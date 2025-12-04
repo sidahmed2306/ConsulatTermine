@@ -1,0 +1,208 @@
+using ConsulatTermine.Application.DTOs;
+using ConsulatTermine.Application.Interfaces;
+using ConsulatTermine.Application.Services;
+using ConsulatTermine.Domain.Entities;
+using ConsulatTermine.Domain.Enums;
+using ConsulatTermine.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+
+namespace ConsulatTermine.Infrastructure.Services
+{
+    public class AppointmentService : IAppointmentService
+    {
+        private readonly ApplicationDbContext _context;
+
+        public AppointmentService(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
+        // -------------------------------------------------------------
+        // FREIE SLOTS ALS DTOs (für UI)
+        // -------------------------------------------------------------
+        public async Task<List<AvailableSlotDto>> GetAvailableSlotDtosAsync(
+            int serviceId,
+            DateTime date)
+        {
+            // Service inkl. aller relevanten Daten laden
+            var service = await _context.Services
+                .Include(s => s.WorkingHours)
+                .Include(s => s.DayOverrides)
+                .Include(s => s.AssignedEmployees)
+                    .ThenInclude(a => a.Employee)
+                .FirstOrDefaultAsync(s => s.Id == serviceId);
+
+            if (service == null)
+                throw new Exception("Service not found.");
+
+            // Alle Termine dieses Tages für diesen Service
+            var appointments = await _context.Appointments
+                .Where(a => a.ServiceId == serviceId &&
+                            a.Date.Date == date.Date)
+                .ToListAsync();
+
+            // Dictionary: (Start, End) -> freie Plätze
+            var dict = AppointmentCalculator.GetAvailableSlots(service, date, appointments);
+
+            // In DTOs umwandeln
+            var result = new List<AvailableSlotDto>();
+
+            foreach (var kv in dict)
+            {
+                var slot = kv.Key;
+                int free = kv.Value;
+
+                result.Add(new AvailableSlotDto
+                {
+                    SlotStart = date.Date + slot.Start,
+                    FreeCapacity = free
+                });
+            }
+
+            return result
+                .OrderBy(r => r.SlotStart)
+                .ToList();
+        }
+
+        // -------------------------------------------------------------
+        // TERMIN BUCHEN
+        // -------------------------------------------------------------
+        public async Task<Appointment> BookAsync(
+            int serviceId,
+            DateTime slotStart,
+            string fullName,
+            string email)
+        {
+            var date = slotStart.Date;
+
+            // Freie Slots für diesen Tag holen
+            var available = await GetAvailableSlotDtosAsync(serviceId, date);
+
+            // Passenden Slot finden
+            var slotDto = available
+                .SingleOrDefault(s => s.SlotStart == slotStart);
+
+            if (slotDto == null)
+                throw new Exception("Invalid slot.");
+
+            if (!slotDto.IsAvailable)
+                throw new Exception("Slot is fully booked.");
+
+            // Termin erzeugen
+            var appointment = new Appointment
+            {
+                FullName = fullName,
+                Email = email,
+                Date = slotStart,
+                ServiceId = serviceId,
+                Status = AppointmentStatus.Booked,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Appointments.Add(appointment);
+            await _context.SaveChangesAsync();
+
+            return appointment;
+        }
+
+        // -------------------------------------------------------------
+        // TERMIN STORNIEREN
+        // -------------------------------------------------------------
+        public async Task<bool> CancelAsync(int appointmentId)
+        {
+            var appointment = await _context.Appointments.FindAsync(appointmentId);
+            if (appointment == null)
+                return false;
+
+            if (appointment.Status == AppointmentStatus.Completed)
+                return false; // fertig bearbeitete Termine nicht mehr stornieren
+
+            appointment.Status = AppointmentStatus.Cancelled;
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
+
+        // -------------------------------------------------------------
+        // TAGESLISTE FÜR EINEN SERVICE
+        // -------------------------------------------------------------
+        public async Task<List<Appointment>> GetAppointmentsByServiceAndDayAsync(
+            int serviceId,
+            DateTime date)
+        {
+            return await _context.Appointments
+                .Where(a => a.ServiceId == serviceId &&
+                            a.Date.Date == date.Date)
+                .OrderBy(a => a.Date)
+                .ToListAsync();
+        }
+
+        // -------------------------------------------------------------
+        // CHECK-IN (Empfang)
+        // -------------------------------------------------------------
+        public async Task<bool> CheckInAsync(int appointmentId)
+        {
+            var appointment = await _context.Appointments.FindAsync(appointmentId);
+            if (appointment == null)
+                return false;
+
+            if (appointment.Status != AppointmentStatus.Booked)
+                return false;
+
+            appointment.Status = AppointmentStatus.CheckedIn;
+            appointment.CheckedInAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        // -------------------------------------------------------------
+        // NÄCHSTER WARTENDER BÜRGER (für Mitarbeiter-UI)
+        // -------------------------------------------------------------
+        public async Task<Appointment?> GetNextAsync(int serviceId)
+        {
+            return await _context.Appointments
+                .Where(a => a.ServiceId == serviceId &&
+                            a.Status == AppointmentStatus.CheckedIn)
+                .OrderBy(a => a.CheckedInAt ?? a.Date)
+                .FirstOrDefaultAsync();
+        }
+
+        // -------------------------------------------------------------
+        // BEARBEITUNG STARTEN (Mitarbeiter nimmt Bürger dran)
+        // -------------------------------------------------------------
+        public async Task<bool> StartProcessingAsync(int appointmentId)
+        {
+            var appointment = await _context.Appointments.FindAsync(appointmentId);
+            if (appointment == null)
+                return false;
+
+            if (appointment.Status != AppointmentStatus.CheckedIn)
+                return false; // nur direkt aus der Warteschlange
+
+            appointment.Status = AppointmentStatus.InProgress;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        // -------------------------------------------------------------
+        // TERMIN ABSCHLIESSEN
+        // -------------------------------------------------------------
+        public async Task<bool> CompleteAsync(int appointmentId)
+        {
+            var appointment = await _context.Appointments.FindAsync(appointmentId);
+            if (appointment == null)
+                return false;
+
+            if (appointment.Status != AppointmentStatus.InProgress)
+                return false;
+
+            appointment.Status = AppointmentStatus.Completed;
+            appointment.CompletedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+    }
+}

@@ -1,0 +1,11 @@
+/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Domain/bin/Debug/net8.0/ConsulatTermine.Domain.deps.json
+/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Domain/bin/Debug/net8.0/ConsulatTermine.Domain.dll
+/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Domain/bin/Debug/net8.0/ConsulatTermine.Domain.pdb
+/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Domain/obj/Debug/net8.0/ConsulatTermine.Domain.GeneratedMSBuildEditorConfig.editorconfig
+/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Domain/obj/Debug/net8.0/ConsulatTermine.Domain.AssemblyInfoInputs.cache
+/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Domain/obj/Debug/net8.0/ConsulatTermine.Domain.AssemblyInfo.cs
+/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Domain/obj/Debug/net8.0/ConsulatTermine.Domain.csproj.CoreCompileInputs.cache
+/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Domain/obj/Debug/net8.0/ConsulatTermine.Domain.dll
+/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Domain/obj/Debug/net8.0/refint/ConsulatTermine.Domain.dll
+/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Domain/obj/Debug/net8.0/ConsulatTermine.Domain.pdb
+/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Domain/obj/Debug/net8.0/ref/ConsulatTermine.Domain.dll

@@ -1,0 +1,15 @@
+/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Application/bin/Debug/net8.0/ConsulatTermine.Application.deps.json
+/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Application/bin/Debug/net8.0/ConsulatTermine.Application.dll
+/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Application/bin/Debug/net8.0/ConsulatTermine.Application.pdb
+/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Application/bin/Debug/net8.0/ConsulatTermine.Domain.dll
+/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Application/bin/Debug/net8.0/ConsulatTermine.Domain.pdb
+/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Application/obj/Debug/net8.0/ConsulatTermine.Application.csproj.AssemblyReference.cache
+/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Application/obj/Debug/net8.0/ConsulatTermine.Application.GeneratedMSBuildEditorConfig.editorconfig
+/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Application/obj/Debug/net8.0/ConsulatTermine.Application.AssemblyInfoInputs.cache
+/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Application/obj/Debug/net8.0/ConsulatTermine.Application.AssemblyInfo.cs
+/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Application/obj/Debug/net8.0/ConsulatTermine.Application.csproj.CoreCompileInputs.cache
+/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Application/obj/Debug/net8.0/Consulat.A8FA0C26.Up2Date
+/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Application/obj/Debug/net8.0/ConsulatTermine.Application.dll
+/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Application/obj/Debug/net8.0/refint/ConsulatTermine.Application.dll
+/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Application/obj/Debug/net8.0/ConsulatTermine.Application.pdb
+/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Application/obj/Debug/net8.0/ref/ConsulatTermine.Application.dll

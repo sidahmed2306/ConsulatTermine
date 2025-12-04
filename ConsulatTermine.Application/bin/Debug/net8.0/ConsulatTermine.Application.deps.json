@@ -1,0 +1,39 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {
+      "ConsulatTermine.Application/1.0.0": {
+        "dependencies": {
+          "ConsulatTermine.Domain": "1.0.0"
+        },
+        "runtime": {
+          "ConsulatTermine.Application.dll": {}
+        }
+      },
+      "ConsulatTermine.Domain/1.0.0": {
+        "runtime": {
+          "ConsulatTermine.Domain.dll": {
+            "assemblyVersion": "1.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "ConsulatTermine.Application/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "ConsulatTermine.Domain/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
