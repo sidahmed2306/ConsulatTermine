@@ -1,8 +1,9 @@
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
-using ConsulatTermine.UI.Data;
+
 using Microsoft.EntityFrameworkCore;
 using ConsulatTermine.Infrastructure.Persistence;
+using Infrastructure.SignalR;
+using MudBlazor.Services;
+
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,9 +14,27 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
-builder.Services.AddSingleton<WeatherForecastService>();
+builder.Services.AddSignalR();
+
+builder.Services.AddMudServices();
+
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+
+var supportedCultures = new[] { "de", "en", "ar" };
+
+builder.Services.Configure<RequestLocalizationOptions>(options =>
+{
+    options.SetDefaultCulture("ar");
+    options.AddSupportedCultures(supportedCultures);
+    options.AddSupportedUICultures(supportedCultures);
+});
+
+
 
 var app = builder.Build();
+
+
+app.UseRequestLocalization();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -32,6 +51,9 @@ app.UseStaticFiles();
 app.UseRouting();
 
 app.MapBlazorHub();
+app.MapHub<DisplayHub>("/hubs/display");
+app.MapHub<EmployeeHub>("/hubs/employee");
 app.MapFallbackToPage("/_Host");
+
 
 app.Run();

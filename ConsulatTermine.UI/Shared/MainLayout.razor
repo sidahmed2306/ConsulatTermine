@@ -1,19 +1,28 @@
 ﻿@inherits LayoutComponentBase
+@using MudBlazor
 
-<PageTitle>ConsulatTermine.UI</PageTitle>
+<!-- MudBlazor Provider für Theme, Popover, Dialog und Snackbar -->
+<MudThemeProvider />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
 
-<div class="page">
-    <div class="sidebar">
+<!-- Hauptlayout -->
+<MudLayout>
+
+    <!-- Optional: AppBar -->
+    <MudAppBar Elevation="1">
+        <MudText Typo="Typo.h5">Consulat Termine</MudText>
+    </MudAppBar>
+
+    <!-- Optional: Sidebar/Drawer mit Navigation -->
+    <MudDrawer Open="true" ClipMode="DrawerClipMode.Always" Elevation="1">
         <NavMenu />
-    </div>
+    </MudDrawer>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
-        </div>
+    <!-- Hauptinhalt -->
+    <MudMainContent Class="pa-4">
+        @Body
+    </MudMainContent>
 
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
-</div>
+</MudLayout>

@@ -1,0 +1,19 @@
+@using MudBlazor
+
+<MudMenu Icon="@Icons.Material.Filled.Language">
+    <MudMenuItem OnClick="@(() => SetLang("de"))">Deutsch</MudMenuItem>
+    <MudMenuItem OnClick="@(() => SetLang("en"))">English</MudMenuItem>
+    <MudMenuItem OnClick="@(() => SetLang("ar"))">العربية</MudMenuItem>
+</MudMenu>
+
+@code {
+    [Inject] NavigationManager Nav { get; set; }
+
+    void SetLang(string culture)
+    {
+        var uri = new Uri(Nav.Uri)
+            .GetComponents(UriComponents.PathAndQuery, UriFormat.Unescaped);
+
+        Nav.NavigateTo($"/{culture}/{uri}", forceLoad: true);
+    }
+}

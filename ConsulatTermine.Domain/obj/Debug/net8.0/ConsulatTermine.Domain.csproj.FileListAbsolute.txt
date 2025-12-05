@@ -9,3 +9,4 @@
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Domain/obj/Debug/net8.0/refint/ConsulatTermine.Domain.dll
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Domain/obj/Debug/net8.0/ConsulatTermine.Domain.pdb
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Domain/obj/Debug/net8.0/ref/ConsulatTermine.Domain.dll
+/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Domain/obj/Debug/net8.0/ConsulatTermine.Domain.sourcelink.json

@@ -4,7 +4,10 @@ using ConsulatTermine.Application.Services;
 using ConsulatTermine.Domain.Entities;
 using ConsulatTermine.Domain.Enums;
 using ConsulatTermine.Infrastructure.Persistence;
+using Infrastructure.SignalR;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+
 
 namespace ConsulatTermine.Infrastructure.Services
 {
@@ -12,9 +15,19 @@ namespace ConsulatTermine.Infrastructure.Services
     {
         private readonly ApplicationDbContext _context;
 
-        public AppointmentService(ApplicationDbContext context)
+        private readonly IHubContext<DisplayHub, IDisplayClient> _displayHub;
+        private readonly IHubContext<EmployeeHub, IEmployeeClient> _employeeHub;
+
+
+
+        public AppointmentService(
+            ApplicationDbContext context,
+            IHubContext<DisplayHub, IDisplayClient> displayHub,
+            IHubContext<EmployeeHub, IEmployeeClient> employeeHub)
         {
             _context = context;
+            _displayHub = displayHub;
+            _employeeHub = employeeHub;
         }
 
         // -------------------------------------------------------------
@@ -153,6 +166,8 @@ namespace ConsulatTermine.Infrastructure.Services
             appointment.CheckedInAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
+            await _employeeHub.Clients.All.StatusUpdated(appointment.Id, appointment.Status);
+
             return true;
         }
 
@@ -183,6 +198,15 @@ namespace ConsulatTermine.Infrastructure.Services
             appointment.Status = AppointmentStatus.InProgress;
 
             await _context.SaveChangesAsync();
+            await _displayHub.Clients.All.CitizenCalled(
+            appointment.Id,
+            appointment.FullName,    // oder Ticketnummer, später UI-Entscheidung
+            appointment.Service?.Name ?? "",
+            "" // counterName kommt später, wenn Mitarbeiter-Workplaces gebaut sind
+);
+
+            await _employeeHub.Clients.All.StatusUpdated(appointment.Id, appointment.Status);
+
             return true;
         }
 
@@ -202,6 +226,8 @@ namespace ConsulatTermine.Infrastructure.Services
             appointment.CompletedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
+            await _employeeHub.Clients.All.StatusUpdated(appointment.Id, appointment.Status);
+
             return true;
         }
     }

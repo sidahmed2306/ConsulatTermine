@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "19xFQ76ypMAfzVxItBBshm11dFOn6OogLJD8o4H9Tdg=",
+  "Hash": "lNQv74CS7AGqNOcx3EmoiLgdKL1SzsK7QjLs8qhwhmg=",
   "Source": "ConsulatTermine.UI",
   "BasePath": "_content/ConsulatTermine.UI",
   "Mode": "Default",
@@ -16,6 +16,44 @@
     }
   ],
   "Assets": [
+    {
+      "Identity": "/Users/boussadiasidahmed/.nuget/packages/mudblazor/8.15.0/staticwebassets/MudBlazor.min.css",
+      "SourceId": "MudBlazor",
+      "SourceType": "Package",
+      "ContentRoot": "/Users/boussadiasidahmed/.nuget/packages/mudblazor/8.15.0/staticwebassets/",
+      "BasePath": "_content/MudBlazor",
+      "RelativePath": "MudBlazor.min.css",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "/Users/boussadiasidahmed/.nuget/packages/mudblazor/8.15.0/staticwebassets/MudBlazor.min.css"
+    },
+    {
+      "Identity": "/Users/boussadiasidahmed/.nuget/packages/mudblazor/8.15.0/staticwebassets/MudBlazor.min.js",
+      "SourceId": "MudBlazor",
+      "SourceType": "Package",
+      "ContentRoot": "/Users/boussadiasidahmed/.nuget/packages/mudblazor/8.15.0/staticwebassets/",
+      "BasePath": "_content/MudBlazor",
+      "RelativePath": "MudBlazor.min.js",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "/Users/boussadiasidahmed/.nuget/packages/mudblazor/8.15.0/staticwebassets/MudBlazor.min.js"
+    },
     {
       "Identity": "/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/obj/Debug/net8.0/scopedcss/bundle/ConsulatTermine.UI.styles.css",
       "SourceId": "ConsulatTermine.UI",
@@ -300,6 +338,25 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot/favicon.png"
+    },
+    {
+      "Identity": "/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/wwwroot/images/Alg_Logo.png",
+      "SourceId": "ConsulatTermine.UI",
+      "SourceType": "Discovered",
+      "ContentRoot": "/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/wwwroot/",
+      "BasePath": "_content/ConsulatTermine.UI",
+      "RelativePath": "images/Alg_Logo.png",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/images/Alg_Logo.png"
     }
   ]
 }

@@ -17,3 +17,4 @@
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Infrastructure/obj/Debug/net8.0/ConsulatTermine.Infrastructure.pdb
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Infrastructure/obj/Debug/net8.0/ConsulatTermine.Infrastructure.genruntimeconfig.cache
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Infrastructure/obj/Debug/net8.0/ref/ConsulatTermine.Infrastructure.dll
+/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Infrastructure/obj/Debug/net8.0/ConsulatTermine.Infrastructure.sourcelink.json

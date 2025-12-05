@@ -1,0 +1,48 @@
+@page "/"
+@using Microsoft.Extensions.Localization
+@using MudBlazor
+@inject IStringLocalizer<Pages.LandingPage> L
+
+
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8 mb-8">
+
+    <!-- Logo oben -->
+    <div class="mud-text-center mud-mb-6">
+        <img src="images/algeria-logo.svg" alt="Algerian Seal" style="width: 120px;" />
+    </div>
+
+    <!-- Titel -->
+    <MudText Typo="Typo.h4" Align="Align.Center" Class="mud-mb-2">
+        @L["WelcomeTitle"]
+    </MudText>
+
+    <!-- Beschreibung -->
+    <MudText Typo="Typo.body1" Align="Align.Center" Class="mud-mb-6 mud-px-4">
+        @L["WelcomeDescription"]
+    </MudText>
+
+    <!-- Info-Boxen -->
+    <MudPaper Elevation="1" Class="mud-p-4 mud-mb-4">
+        <MudText Typo="Typo.body1">@L["Info1"]</MudText>
+    </MudPaper>
+    <MudPaper Elevation="1" Class="mud-p-4 mud-mb-4">
+        <MudText Typo="Typo.body1">@L["Info2"]</MudText>
+    </MudPaper>
+    <MudPaper Elevation="1" Class="mud-p-4 mud-mb-6">
+        <MudText Typo="Typo.body1">@L["Info3"]</MudText>
+    </MudPaper>
+
+    <!-- Button -->
+    <div class="mud-text-center">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="services" Class="mud-px-6 mud-py-2">
+            @L["StartButton"]
+        </MudButton>
+    </div>
+
+    <!-- Sprachauswahl -->
+    <div class="mud-text-center mud-mt-4">
+        <LanguageSelector />
+    </div>
+
+</MudContainer>

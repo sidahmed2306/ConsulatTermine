@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <data name="WelcomeTitle" xml:space="preserve">
+    <value>مرحبًا بكم في خدمة حجز المواعيد للقنصلية الجزائرية</value>
+  </data>
+
+  <data name="WelcomeDescription" xml:space="preserve">
+    <value>يرجى اختيار الخدمة المطلوبة واتباع الخطوات لحجز موعدك.</value>
+  </data>
+
+  <data name="StartButton" xml:space="preserve">
+    <value>متابعة</value>
+  </data>
+
+  <data name="Info1" xml:space="preserve">
+    <value>خدمة المواعيد متاحة للمواطنين الجزائريين المقيمين في ألمانيا.</value>
+  </data>
+
+  <data name="Info2" xml:space="preserve">
+    <value>يرجى التأكد من صحة معلوماتك قبل إرسال الطلب.</value>
+  </data>
+
+  <data name="Info3" xml:space="preserve">
+    <value>سيتم إرسال تأكيد الموعد إلى بريدك الإلكتروني.</value>
+  </data>
+
+  <data name="LanguageLabel" xml:space="preserve">
+    <value>اختر اللغة</value>
+  </data>
+</root>

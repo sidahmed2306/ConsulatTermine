@@ -1,4 +1,7 @@
 is_global = true
+build_property.MudDebugAnalyzer = 
+build_property.MudAllowedAttributePattern = 
+build_property.MudAllowedAttributeList = 
 build_property.TargetFramework = net8.0
 build_property.TargetPlatformMinVersion = 
 build_property.UsingMicrosoftNETSdkWeb = true
@@ -32,6 +35,14 @@ build_metadata.AdditionalFiles.CssScope =
 
 [/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/Pages/Index.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXMvSW5kZXgucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/Pages/LandingPage.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvTGFuZGluZ1BhZ2UucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/Shared/LanguageSelector.razor]
+build_metadata.AdditionalFiles.TargetPath = U2hhcmVkL0xhbmd1YWdlU2VsZWN0b3IucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
 [/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/Shared/SurveyPrompt.razor]
