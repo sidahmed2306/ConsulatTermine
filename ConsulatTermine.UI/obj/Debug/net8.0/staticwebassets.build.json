@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "lNQv74CS7AGqNOcx3EmoiLgdKL1SzsK7QjLs8qhwhmg=",
+  "Hash": "1mPnnuoyl3/b4WK5EczfhSmv6knM1itOsU5+Yd2w6EE=",
   "Source": "ConsulatTermine.UI",
   "BasePath": "_content/ConsulatTermine.UI",
   "Mode": "Default",
@@ -300,6 +300,25 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot/css/open-iconic/README.md"
+    },
+    {
+      "Identity": "/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/wwwroot/css/private_css.css",
+      "SourceId": "ConsulatTermine.UI",
+      "SourceType": "Discovered",
+      "ContentRoot": "/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/wwwroot/",
+      "BasePath": "_content/ConsulatTermine.UI",
+      "RelativePath": "css/private_css.css",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/css/private_css.css"
     },
     {
       "Identity": "/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/wwwroot/css/site.css",

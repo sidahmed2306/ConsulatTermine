@@ -175,3 +175,4 @@
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/obj/Debug/net8.0/de/ConsulatTermine.UI.resources.dll
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/obj/Debug/net8.0/en/ConsulatTermine.UI.resources.cs
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/obj/Debug/net8.0/en/ConsulatTermine.UI.resources.dll
+/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/bin/Debug/net8.0/Blazored.SessionStorage.dll

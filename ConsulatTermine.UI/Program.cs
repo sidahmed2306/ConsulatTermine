@@ -3,6 +3,10 @@ using Microsoft.EntityFrameworkCore;
 using ConsulatTermine.Infrastructure.Persistence;
 using Infrastructure.SignalR;
 using MudBlazor.Services;
+using ConsulatTermine.Application.Interfaces;
+using ConsulatTermine.Infrastructure.Services;
+using Blazored.SessionStorage;
+
 
 
 
@@ -12,9 +16,18 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Add services to the container.
+builder.Services.AddBlazoredSessionStorage();
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddSignalR();
+builder.Services.AddScoped<IServiceService, ServiceService>();
+builder.Services.AddScoped<IEmployeeService, EmployeeService>();
+builder.Services.AddScoped<IAppointmentService, AppointmentService>();
+builder.Services.AddScoped<IEmployeeAssignmentService, EmployeeAssignmentService>();
+builder.Services.AddScoped<IWorkingHoursService, WorkingHoursService>();
+
+
+
 
 builder.Services.AddMudServices();
 

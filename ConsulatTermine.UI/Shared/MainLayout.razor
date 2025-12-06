@@ -1,27 +1,23 @@
 ﻿@inherits LayoutComponentBase
 @using MudBlazor
+@using ConsulatTermine.UI.Theme
 
-<!-- MudBlazor Provider für Theme, Popover, Dialog und Snackbar -->
-<MudThemeProvider />
+<MudThemeProvider Theme="AlgeriaTheme.DefaultTheme" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
-<!-- Hauptlayout -->
 <MudLayout>
 
-    <!-- Optional: AppBar -->
-    <MudAppBar Elevation="1">
-        <MudText Typo="Typo.h5">Consulat Termine</MudText>
+    <MudAppBar Elevation="4" Color="Color.Primary" Style="height: 120px; padding-top: 16px; margin-bottom: 50px;">
+        <div class="d-flex justify-center align-center" style="width:100%; padding: 40px 0;">
+            <MudImage Src="images/Alg_Logo.png" Alt="Consulat Algerien Logo"
+                      Style="height:90px; margin:12px;" />
+            <MudText Typo="Typo.h3" Class="mud-text-white">Consulat Général Algérien à Francfort</MudText>
+        </div>
     </MudAppBar>
 
-    <!-- Optional: Sidebar/Drawer mit Navigation -->
-    <MudDrawer Open="true" ClipMode="DrawerClipMode.Always" Elevation="1">
-        <NavMenu />
-    </MudDrawer>
-
-    <!-- Hauptinhalt -->
-    <MudMainContent Class="pa-4">
+    <MudMainContent Class="pa-0" Style="margin-top: 120px;">
         @Body
     </MudMainContent>
 

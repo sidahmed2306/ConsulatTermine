@@ -1,0 +1,140 @@
+@page "/admin/assignments"
+
+@using MudBlazor
+@using ConsulatTermine.Application.Interfaces
+@using ConsulatTermine.Domain.Entities
+
+@inject IEmployeeAssignmentService AssignmentService
+@inject IEmployeeService EmployeeService
+@inject IServiceService ServiceService
+@inject ISnackbar Snackbar
+
+<MudPaper Class="pa-4">
+
+    <MudStack Spacing="3">
+
+        <MudText Typo="Typo.h5">Mitarbeiter & Services</MudText>
+
+        <!-- Assignment Tabelle -->
+        <MudTable Items="_assignments" Hover="true" Dense="true">
+
+            <HeaderContent>
+                <MudTh style="width:150px;">Mitarbeiter</MudTh>
+                <MudTh style="width:150px;">Service</MudTh>
+                <MudTh style="width:100px;">Aktionen</MudTh>
+            </HeaderContent>
+
+            <RowTemplate>
+                <MudTd>@(context.Employee?.FullName ?? "N/A")</MudTd>
+                <MudTd>@(context.Service?.Name ?? "N/A")</MudTd>
+
+                <MudTd>
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                   Color="Color.Error"
+                                   OnClick="@(() => DeleteAssignment(context))" />
+                </MudTd>
+            </RowTemplate>
+
+            <NoRecordsContent>
+                <MudText>Keine Zuordnungen vorhanden.</MudText>
+            </NoRecordsContent>
+
+        </MudTable>
+
+        <!-- Formular -->
+        <MudPaper Class="pa-4">
+
+            <MudText Typo="Typo.h6">Neue Zuordnung</MudText>
+
+            <MudStack Spacing="2">
+
+                <MudSelect T="int"
+                           Label="Mitarbeiter"
+                           @bind-Value="_selectedEmployee">
+                    @foreach (var e in _employees)
+                    {
+                        <MudSelectItem Value="@e.Id">@e.FullName</MudSelectItem>
+                    }
+                </MudSelect>
+
+                <MudSelect T="int"
+                           Label="Service"
+                           @bind-Value="_selectedService">
+                    @foreach (var s in _services)
+                    {
+                        <MudSelectItem Value="@s.Id">@s.Name</MudSelectItem>
+                    }
+                </MudSelect>
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           OnClick="@AddAssignment">
+                    Hinzufügen
+                </MudButton>
+
+            </MudStack>
+
+        </MudPaper>
+
+    </MudStack>
+
+</MudPaper>
+
+@code {
+
+    private List<EmployeeServiceAssignment> _assignments = new();
+    private List<Employee> _employees = new();
+    private List<Service> _services = new();
+
+    private int _selectedEmployee;
+    private int _selectedService;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Snackbar.Configuration.PositionClass = Defaults.Classes.Position.BottomLeft;
+
+        _employees = await EmployeeService.GetAllEmployeesAsync();
+        _services = await ServiceService.GetAllServicesAsync();
+
+        await LoadAssignments();
+    }
+
+    private async Task LoadAssignments()
+    {
+        _assignments = await AssignmentService.GetAllAssignmentsAsync();
+    }
+
+    private async Task AddAssignment()
+    {
+        if (_selectedEmployee == 0 || _selectedService == 0)
+        {
+            Snackbar.Add("Bitte Mitarbeiter und Service wählen.", Severity.Warning);
+            return;
+        }
+
+        var ok = await AssignmentService.AddAssignmentAsync(_selectedEmployee, _selectedService);
+
+        if (!ok)
+        {
+            Snackbar.Add("Zuordnung existiert bereits!", Severity.Error);
+            return;
+        }
+
+        Snackbar.Add("Zuordnung hinzugefügt!", Severity.Success);
+        await LoadAssignments();
+    }
+
+    private async Task DeleteAssignment(EmployeeServiceAssignment a)
+    {
+        var ok = await AssignmentService.RemoveAssignmentAsync(a.EmployeeId, a.ServiceId);
+
+        if (!ok)
+        {
+            Snackbar.Add("Löschen fehlgeschlagen.", Severity.Error);
+            return;
+        }
+
+        Snackbar.Add("Zuordnung gelöscht.", Severity.Success);
+        await LoadAssignments();
+    }
+}

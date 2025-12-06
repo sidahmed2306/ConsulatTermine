@@ -25,20 +25,36 @@ build_property._RazorSourceGeneratorDebug =
 build_metadata.AdditionalFiles.TargetPath = QXBwLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/Pages/Counter.razor]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXMvQ291bnRlci5yYXpvcg==
+[/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/Pages/AdminWorkingHours.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvQWRtaW5Xb3JraW5nSG91cnMucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/Pages/FetchData.razor]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXMvRmV0Y2hEYXRhLnJhem9y
+[/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/Pages/AppointmentFormPage.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvQXBwb2ludG1lbnRGb3JtUGFnZS5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/Pages/Index.razor]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXMvSW5kZXgucmF6b3I=
+[/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/Pages/Appointmentslot.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvQXBwb2ludG1lbnRzbG90LnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/Pages/EmployeeAssignments.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvRW1wbG95ZWVBc3NpZ25tZW50cy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/Pages/Employees.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvRW1wbG95ZWVzLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
 [/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/Pages/LandingPage.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXMvTGFuZGluZ1BhZ2UucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/Pages/Services.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvU2VydmljZXMucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/Pages/ServiceVerwaltung.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvU2VydmljZVZlcndhbHR1bmcucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
 [/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/Shared/LanguageSelector.razor]

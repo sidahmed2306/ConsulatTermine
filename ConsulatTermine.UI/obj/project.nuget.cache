@@ -1,11 +1,12 @@
 {
   "version": 2,
-  "dgSpecHash": "V5v6xiba3Uw=",
+  "dgSpecHash": "Ko1pc2nfaTM=",
   "success": true,
   "projectFilePath": "/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/ConsulatTermine.UI.csproj",
   "expectedPackageFiles": [
     "/Users/boussadiasidahmed/.nuget/packages/azure.core/1.35.0/azure.core.1.35.0.nupkg.sha512",
     "/Users/boussadiasidahmed/.nuget/packages/azure.identity/1.10.3/azure.identity.1.10.3.nupkg.sha512",
+    "/Users/boussadiasidahmed/.nuget/packages/blazored.sessionstorage/2.4.0/blazored.sessionstorage.2.4.0.nupkg.sha512",
     "/Users/boussadiasidahmed/.nuget/packages/humanizer.core/2.14.1/humanizer.core.2.14.1.nupkg.sha512",
     "/Users/boussadiasidahmed/.nuget/packages/microsoft.aspnetcore.authentication.abstractions/2.3.0/microsoft.aspnetcore.authentication.abstractions.2.3.0.nupkg.sha512",
     "/Users/boussadiasidahmed/.nuget/packages/microsoft.aspnetcore.authorization/8.0.12/microsoft.aspnetcore.authorization.8.0.12.nupkg.sha512",

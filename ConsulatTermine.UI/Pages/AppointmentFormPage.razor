@@ -1,0 +1,182 @@
+@page "/appointment-form"
+
+@using MudBlazor
+@using ConsulatTermine.Application.Interfaces
+@using Blazored.SessionStorage
+@using ConsulatTermine.Application.DTOs
+@using ConsulatTermine.Domain.Entities
+
+@inject IAppointmentService AppointmentService
+@inject IServiceService ServiceService
+@inject NavigationManager Navigation
+@inject ISessionStorageService Session
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="pa-4">
+
+    <MudStepper Linear="true"
+                DisableNavigation="true"
+                @bind-ActiveIndex="_activeStep"
+                Class="mb-6">
+        <MudStep Title="1. Service" Completed="@(_service != null)" />
+        <MudStep Title="2. Termin wählen" Completed="@(_slot != null)" />
+        <MudStep Title="3. Ihre Daten" Completed="@(_appointment != null)" />
+    </MudStepper>
+
+    <MudPaper Class="pa-4" Style="gap: 16px;">
+
+        @if (_service == null || _slot == null)
+        {
+            <MudAlert Severity="Severity.Error">
+                Es fehlen Angaben. Bitte starten Sie erneut.
+            </MudAlert>
+
+            <MudButton Variant="Variant.Filled" OnClick="@(() => Navigation.NavigateTo("/services"))">
+                Zurück
+            </MudButton>
+        }
+        else
+        {
+            @if (_appointment == null)
+            {
+                <MudText Typo="Typo.h6">Ihre Daten</MudText>
+
+                <MudTextField Label="Vollständiger Name"
+                              @bind-Value="_name"
+                              Required="true" />
+
+                <MudTextField Label="E-Mail"
+                              @bind-Value="_email"
+                              Required="true" />
+
+                @if (!string.IsNullOrEmpty(_error))
+                {
+                    <MudAlert Severity="Severity.Error">@_error</MudAlert>
+                }
+
+                <MudStack Direction="Row" Class="mt-4" Justify="Justify.SpaceBetween">
+
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Default"
+                               OnClick="@(() => Navigation.NavigateTo("/appointment"))">
+                        Zurück
+                    </MudButton>
+
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               Disabled="@_saving"
+                               OnClick="Book">
+                        @if (_saving)
+                        {
+                            <MudProgressCircular Indeterminate="true" Size="Size.Small" Class="me-2" />
+                        }
+                        Termin buchen
+                    </MudButton>
+
+                </MudStack>
+            }
+            else
+            {
+                <MudAlert Severity="Severity.Success" Class="mb-4">
+                    Termin erfolgreich gebucht!
+                </MudAlert>
+
+                <MudText><b>Datum:</b> @_slot.SlotStart.ToString("dd.MM.yyyy")</MudText>
+                <MudText><b>Uhrzeit:</b> @_slot.SlotStart.ToString("HH:mm")</MudText>
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Class="mt-4"
+                           OnClick="Finish">
+                    Fertig
+                </MudButton>
+            }
+        }
+
+    </MudPaper>
+
+</MudContainer>
+
+@code {
+
+    private int _activeStep = 2;
+
+    private Service? _service;
+    private AvailableSlotDto? _slot;
+
+    private string _name = "";
+    private string _email = "";
+    private bool _saving = false;
+    private string? _error;
+
+    private Appointment? _appointment;
+    private bool _initialized;
+
+    protected override Task OnInitializedAsync() => Task.CompletedTask;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _initialized)
+            return;
+
+        try
+        {
+            _activeStep = await Session.GetItemAsync<int?>("activeStep") ?? 2;
+
+            var sid = await Session.GetItemAsync<int?>("selectedServiceId");
+            if (sid != null)
+                _service = await ServiceService.GetServiceByIdAsync(sid.Value);
+
+            _slot = await Session.GetItemAsync<AvailableSlotDto>("selectedSlot");
+        }
+        catch (InvalidOperationException)
+        {
+            _activeStep = 2;
+        }
+
+        _initialized = true;
+        StateHasChanged();
+    }
+
+    private async Task Book()
+    {
+        if (string.IsNullOrWhiteSpace(_name) || string.IsNullOrWhiteSpace(_email))
+        {
+            _error = "Bitte Name und E-Mail eingeben.";
+            return;
+        }
+
+        if (_service == null || _slot == null)
+        {
+            _error = "Technischer Fehler: Service oder Slot fehlen.";
+            return;
+        }
+
+        _saving = true;
+
+        try
+        {
+            _appointment = await AppointmentService.BookAsync(
+                _service.Id,
+                _slot.SlotStart,
+                _name,
+                _email
+            );
+
+            await Session.SetItemAsync("activeStep", 2);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void Finish()
+    {
+        Session.ClearAsync(); // Reset alles
+        Navigation.NavigateTo("/");
+    }
+}

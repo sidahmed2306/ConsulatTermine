@@ -49,6 +49,10 @@
       "PackagePath": "staticwebassets/css/open-iconic/font/fonts/open-iconic.woff"
     },
     {
+      "Id": "/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/wwwroot/css/private_css.css",
+      "PackagePath": "staticwebassets/css/private_css.css"
+    },
+    {
       "Id": "/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/wwwroot/css/site.css",
       "PackagePath": "staticwebassets/css/site.css"
     },

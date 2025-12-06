@@ -1,48 +1,69 @@
 @page "/"
-@using Microsoft.Extensions.Localization
 @using MudBlazor
-@inject IStringLocalizer<Pages.LandingPage> L
+@using ConsulatTermine.UI.Theme
+@inject NavigationManager NavigationManager
 
+<PageTitle>Consulat Algerien Frankfurt</PageTitle>
 
+<MudContainer MaxWidth="MaxWidth.False" Class="mt-12">
 
-<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8 mb-8">
-
-    <!-- Logo oben -->
-    <div class="mud-text-center mud-mb-6">
-        <img src="images/algeria-logo.svg" alt="Algerian Seal" style="width: 120px;" />
-    </div>
-
-    <!-- Titel -->
-    <MudText Typo="Typo.h4" Align="Align.Center" Class="mud-mb-2">
-        @L["WelcomeTitle"]
-    </MudText>
-
-    <!-- Beschreibung -->
-    <MudText Typo="Typo.body1" Align="Align.Center" Class="mud-mb-6 mud-px-4">
-        @L["WelcomeDescription"]
-    </MudText>
-
-    <!-- Info-Boxen -->
-    <MudPaper Elevation="1" Class="mud-p-4 mud-mb-4">
-        <MudText Typo="Typo.body1">@L["Info1"]</MudText>
-    </MudPaper>
-    <MudPaper Elevation="1" Class="mud-p-4 mud-mb-4">
-        <MudText Typo="Typo.body1">@L["Info2"]</MudText>
-    </MudPaper>
-    <MudPaper Elevation="1" Class="mud-p-4 mud-mb-6">
-        <MudText Typo="Typo.body1">@L["Info3"]</MudText>
-    </MudPaper>
-
-    <!-- Button -->
-    <div class="mud-text-center">
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="services" Class="mud-px-6 mud-py-2">
-            @L["StartButton"]
+    <!-- Hero-Section -->
+    <MudPaper Elevation="0" Class="pa-8 text-center">
+        <MudText Typo="Typo.h3" GutterBottom="true">Willkommen beim Konsulat Algerien – Frankfurt</MudText>
+        <MudText Typo="Typo.body1" Class="mb-4">
+            Buchen Sie Ihren Termin einfach online — schnell, sicher und bequem.
+        </MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                   OnClick="HandleNavigateToServices">
+            Termin jetzt buchen
         </MudButton>
-    </div>
+    </MudPaper>
 
-    <!-- Sprachauswahl -->
-    <div class="mud-text-center mud-mt-4">
-        <LanguageSelector />
-    </div>
+    <!-- Info / Hinweise Section -->
+    <MudContainer MaxWidth="MaxWidth.Medium" Class="py-8">
+        <MudCard Outlined="true" Class="pa-4 mb-6">
+            <MudCardContent>
+                <MudText Typo="Typo.h6" Class="mb-2">Wichtige Hinweise</MudText>
+                <ul>
+                    <li>Die Abholung des Reisepasses und/oder Personalausweises erfolgt <strong>ohne Terminvereinbarung</strong>.</li>
+                    <li>Anträge auf Visa für Ehepartner von Algeriern werden <strong>ohne Termin</strong> (Dienstag bis Samstag, 09:00–13:00 Uhr) entgegengenommen.</li>
+                </ul>
+            </MudCardContent>
+        </MudCard>
+
+        <MudCard Outlined="true" Class="pa-4 mb-6">
+            <MudCardContent>
+                <MudText Typo="Typo.h6" Class="mb-2">Öffnungszeiten</MudText>
+                <MudText Typo="Typo.body2">
+                    <strong>VISA-Service:</strong> Dienstag bis Samstag, 9:00 – 15:00 Uhr<br />
+                    <strong>Passservice:</strong> Dienstag bis Samstag, 9:00 – 15:00 Uhr<br />
+                    <strong>Standesamt:</strong> Dienstag bis Samstag, 9:00 – 15:00 Uhr
+                </MudText>
+            </MudCardContent>
+        </MudCard>
+
+        <MudCard Outlined="true" Class="pa-4 mb-6">
+            <MudCardContent>
+                <MudText Typo="Typo.h6" Class="mb-2">Kontakt & Telefon</MudText>
+                <MudText Typo="Typo.body2">
+                    <strong>VISA-Service:</strong> 069 7060 95 129 / 069 7060 95 120<br />
+                    <strong>Passdienst & Zulassungsstelle:</strong> 069 7060 95 113 / 069 7060 95 118 / 069 7060 95 119<br />
+                    <strong>Biometrische Personalausweise:</strong> 069 7060 95 134<br />
+                    <strong>Standesamt:</strong> 069 7060 95 114 / 069 7060 95 117 / 069 7060 95 137<br />
+                    <br />
+                    <strong>E-Mail Standesamt:</strong> zivilstand@konsulat-algerien.de<br />
+                    <strong>E-Mail Reisepass / biometrischer Pass:</strong> biometrischer.reisepass@konsulat-algerien.de<br />
+                    <strong>E-Mail VISA-Service:</strong> visa@konsulat-algerien.de
+                </MudText>
+            </MudCardContent>
+        </MudCard>
+    </MudContainer>
 
 </MudContainer>
+
+@code {
+    private void HandleNavigateToServices()
+    {
+        NavigationManager.NavigateTo("/services");
+    }
+}

@@ -230,5 +230,96 @@ namespace ConsulatTermine.Infrastructure.Services
 
             return true;
         }
+
+        // -------------------------------------------------------------
+// GRUPPENBUCHUNG (1–5 Personen, mehrere Slots möglich)
+// -------------------------------------------------------------
+public async Task<List<Appointment>> BookGroupAsync(GroupBookingDto dto)
+{
+    var result = new List<Appointment>();
+
+    // Service laden (inkl. Kapazitätsdaten)
+    var service = await _context.Services
+        .Include(s => s.WorkingHours)
+        .Include(s => s.DayOverrides)
+        .Include(s => s.AssignedEmployees)
+        .FirstOrDefaultAsync(s => s.Id == dto.ServiceId);
+
+    if (service == null)
+        throw new Exception("Service not found.");
+
+    // Gruppengröße prüfen
+    if (dto.TotalPersons < 1 || dto.TotalPersons > 5)
+        throw new Exception("Gruppengröße muss zwischen 1 und 5 liegen.");
+
+    if (dto.Persons.Count != dto.TotalPersons)
+        throw new Exception("Anzahl der Personen stimmt nicht mit TotalPersons überein.");
+
+    // Alle Slots aus GroupBookingDto extrahieren
+    var allSlotStarts = dto.Persons.Select(p => p.SlotStart).ToList();
+
+    // Datumsvalidierung: alle Slots müssen am gleichen Tag liegen
+    var date = allSlotStarts.First().Date;
+    if (allSlotStarts.Any(s => s.Date != date))
+        throw new Exception("Alle Slots müssen am selben Tag liegen.");
+
+    // Alle existierenden Termine für diesen Tag laden
+    var existing = await _context.Appointments
+        .Where(a => a.ServiceId == dto.ServiceId && a.Date.Date == date.Date)
+        .ToListAsync();
+
+    // freie Kapazität pro Slot berechnen
+    var freeSlots = AppointmentCalculator.GetAvailableSlots(service, date, existing);
+    // freeSlots: Dictionary<(start,end), capacity>
+
+    // 1. Validierung: jeder Slot hat genug Kapazität
+    foreach (var slotGroup in dto.Persons.GroupBy(p => p.SlotStart))
+    {
+        var slotStart = slotGroup.Key.TimeOfDay;
+
+        var slot = freeSlots.Keys.FirstOrDefault(k => k.Start == slotStart);
+        if (slot.Start == default)
+            throw new Exception($"Ungültiger Slot: {slotStart}");
+
+        int free = freeSlots[slot];
+        int needed = slotGroup.Count();
+
+        if (needed > free)
+            throw new Exception($"Slot {slotStart} hat nicht genug freie Plätze. Frei: {free}, benötigt: {needed}");
+    }
+
+    // 2. Speichern in Transaktion
+    using var trx = await _context.Database.BeginTransactionAsync();
+
+    try
+    {
+        foreach (var person in dto.Persons)
+        {
+            var appointment = new Appointment
+            {
+                FullName = person.FullName,
+                Email = person.Email,
+                Date = person.SlotStart,
+                ServiceId = dto.ServiceId,
+                Status = AppointmentStatus.Booked,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Appointments.Add(appointment);
+            result.Add(appointment);
+        }
+
+        await _context.SaveChangesAsync();
+        await trx.CommitAsync();
+    }
+    catch
+    {
+        await trx.RollbackAsync();
+        throw;
+    }
+
+    return result;
+}
+
     }
 }

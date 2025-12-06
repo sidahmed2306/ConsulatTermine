@@ -1,0 +1,293 @@
+@page "/admin/services"
+
+@using MudBlazor
+@using ConsulatTermine.Application.Interfaces
+@using ConsulatTermine.Application.DTOs
+@using ConsulatTermine.Domain.Entities
+
+@inject IServiceService ServiceService
+@inject ISnackbar Snackbar
+
+<MudPaper Class="pa-4">
+
+    <MudStack Spacing="2">
+
+        <!-- Header -->
+        <MudStack Direction="Row"
+                  Justify="Justify.SpaceBetween"
+                  AlignItems="AlignItems.Center">
+
+            <MudText Typo="Typo.h5">Service-Verwaltung</MudText>
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       OnClick="@NewService">
+                <MudIcon Icon="@Icons.Material.Filled.Add" Class="me-2" />
+                Neuer Service
+            </MudButton>
+        </MudStack>
+
+        <!-- Ladeanzeige -->
+        @if (_loading)
+        {
+            <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="mt-4">
+                <MudProgressCircular Indeterminate="true" />
+                <MudText Class="mt-2">Lade Services...</MudText>
+            </MudStack>
+        }
+        else
+        {
+            <!-- Fehlermeldung -->
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <MudAlert Severity="Severity.Error" Class="mb-2">
+                    @_errorMessage
+                </MudAlert>
+            }
+
+            <!-- Tabelle -->
+            <MudTable Items="_services" Hover="true" Dense="true">
+                <HeaderContent>
+                    <MudTh style="width:70px;">ID</MudTh>
+                    <MudTh>Name</MudTh>
+                    <MudTh>Beschreibung</MudTh>
+                    <MudTh style="width:150px;">Kapazität</MudTh>
+                    <MudTh style="width:150px;">Slotdauer (Min)</MudTh>
+                    <MudTh style="width:140px;">Aktionen</MudTh>
+                </HeaderContent>
+
+                <RowTemplate>
+                    <MudTd DataLabel="ID">@context.Id</MudTd>
+                    <MudTd DataLabel="Name">@context.Name</MudTd>
+                    <MudTd DataLabel="Beschreibung">@context.Description</MudTd>
+                    <MudTd DataLabel="Kapazität">@context.CapacityPerSlot</MudTd>
+                    <MudTd DataLabel="Slotdauer">@context.SlotDurationMinutes</MudTd>
+
+                    <MudTd DataLabel="Aktionen">
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                       Color="Color.Primary"
+                                       Size="Size.Small"
+                                       OnClick="@(() => EditService(context))" />
+
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                       Color="Color.Error"
+                                       Size="Size.Small"
+                                       Class="ms-1"
+                                       OnClick="@(() => DeleteService(context))" />
+                    </MudTd>
+                </RowTemplate>
+
+                <NoRecordsContent>
+                    <MudText>Keine Services vorhanden.</MudText>
+                </NoRecordsContent>
+            </MudTable>
+        }
+
+        <!-- Formular für Neu/Bearbeiten -->
+        @if (_editOpen)
+        {
+            <MudPaper Class="pa-4 mt-4">
+
+                <MudText Typo="Typo.h6" Class="mb-2">
+                    @(_editId == 0 ? "Neuen Service anlegen" : "Service bearbeiten")
+                </MudText>
+
+                <EditForm Model="_model"
+                          OnValidSubmit="SaveAsync"
+                          OnInvalidSubmit="OnInvalidSubmit">
+
+                    <DataAnnotationsValidator />
+
+                    <MudStack Spacing="2">
+
+                        <MudTextField Label="Name"
+                                      @bind-Value="_model.Name"
+                                      Required="true" />
+
+                        <MudTextField Label="Beschreibung"
+                                      TextArea="true"
+                                      Lines="3"
+                                      @bind-Value="_model.Description" />
+
+                        <MudNumericField Label="Kapazität pro Slot"
+                                         Min="1"
+                                         Required="true"
+                                         @bind-Value="_model.CapacityPerSlot" />
+
+                        <MudNumericField Label="Slotdauer (Min.)"
+                                         Min="1"
+                                         Required="true"
+                                         @bind-Value="_model.SlotDurationMinutes" />
+
+                        @if (!string.IsNullOrEmpty(_formError))
+                        {
+                            <MudAlert Severity="Severity.Error">@_formError</MudAlert>
+                        }
+
+                        <MudStack Direction="Row"
+                                  Justify="Justify.FlexEnd"
+                                  Spacing="2"
+                                  Class="mt-2">
+
+                            <MudButton Variant="Variant.Text"
+                                       Color="Color.Default"
+                                       OnClick="@CancelEdit">
+                                Abbrechen
+                            </MudButton>
+
+                            <MudButton Variant="Variant.Filled"
+                                       Color="Color.Primary"
+                                       Disabled="_saving"
+                                       ButtonType="ButtonType.Submit">
+                                @if (_saving)
+                                {
+                                    <MudProgressCircular Indeterminate="true"
+                                                         Size="Size.Small"
+                                                         Class="me-2" />
+                                }
+                                Speichern
+                            </MudButton>
+
+                        </MudStack>
+
+                    </MudStack>
+
+                </EditForm>
+
+            </MudPaper>
+        }
+
+    </MudStack>
+
+</MudPaper>
+
+@code {
+
+    private List<Service> _services = new();
+    private bool _loading = true;
+
+    private bool _editOpen = false;
+    private int _editId = 0;
+    private ServiceDto _model = new();
+
+    private bool _saving = false;
+    private string? _errorMessage;
+    private string? _formError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Snackbar.Configuration.PositionClass = Defaults.Classes.Position.BottomLeft;
+        Snackbar.Configuration.SnackbarVariant = Variant.Filled;
+
+        await LoadServices();
+    }
+
+    private async Task LoadServices()
+    {
+        _loading = true;
+
+        try
+        {
+            _services = await ServiceService.GetAllServicesAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Fehler beim Laden: {ex.Message}";
+            Snackbar.Add(_errorMessage, Severity.Error);
+        }
+
+        _loading = false;
+    }
+
+    private void NewService()
+    {
+        _model = new ServiceDto
+        {
+            Name = "",
+            Description = "",
+            CapacityPerSlot = 1,
+            SlotDurationMinutes = 10
+        };
+
+        _editId = 0;
+        _editOpen = true;
+        _formError = null;
+    }
+
+    private void EditService(Service s)
+    {
+        _model = new ServiceDto
+        {
+            Name = s.Name,
+            Description = s.Description,
+            CapacityPerSlot = s.CapacityPerSlot,
+            SlotDurationMinutes = s.SlotDurationMinutes
+        };
+
+        _editId = s.Id;
+        _editOpen = true;
+        _formError = null;
+    }
+
+    private void CancelEdit()
+    {
+        _editOpen = false;
+        _formError = null;
+    }
+
+    private async Task OnInvalidSubmit()
+    {
+        _formError = "Bitte alle Felder korrekt ausfüllen.";
+        Snackbar.Add(_formError, Severity.Error);
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+
+        try
+        {
+            if (_editId == 0)
+            {
+                await ServiceService.CreateServiceAsync(_model);
+                Snackbar.Add("Service erfolgreich erstellt!", Severity.Success);
+            }
+            else
+            {
+                await ServiceService.UpdateServiceAsync(_editId, _model);
+                Snackbar.Add("Service erfolgreich aktualisiert!", Severity.Success);
+            }
+
+            _editOpen = false;
+            await LoadServices();
+        }
+        catch (Exception ex)
+        {
+            _formError = $"Fehler beim Speichern: {ex.Message}";
+            Snackbar.Add(_formError, Severity.Error);
+        }
+
+        _saving = false;
+    }
+
+    private async Task DeleteService(Service s)
+    {
+        try
+        {
+            var ok = await ServiceService.DeleteServiceAsync(s.Id);
+
+            if (!ok)
+            {
+                Snackbar.Add("Service konnte nicht gelöscht werden.", Severity.Error);
+                return;
+            }
+
+            Snackbar.Add("Service gelöscht.", Severity.Success);
+            await LoadServices();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Fehler beim Löschen: {ex.Message}", Severity.Error);
+        }
+    }
+}

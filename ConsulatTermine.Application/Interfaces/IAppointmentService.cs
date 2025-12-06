@@ -16,4 +16,7 @@ public interface IAppointmentService
     Task<Appointment?> GetNextAsync(int serviceId);       // Nächster wartender Bürger
     Task<bool> StartProcessingAsync(int appointmentId);   // Mitarbeiter bearbeitet diesen Bürger
     Task<bool> CompleteAsync(int appointmentId);          // Fertig verarbeitet
+
+    Task<List<Appointment>> BookGroupAsync(GroupBookingDto dto);
+
 }

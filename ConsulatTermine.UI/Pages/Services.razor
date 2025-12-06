@@ -1,0 +1,182 @@
+@page "/services"
+
+@using MudBlazor
+@using ConsulatTermine.Application.Interfaces
+@using ConsulatTermine.Domain.Entities
+@using Blazored.SessionStorage
+
+@inject IServiceService ServiceService
+@inject ISessionStorageService Session
+@inject NavigationManager Navigation
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="pa-4">
+
+    <!-- Fortschrittsanzeige -->
+    <MudStepper Linear="true" DisableNavigation="true" @bind-ActiveIndex="_activeStep" Class="mb-6">
+        <MudStep Title="1. Service" />
+        <MudStep Title="2. Termin wählen" />
+        <MudStep Title="3. Ihre Daten" />
+    </MudStepper>
+
+    <MudPaper Class="pa-4">
+
+        @if (_loading)
+        {
+            <MudProgressCircular Indeterminate="true" />
+            <MudText>Lade Services...</MudText>
+        }
+        else
+        {
+            <!-- PERSONENANZAHL -->
+            <h3 class="title">Für wie viele Personen möchten Sie einen Termin buchen?</h3>
+
+            <div class="person-row">
+                <MudIcon Icon="@Icons.Material.Filled.Person" style="color:#006400;" Size="Size.Medium" />
+
+                <MudIconButton Icon="@Icons.Material.Filled.Remove"
+                               Disabled="@(_personCount <= 1)"
+                               OnClick="DecrementPerson"
+                               Class="counter-btn" />
+
+                <span class="counter">@_personCount</span>
+
+                <MudIconButton Icon="@Icons.Material.Filled.Add"
+                               Disabled="@(_personCount >= MaxPersons)"
+                               OnClick="IncrementPerson"
+                               Class="counter-btn" />
+            </div>
+
+            <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Class="info-box">
+                Weisen Sie mindestens einem Service unten Termine zu, um fortzufahren.
+            </MudAlert>
+
+            <h3 class="title">Für welchen Service benötigen Sie einen Termin?</h3>
+
+            @foreach (var s in _services)
+            {
+                var assigned = GetAssignedCount(s.Id);
+                var canIncrease = CanIncreaseForService(s.Id);
+
+                <div class="service-card">
+
+                    <div class="service-left">
+                        <div class="service-name">@s.Name</div>
+                        <div class="service-desc">@s.Description</div>
+                    </div>
+
+                    <div class="service-right">
+
+                        <MudIconButton Icon="@Icons.Material.Filled.Remove"
+                                       Disabled="@(assigned <= 0)"
+                                       OnClick="@(() => DecrementService(s.Id))"
+                                       Class="counter-btn" />
+
+                        <span class="counter">@assigned</span>
+
+                        <MudIconButton Icon="@Icons.Material.Filled.Add"
+                                       Disabled="@(!canIncrease)"
+                                       OnClick="@(() => IncrementService(s.Id))"
+                                       Class="counter-btn" />
+                    </div>
+
+                </div>
+            }
+
+            <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Class="info-box">
+                Falls Ihr benötigter Service nicht angezeigt wird, kontaktieren Sie bitte das Konsulat.
+            </MudAlert>
+
+            <div class="assigned-status">
+                Zugewiesene Personen: <b>@TotalAssigned</b> von <b>@_personCount</b>
+            </div>
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Disabled="!CanConfirm"
+                       Class="confirm-btn"
+                       OnClick="ConfirmSelection">
+                Bestätigen
+            </MudButton>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private int _activeStep = 0;
+    private const int MaxPersons = 5;
+
+    private List<Service> _services = new();
+    private bool _loading = true;
+
+    private int _personCount = 1;
+
+    private Dictionary<int, int> _serviceAssignments = new();
+
+    private int TotalAssigned => _serviceAssignments.Values.Sum();
+
+    private bool CanConfirm => TotalAssigned == _personCount && _serviceAssignments.Count == 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _services = await ServiceService.GetAllServicesAsync();
+        _loading = false;
+    }
+
+    private void IncrementPerson()
+    {
+        if (_personCount < MaxPersons)
+            _personCount++;
+    }
+
+    private void DecrementPerson()
+    {
+        if (_personCount > 1)
+            _personCount--;
+    }
+
+    private int GetAssignedCount(int id)
+        => _serviceAssignments.TryGetValue(id, out var count) ? count : 0;
+
+    private bool CanIncreaseForService(int id)
+    {
+        if (TotalAssigned >= _personCount)
+            return false;
+
+        if (_serviceAssignments.Count == 0)
+            return true;
+
+        return _serviceAssignments.ContainsKey(id);
+    }
+
+    private void IncrementService(int id)
+    {
+        if (!CanIncreaseForService(id))
+            return;
+
+        var current = GetAssignedCount(id);
+        _serviceAssignments[id] = current + 1;
+    }
+
+    private void DecrementService(int id)
+    {
+        var current = GetAssignedCount(id);
+        if (current <= 0) return;
+
+        if (current == 1)
+            _serviceAssignments.Remove(id);
+        else
+            _serviceAssignments[id] = current - 1;
+    }
+
+    private void ConfirmSelection()
+    {
+        if (!CanConfirm) return;
+
+        var selected = _serviceAssignments.Keys.First();
+
+        Session.SetItemAsync("personCount", _personCount);
+        Session.SetItemAsync("selectedServiceId", selected);
+
+        Navigation.NavigateTo("/appointment");
+    }
+}
