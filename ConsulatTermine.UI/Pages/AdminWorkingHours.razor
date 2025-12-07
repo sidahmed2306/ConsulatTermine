@@ -1,366 +1,504 @@
-@page "/admin/working-hours"
+@page "/admin/working-schedule"
 
+@using System.Linq
 @using MudBlazor
-@using ConsulatTermine.Domain.Entities
+@using ConsulatTermine.Application.DTOs
 @using ConsulatTermine.Application.Interfaces
-@using Microsoft.AspNetCore.Components.Forms
+@using ConsulatTermine.Domain.Entities
 
-@inject IWorkingHoursService WorkingHoursService
 @inject IServiceService ServiceService
+@inject IWorkingScheduleService WorkingScheduleService
 @inject ISnackbar Snackbar
 
 <MudPaper Class="pa-4">
 
-    <MudStack Spacing="2">
+    <MudText Typo="Typo.h5" Class="mb-4">
+        Dienstplan & Öffnungszeiten – Neuer Plan erstellen
+    </MudText>
 
-        <!-- Header -->
-        <MudStack Direction="Row" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-            <MudText Typo="Typo.h5">Arbeitszeiten</MudText>
+    <MudExpansionPanels MultiExpansion="false">
 
+        <!-- STEP 1: SERVICE -->
+        <MudExpansionPanel Text="1. Service auswählen" Expanded="@(_activeStep == 0)">
+            <MudStack Spacing="2" Class="pa-4">
+
+                <MudSelect T="int"
+                           Label="Bitte Service auswählen"
+                           @bind-Value="_model.ServiceId"
+                           Required="true">
+                    @foreach (var s in _services)
+                    {
+                        <MudSelectItem Value="@s.Id">@s.Name</MudSelectItem>
+                    }
+                </MudSelect>
+
+                @if (_model.ServiceId != 0)
+                {
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               OnClick="@GoNext">
+                        Weiter
+                    </MudButton>
+                }
+
+            </MudStack>
+        </MudExpansionPanel>
+
+        <!-- STEP 2: JAHR -->
+        <MudExpansionPanel Text="2. Jahr auswählen"
+                           Expanded="@(_activeStep == 1)"
+                           Disabled="@(_model.ServiceId == 0)">
+            <MudStack Spacing="2" Class="pa-4">
+
+                <MudSelect T="int"
+                           Label="Jahr auswählen"
+                           @bind-Value="_model.Year"
+                           Required="true">
+                    @foreach (var year in Enumerable.Range(DateTime.Now.Year, 10))
+                    {
+                        <MudSelectItem Value="@year">@year</MudSelectItem>
+                    }
+                </MudSelect>
+
+                @if (_model.Year > 0)
+                {
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               OnClick="@GoNext">
+                        Weiter
+                    </MudButton>
+                }
+
+            </MudStack>
+        </MudExpansionPanel>
+
+        <!-- STEP 3: MONATE -->
+       <MudExpansionPanel Text="3. Monate auswählen"
+                   Expanded="@(_activeStep == 2)"
+                   Disabled="@(_model.Year == 0)">
+
+    <MudStack Class="pa-4" Spacing="2">
+
+        <MudText Typo="Typo.subtitle1">Bitte Monate auswählen</MudText>
+
+      <MudSelect T="int"
+           Label="Monate auswählen"
+           MultiSelection="true"
+           SelectedValues="_model.Months"
+           SelectedValuesChanged="@(m => _model.Months = m.ToHashSet())"
+           Required="true">
+
+    @foreach (var month in _monthNames)
+    {
+        <MudSelectItem Value="@month.Key">@month.Value</MudSelectItem>
+    }
+
+</MudSelect>
+
+
+
+        @if (_model.Months.Any())
+        {
             <MudButton Variant="Variant.Filled"
                        Color="Color.Primary"
-                       OnClick="@NewEntry">
-                <MudIcon Icon="@Icons.Material.Filled.Add" Class="me-2" />
-                Neue Arbeitszeit
+                       OnClick="@GoNext">
+                Weiter
             </MudButton>
-        </MudStack>
-
-        <!-- Akkordeon: pro Service ein Panel -->
-        @if (_loading)
-        {
-            <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="mt-4">
-                <MudProgressCircular Indeterminate="true" />
-            </MudStack>
-        }
-        else if (!_items.Any())
-        {
-            <MudText Class="mt-2">Noch keine Arbeitszeiten erfasst.</MudText>
-        }
-        else
-        {
-            <MudExpansionPanels Class="mt-2">
-                @foreach (var group in GroupedByService)
-                {
-                    var service = _services.FirstOrDefault(s => s.Id == group.Key);
-                    var serviceName = service?.Name ?? $"Service #{group.Key}";
-
-                    <MudExpansionPanel Text="@serviceName">
-                        <MudTable Items="group.OrderBy(g => g.Day)" Dense="true">
-
-                            <HeaderContent>
-                                <MudTh>Tag</MudTh>
-                                <MudTh>Start</MudTh>
-                                <MudTh>Ende</MudTh>
-                                <MudTh style="width:150px;">Aktionen</MudTh>
-                            </HeaderContent>
-
-                            <RowTemplate>
-                                <MudTd>@context.Day</MudTd>
-                                <MudTd>@context.StartTime.ToString(@"hh\:mm")</MudTd>
-                                <MudTd>@context.EndTime.ToString(@"hh\:mm")</MudTd>
-
-                                <MudTd>
-                                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                                   Color="Color.Primary"
-                                                   Size="Size.Small"
-                                                   OnClick="@(() => EditEntry(context))" />
-
-                                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                                   Color="Color.Error"
-                                                   Size="Size.Small"
-                                                   OnClick="@(() => DeleteEntry(context))" />
-                                </MudTd>
-                            </RowTemplate>
-
-                            <NoRecordsContent>
-                                <MudText>Keine Tage für diesen Service.</MudText>
-                            </NoRecordsContent>
-
-                        </MudTable>
-                    </MudExpansionPanel>
-                }
-            </MudExpansionPanels>
-        }
-
-        <!-- Formular (unterhalb, wie bei deinen anderen Admin-Seiten) -->
-        @if (_formOpen)
-        {
-            <MudPaper Class="pa-4 mt-4">
-
-                <MudText Typo="Typo.h6">
-                    @(_editId == 0 ? "Neue Arbeitszeit-Regel erstellen" : "Arbeitszeit bearbeiten")
-                </MudText>
-
-                <EditForm Model="_form" OnValidSubmit="Save" OnInvalidSubmit="OnInvalid">
-
-                    <DataAnnotationsValidator />
-
-                    <MudStack Spacing="2" Class="mt-3">
-
-                        <!-- Service -->
-                        <MudSelect T="int"
-                                   Label="Service"
-                                   @bind-Value="_form.ServiceId"
-                                   Required="true">
-                            @foreach (var s in _services)
-                            {
-                                <MudSelectItem Value="@s.Id">@s.Name</MudSelectItem>
-                            }
-                        </MudSelect>
-
-                        <!-- Wochentage: bei Neu MultiSelect, bei Edit nur Anzeige eines Tages -->
-                        @if (_editId == 0)
-                        {
-                            <!-- Mehrere Tage auf einmal anlegen -->
-                           <MudSelect T="DayOfWeek"
-                              Label="Wochentage"
-                              MultiSelection="true"
-                              SelectedValues="@_form.SelectedDays"
-                              SelectedValuesChanged="OnDaysChanged"
-                              Required="true">
-
-                             @foreach (DayOfWeek d in Enum.GetValues(typeof(DayOfWeek)))
-                             {
-                               <MudSelectItem Value="@d">@d</MudSelectItem>
-                             }
-                            </MudSelect>
-
-                        }
-                        else
-                        {
-                            <!-- Beim Bearbeiten nur ein Tag (kein MultiSelect) -->
-                            <MudSelect T="DayOfWeek"
-                                       Label="Wochentag"
-                                       @bind-Value="_form.Day"
-                                       Disabled="true">
-                                @foreach (DayOfWeek d in Enum.GetValues(typeof(DayOfWeek)))
-                                {
-                                    <MudSelectItem Value="@d">@d</MudSelectItem>
-                                }
-                            </MudSelect>
-                        }
-
-                        <!-- Zeiten -->
-                        <MudTimePicker Label="Startzeit"
-                                       AmPm="false"
-                                       @bind-Time="_form.StartTime"/>
-
-                        <MudTimePicker Label="Endzeit"
-                                       AmPm="false"
-                                       @bind-Time="_form.EndTime" />
-
-                        @if (!string.IsNullOrEmpty(_error))
-                        {
-                            <MudAlert Severity="Severity.Error">@_error</MudAlert>
-                        }
-
-                        <MudStack Direction="Row" Spacing="2" Justify="Justify.FlexEnd">
-                            <MudButton Variant="Variant.Text" OnClick="@Cancel">
-                                Abbrechen
-                            </MudButton>
-
-                            <MudButton Variant="Variant.Filled"
-                                       Color="Color.Primary"
-                                       ButtonType="ButtonType.Submit">
-                                Speichern
-                            </MudButton>
-                        </MudStack>
-
-                    </MudStack>
-
-                </EditForm>
-
-            </MudPaper>
         }
 
     </MudStack>
+</MudExpansionPanel>
+
+
+        <!-- STEP 4: REGELMÄSSIGE ÖFFNUNGSZEITEN -->
+        <MudExpansionPanel Text="4. Regelmäßige Öffnungszeiten"
+                           Expanded="@(_activeStep == 3)"
+                           Disabled="@(!_model.Months.Any())">
+            <MudStack Spacing="2" Class="pa-4">
+
+                <MudText Typo="Typo.subtitle1">Wochentage auswählen</MudText>
+
+                <MudGrid>
+                    @foreach (DayOfWeek day in Enum.GetValues(typeof(DayOfWeek)))
+                    {
+                        <MudItem xs="6" sm="4" md="3">
+                            <MudCheckBox T="bool"
+                                         Label="@day.ToString()"
+                                         Checked="@_model.RegularDays.Contains(day)"
+                                         OnCheckedChanged="@((bool v) => ToggleRegularDay(day, v))" />
+                        </MudItem>
+                    }
+                </MudGrid>
+
+                <MudTimePicker Label="Startzeit"
+                               Time="_model.StartTime"
+                               TimeChanged="@(t => _model.StartTime = t)"
+                               AmPm="false" />
+
+                <MudTimePicker Label="Endzeit"
+                               Time="_model.EndTime"
+                               TimeChanged="@(t => _model.EndTime = t)"
+                               AmPm="false" />
+
+                @if (IsRegularTimeValid)
+                {
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               OnClick="@GoNext">
+                        Weiter
+                    </MudButton>
+                }
+
+            </MudStack>
+        </MudExpansionPanel>
+
+        <!-- STEP 5: AUSNAHMEN DEFINIEREN -->
+        <MudExpansionPanel Text="5. Ausnahmen definieren"
+                           Expanded="@(_activeStep == 4)"
+                           Disabled="@(!IsRegularTimeValid)">
+            <MudStack Spacing="3" Class="pa-4">
+
+                <!-- WÖCHENTLICHE AUSNAHMEN -->
+                <MudText Typo="Typo.subtitle1">Wöchentliche Ausnahmen</MudText>
+
+                <MudTable Items="_model.WeeklyOverrides" Dense="true" Hover="true">
+                    <HeaderContent>
+                        <MudTh>Wochentag</MudTh>
+                        <MudTh>Status</MudTh>
+                        <MudTh>Start</MudTh>
+                        <MudTh>Ende</MudTh>
+                        <MudTh>Kapazität</MudTh>
+                        <MudTh>Aktion</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@context.Day</MudTd>
+                        <MudTd>@(context.IsClosed ? "Geschlossen" : "Geöffnet")</MudTd>
+                        <MudTd>@(context.StartTime?.ToString(@"hh\:mm") ?? "-")</MudTd>
+                        <MudTd>@(context.EndTime?.ToString(@"hh\:mm") ?? "-")</MudTd>
+                        <MudTd>@(context.CapacityPerSlotOverride?.ToString() ?? "-")</MudTd>
+                        <MudTd>
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                           Color="Color.Error"
+                                           OnClick="@(() => RemoveWeeklyOverride(context))" />
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+
+                <MudPaper Class="pa-3">
+                    <MudText Typo="Typo.subtitle2">Wöchentliche Ausnahme hinzufügen</MudText>
+
+                    <MudSelect T="DayOfWeek" Label="Wochentag" @bind-Value="_newWeekly.Day">
+                        @foreach (DayOfWeek d in Enum.GetValues(typeof(DayOfWeek)))
+                        {
+                            <MudSelectItem Value="@d">@d.ToString()</MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    <MudCheckBox T="bool" Label="Geschlossen" @bind-Checked="_newWeekly.IsClosed" />
+
+                    @if (!_newWeekly.IsClosed)
+                    {
+                        <MudTimePicker Label="Startzeit"
+                                       Time="_newWeekly.StartTime"
+                                       TimeChanged="@(t => _newWeekly.StartTime = t)"
+                                       AmPm="false" />
+
+                        <MudTimePicker Label="Endzeit"
+                                       Time="_newWeekly.EndTime"
+                                       TimeChanged="@(t => _newWeekly.EndTime = t)"
+                                       AmPm="false" />
+
+                        <MudNumericField T="int?"
+                                         Label="Kapazität (optional)"
+                                         @bind-Value="_newWeekly.CapacityPerSlotOverride" />
+                    }
+
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               Disabled="@(!CanAddWeekly)"
+                               OnClick="@AddWeeklyOverride">
+                        Hinzufügen
+                    </MudButton>
+                </MudPaper>
+
+                <MudDivider Class="my-4" />
+
+                <!-- DATUMSSPEZIFISCHE AUSNAHMEN -->
+                <MudText Typo="Typo.subtitle1">Datumsspezifische Ausnahmen</MudText>
+
+                <MudTable Items="_model.DateOverrides" Dense="true">
+                    <HeaderContent>
+                        <MudTh>Datum</MudTh>
+                        <MudTh>Status</MudTh>
+                        <MudTh>Start</MudTh>
+                        <MudTh>Ende</MudTh>
+                        <MudTh>Kapazität</MudTh>
+                        <MudTh>Aktion</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@context.Date?.ToString("yyyy-MM-dd")</MudTd>
+                        <MudTd>@(context.IsClosed ? "Geschlossen" : "Geöffnet")</MudTd>
+                        <MudTd>@(context.StartTime?.ToString(@"hh\:mm") ?? "-")</MudTd>
+                        <MudTd>@(context.EndTime?.ToString(@"hh\:mm") ?? "-")</MudTd>
+                        <MudTd>@(context.CapacityPerSlotOverride?.ToString() ?? "-")</MudTd>
+                        <MudTd>
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                           Color="Color.Error"
+                                           OnClick="@(() => RemoveDateOverride(context))" />
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+
+                <MudPaper Class="pa-3">
+                    <MudText Typo="Typo.subtitle2">Datumsausnahme hinzufügen</MudText>
+
+                    <MudDatePicker Label="Datum"
+                         Date="_newDate.Date"
+                          DateChanged="@(d => _newDate.Date = d ?? DateTime.UtcNow)"
+                          PickerVariant="PickerVariant.Dialog" />
+
+
+                    <MudCheckBox T="bool" Label="Geschlossen" @bind-Checked="_newDate.IsClosed" />
+
+                    @if (!_newDate.IsClosed)
+                    {
+                        <MudTimePicker Label="Startzeit"
+                                       Time="_newDate.StartTime"
+                                       TimeChanged="@(t => _newDate.StartTime = t)"
+                                       AmPm="false" />
+
+                        <MudTimePicker Label="Endzeit"
+                                       Time="_newDate.EndTime"
+                                       TimeChanged="@(t => _newDate.EndTime = t)"
+                                       AmPm="false" />
+
+                        <MudNumericField T="int?"
+                                         Label="Kapazität (optional)"
+                                         @bind-Value="_newDate.CapacityPerSlotOverride" />
+                    }
+
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               Disabled="@(!CanAddDate)"
+                               OnClick="@AddDateOverride">
+                        Hinzufügen
+                    </MudButton>
+
+                </MudPaper>
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           OnClick="@GoNext">
+                    Weiter zur Zusammenfassung
+                </MudButton>
+
+            </MudStack>
+        </MudExpansionPanel>
+
+        <!-- STEP 6: ZUSAMMENFASSUNG -->
+        <MudExpansionPanel Text="6. Zusammenfassung & Speichern"
+                           Expanded="@(_activeStep == 5)"
+                           Disabled="@(!IsRegularTimeValid)">
+
+            <MudStack Spacing="2" Class="pa-4">
+
+                <MudText Typo="Typo.h5">Zusammenfassung</MudText>
+
+                <MudText>Service: @SelectedServiceName</MudText>
+                <MudText>Jahr: @_model.Year</MudText>
+                <MudText>Monate: @string.Join(", ", _model.Months.Select(m => _monthNames[m]))</MudText>
+                <MudText>Öffnungstage: @string.Join(", ", _model.RegularDays)</MudText>
+
+                <MudText>Öffnungszeiten:
+                    @_model.StartTime?.ToString(@"hh\:mm")
+                    -
+                    @_model.EndTime?.ToString(@"hh\:mm")
+                </MudText>
+
+                <MudText>Wöchentliche Ausnahmen: @_model.WeeklyOverrides.Count</MudText>
+                <MudText>Datumsausnahmen: @_model.DateOverrides.Count</MudText>
+
+                <MudDivider />
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Disabled="@_saving"
+                           OnClick="@SaveSchedule">
+
+                    @if (_saving)
+                    {
+                        <MudProgressCircular Indeterminate="true" Size="Size.Small" />
+                    }
+                    Speichern
+                </MudButton>
+
+            </MudStack>
+
+        </MudExpansionPanel>
+
+    </MudExpansionPanels>
 
 </MudPaper>
 
 @code {
 
-    // ----------------- Anzeige-Daten -----------------
+    private int _activeStep = 0;
 
-    private List<WorkingHours> _items = new();
+    private WorkingScheduleRequestDto _model = new();
+
     private List<Service> _services = new();
 
-    private bool _loading = true;
-    private bool _formOpen = false;
-    private int _editId = 0;
-    private string? _error;
+    private WeeklyOverrideDto _newWeekly = new();
+    private DateOverrideDto _newDate = new();
 
-    // Akkordeon: Gruppierung nach Service
-    private IEnumerable<IGrouping<int, WorkingHours>> GroupedByService
-        => _items.GroupBy(w => w.ServiceId);
+    private bool _saving = false;
 
 
-    // ----------------- Formular-Model -----------------
-
-    private class WorkingHoursFormModel
-    {
-        public int ServiceId { get; set; }
-
-        // für "Neu": mehrere Tage
-        public HashSet<DayOfWeek> SelectedDays { get; set; } = new();
-
-        // für "Edit": einzelner Tag
-        public DayOfWeek Day { get; set; } = DayOfWeek.Monday;
-
-        public TimeSpan? StartTime { get; set; } = new TimeSpan(8, 0, 0);
-        public TimeSpan? EndTime { get; set; } = new TimeSpan(16, 0, 0);
-    }
-
-    private WorkingHoursFormModel _form = new();
-
-
-    // ----------------- Lifecycle -----------------
 
     protected override async Task OnInitializedAsync()
     {
-        Snackbar.Configuration.PositionClass = Defaults.Classes.Position.BottomLeft;
-
         _services = await ServiceService.GetAllServicesAsync();
-        await LoadItems();
     }
 
-    private async Task LoadItems()
+    private void GoNext() => _activeStep++;
+    private void GoBack() => _activeStep--;
+
+    private string SelectedServiceName =>
+        _services.FirstOrDefault(s => s.Id == _model.ServiceId)?.Name ?? "-";
+
+    // Monate
+    private readonly Dictionary<int, string> _monthNames = new()
     {
-        _loading = true;
-        _items = await WorkingHoursService.GetAllAsync();
-        _loading = false;
-    }
+        { 1, "Januar" }, { 2, "Februar" }, { 3, "März" }, { 4, "April" },
+        { 5, "Mai" }, { 6, "Juni" }, { 7, "Juli" }, { 8, "August" },
+        { 9, "September" }, { 10, "Oktober" }, { 11, "November" }, { 12, "Dezember" }
+    };
 
-
-    // ----------------- Aktionen: NEU / EDIT / DELETE -----------------
-
-    private void NewEntry()
-    {
-        _form = new WorkingHoursFormModel
-        {
-            ServiceId = _services.FirstOrDefault()?.Id ?? 0,
-            Day = DayOfWeek.Monday,
-            StartTime = new TimeSpan(8, 0, 0),
-            EndTime = new TimeSpan(16, 0, 0)
-        };
-
-        _form.SelectedDays.Clear(); // MultiSelect leer
-
-        _editId = 0;
-        _error = null;
-        _formOpen = true;
-    }
-
-    private void EditEntry(WorkingHours w)
-    {
-        _form = new WorkingHoursFormModel
-        {
-            ServiceId = w.ServiceId,
-            Day = w.Day,
-            StartTime = w.StartTime,
-            EndTime = w.EndTime
-        };
-
-        _form.SelectedDays.Clear();
-        _form.SelectedDays.Add(w.Day); // nur zur Info, wird aber bei Edit nicht genutzt
-
-        _editId = w.Id;
-        _error = null;
-        _formOpen = true;
-    }
-
-    private void Cancel()
-    {
-        _formOpen = false;
-        _error = null;
-    }
-
-   private void OnInvalid(EditContext context)
+    private void OnMonthClicked(int month)
 {
-    _error = "Bitte alle Pflichtfelder korrekt ausfüllen.";
-    Snackbar.Add(_error, Severity.Error);
+    Console.WriteLine($"CLICK MONTH: {month}");
+
+    if (_model.Months.Contains(month))
+        _model.Months.Remove(month);
+    else
+        _model.Months.Add(month);
+}
+
+private string GetMonthStyle(int month)
+{
+    bool selected = _model.Months.Contains(month);
+
+    return selected
+        ? "background:#4caf50;color:white;border-radius:10px;cursor:pointer;"
+        : "background:#e0e0e0;color:black;border-radius:10px;cursor:pointer;";
 }
 
 
-    private async Task Save()
-    {
-        if (_form.StartTime == null || _form.EndTime == null || _form.StartTime >= _form.EndTime)
-        {
-            _error = "Startzeit muss vor Endzeit liegen.";
-            Snackbar.Add(_error, Severity.Error);
-            return;
-        }
 
+    private void ToggleMonth(int month)
+    {
+        if (_model.Months.Contains(month))
+            _model.Months.Remove(month);
+        else
+            _model.Months.Add(month);
+    }
+
+
+    // Öffnungstage
+    private void ToggleRegularDay(DayOfWeek day, bool v)
+    {
+        if (v)
+            _model.RegularDays.Add(day);
+        else
+            _model.RegularDays.Remove(day);
+    }
+
+    private bool IsRegularTimeValid =>
+        _model.RegularDays.Any()
+        && _model.StartTime.HasValue
+        && _model.EndTime.HasValue
+        && _model.EndTime > _model.StartTime;
+
+    // Weekly exceptions
+    private bool CanAddWeekly =>
+        _newWeekly.IsClosed
+        || (_newWeekly.StartTime.HasValue
+            && _newWeekly.EndTime.HasValue
+            && _newWeekly.EndTime > _newWeekly.StartTime);
+
+    private void AddWeeklyOverride()
+    {
+        _model.WeeklyOverrides.Add(new WeeklyOverrideDto
+        {
+            Day = _newWeekly.Day,
+            IsClosed = _newWeekly.IsClosed,
+            StartTime = _newWeekly.StartTime,
+            EndTime = _newWeekly.EndTime,
+            CapacityPerSlotOverride = _newWeekly.CapacityPerSlotOverride
+        });
+
+        _newWeekly = new WeeklyOverrideDto();
+    }
+
+    private void RemoveWeeklyOverride(WeeklyOverrideDto item)
+    {
+        _model.WeeklyOverrides.Remove(item);
+    }
+
+    // Date exceptions
+    private bool CanAddDate =>
+        _newDate.Date != null
+        && (
+            _newDate.IsClosed ||
+            (_newDate.StartTime.HasValue
+             && _newDate.EndTime.HasValue
+             && _newDate.EndTime > _newDate.StartTime)
+        );
+
+    private void AddDateOverride()
+    {
+        _model.DateOverrides.Add(new DateOverrideDto
+        {
+            Date = _newDate.Date,
+            IsClosed = _newDate.IsClosed,
+            StartTime = _newDate.StartTime,
+            EndTime = _newDate.EndTime,
+            CapacityPerSlotOverride = _newDate.CapacityPerSlotOverride
+        });
+
+        _newDate = new DateOverrideDto();
+    }
+
+    private void RemoveDateOverride(DateOverrideDto item)
+    {
+        _model.DateOverrides.Remove(item);
+    }
+
+    // Save
+    private async Task SaveSchedule()
+    {
         try
         {
-            if (_editId == 0)
+            _saving = true;
+            var ok = await WorkingScheduleService.GenerateScheduleAsync(_model);
+            _saving = false;
+
+            if (!ok)
             {
-                // NEUE REGEL: für alle ausgewählten Tage einzelne WorkingHours anlegen
-                if (_form.SelectedDays == null || !_form.SelectedDays.Any())
-                {
-                    _error = "Bitte mindestens einen Wochentag auswählen.";
-                    Snackbar.Add(_error, Severity.Error);
-                    return;
-                }
-
-                foreach (var day in _form.SelectedDays)
-                {
-                    var entity = new WorkingHours
-                    {
-                        ServiceId = _form.ServiceId,
-                        Day = day,
-                        StartTime = _form.StartTime ?? new TimeSpan(8, 0, 0),
-                        EndTime = _form.EndTime ?? new TimeSpan(16, 0, 0)
-                    };
-
-                    await WorkingHoursService.CreateAsync(entity);
-                }
-
-                Snackbar.Add("Arbeitszeiten erstellt!", Severity.Success);
-            }
-            else
-            {
-                // BEARBEITEN: nur einen bestehenden Eintrag aktualisieren
-                var entity = new WorkingHours
-                {
-                    Id = _editId,
-                    ServiceId = _form.ServiceId,
-                    Day = _form.Day,
-                    StartTime = _form.StartTime ?? new TimeSpan(8, 0, 0),
-                    EndTime = _form.EndTime ?? new TimeSpan(16, 0, 0)
-                };
-
-                await WorkingHoursService.UpdateAsync(_editId, entity);
-                Snackbar.Add("Arbeitszeit aktualisiert!", Severity.Success);
+                Snackbar.Add("Fehler beim Speichern.", Severity.Error);
+                return;
             }
 
-            _formOpen = false;
-            await LoadItems();
+            Snackbar.Add("Dienstplan erfolgreich gespeichert!", Severity.Success);
+
+            _model = new WorkingScheduleRequestDto();
+            _activeStep = 0;
         }
         catch (Exception ex)
         {
-            _error = ex.Message;
-            Snackbar.Add(ex.Message, Severity.Error);
+            _saving = false;
+            Snackbar.Add("Fehler: " + ex.Message, Severity.Error);
         }
-    }
-
-
-    private async Task DeleteEntry(WorkingHours w)
-    {
-        var ok = await WorkingHoursService.DeleteAsync(w.Id);
-
-        if (!ok)
-        {
-            Snackbar.Add("Löschen fehlgeschlagen.", Severity.Error);
-            return;
-        }
-
-        Snackbar.Add("Arbeitszeit gelöscht!", Severity.Success);
-        await LoadItems();
-    }
-
-    private void OnDaysChanged(HashSet<DayOfWeek> values)
-    {
-       _form.SelectedDays = values;
     }
 
 }

@@ -1,6 +1,5 @@
 using ConsulatTermine.Application.DTOs;
 using ConsulatTermine.Application.Interfaces;
-using ConsulatTermine.Application.Services;
 using ConsulatTermine.Domain.Entities;
 using ConsulatTermine.Domain.Enums;
 using ConsulatTermine.Infrastructure.Persistence;

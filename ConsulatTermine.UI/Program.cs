@@ -20,11 +20,15 @@ builder.Services.AddBlazoredSessionStorage();
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddSignalR();
+
+builder.Services.AddScoped<IServiceDayOverrideService, ServiceDayOverrideService>();
 builder.Services.AddScoped<IServiceService, ServiceService>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 builder.Services.AddScoped<IEmployeeAssignmentService, EmployeeAssignmentService>();
 builder.Services.AddScoped<IWorkingHoursService, WorkingHoursService>();
+builder.Services.AddScoped<IWorkingScheduleService, WorkingScheduleService>();
+
 
 
 
