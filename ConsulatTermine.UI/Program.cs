@@ -28,6 +28,7 @@ builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 builder.Services.AddScoped<IEmployeeAssignmentService, EmployeeAssignmentService>();
 builder.Services.AddScoped<IWorkingHoursService, WorkingHoursService>();
 builder.Services.AddScoped<IWorkingScheduleService, WorkingScheduleService>();
+builder.Services.AddScoped<IWorkingScheduleOverviewService, WorkingScheduleOverviewService>();
 
 
 
