@@ -11,7 +11,7 @@ public class Service
     public string Description { get; set; } = string.Empty;
 
     // Kapazität pro Zeitslot
-    public int CapacityPerSlot { get; set; }
+    public int? CapacityPerSlot { get; set; }
 
     // Dauer eines Slots in Minuten (10, 15, 20 etc.)
     public int SlotDurationMinutes { get; set; }

@@ -27,5 +27,9 @@ namespace ConsulatTermine.Domain.Entities
         /// Optional: abweichende Kapazität pro Slot an diesem Tag
         /// </summary>
         public int? CapacityPerSlotOverride { get; set; }
+
+         public bool IsWeeklyOverride { get; set; } = false;
+
+          public DayOfWeek? WeeklyDay { get; set; }
     }
 }

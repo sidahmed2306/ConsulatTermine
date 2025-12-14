@@ -30,6 +30,10 @@ namespace ConsulatTermine.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("BookingReference")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime?>("CheckedInAt")
                         .HasColumnType("datetime2");
 
@@ -49,6 +53,12 @@ namespace ConsulatTermine.Infrastructure.Migrations
                     b.Property<string>("FullName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsMainPerson")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("PersonIndex")
+                        .HasColumnType("int");
 
                     b.Property<int>("ServiceId")
                         .HasColumnType("int");
@@ -130,7 +140,7 @@ namespace ConsulatTermine.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("CapacityPerSlot")
+                    b.Property<int?>("CapacityPerSlot")
                         .HasColumnType("int");
 
                     b.Property<string>("Description")
@@ -169,11 +179,17 @@ namespace ConsulatTermine.Infrastructure.Migrations
                     b.Property<bool>("IsClosed")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsWeeklyOverride")
+                        .HasColumnType("bit");
+
                     b.Property<int>("ServiceId")
                         .HasColumnType("int");
 
                     b.Property<TimeSpan?>("StartTime")
                         .HasColumnType("time");
+
+                    b.Property<int?>("WeeklyDay")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 

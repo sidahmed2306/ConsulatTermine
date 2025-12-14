@@ -105,24 +105,27 @@
     }
 
     private async Task AddAssignment()
+{
+    if (_selectedEmployee == 0 || _selectedService == 0)
     {
-        if (_selectedEmployee == 0 || _selectedService == 0)
-        {
-            Snackbar.Add("Bitte Mitarbeiter und Service wählen.", Severity.Warning);
-            return;
-        }
-
-        var ok = await AssignmentService.AddAssignmentAsync(_selectedEmployee, _selectedService);
-
-        if (!ok)
-        {
-            Snackbar.Add("Zuordnung existiert bereits!", Severity.Error);
-            return;
-        }
-
-        Snackbar.Add("Zuordnung hinzugefügt!", Severity.Success);
-        await LoadAssignments();
+        Snackbar.Add("Bitte Mitarbeiter und Service wählen.", Severity.Warning);
+        return;
     }
+
+    var ok = await AssignmentService.AddAssignmentAsync(
+        _selectedEmployee,
+        _selectedService);
+
+    if (!ok)
+    {
+        Snackbar.Add("Zuordnung existiert bereits!", Severity.Error);
+        return;
+    }
+
+    Snackbar.Add("Zuordnung hinzugefügt!", Severity.Success);
+    await LoadAssignments();
+}
+
 
     private async Task DeleteAssignment(EmployeeServiceAssignment a)
     {

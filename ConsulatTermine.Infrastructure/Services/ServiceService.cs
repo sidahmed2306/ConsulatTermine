@@ -3,6 +3,7 @@ using ConsulatTermine.Application.DTOs;
 using ConsulatTermine.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using ConsulatTermine.Infrastructure.Persistence;
+using ConsulatTermine.Application.ViewModels;
 
 namespace ConsulatTermine.Infrastructure.Services
 {
@@ -19,12 +20,15 @@ namespace ConsulatTermine.Infrastructure.Services
         // GET ALL SERVICES
         // -------------------------------------------------------------
         public async Task<List<Service>> GetAllServicesAsync()
-        {
-            return await _context.Services
-                .AsNoTracking()
-                .OrderBy(s => s.Name)
-                .ToListAsync();
-        }
+{
+    return await _context.Services
+        .Include(s => s.AssignedEmployees)
+            .ThenInclude(a => a.Employee)
+        .AsNoTracking()
+        .OrderBy(s => s.Name)
+        .ToListAsync();
+}
+
 
         // -------------------------------------------------------------
         // GET SERVICE BY ID (inkl. WorkingHours, Overrides, Employees)
@@ -89,5 +93,63 @@ namespace ConsulatTermine.Infrastructure.Services
             await _context.SaveChangesAsync();
             return true;
         }
+
+public async Task<List<SlotViewModel>> GetAvailableSlotsForServiceAsync(int serviceId, DateOnly date)
+{
+    var service = await _context.Services
+        .Include(s => s.WorkingHours)
+        .Include(s => s.DayOverrides)
+        .Include(s => s.AssignedEmployees)
+        .FirstOrDefaultAsync(s => s.Id == serviceId);
+
+    if (service == null) 
+        return new List<SlotViewModel>();
+
+    var existing = await _context.Appointments
+        .Where(a => a.ServiceId == serviceId 
+                 && a.Date.Date == date.ToDateTime(TimeOnly.MinValue).Date)
+        .ToListAsync();
+
+    var freeSlots = AppointmentCalculator.GetAvailableSlots(
+        service,
+        date.ToDateTime(TimeOnly.MinValue).Date,
+        existing);
+
+    return freeSlots
+    .Select(kvp => new SlotViewModel
+    {
+        DateTime = date.ToDateTime(TimeOnly.FromTimeSpan(kvp.Key.Start)),
+        FreeSlots = kvp.Value,
+        BookedSlots = 0
+    })
+    .ToList();
+
+}
+
+public async Task<ServiceDto> GetByIdAsync(int id)
+{
+    // Lade den Service aus der Datenbank
+    var service = await _context.Services
+        .FirstOrDefaultAsync(s => s.Id == id);
+
+    if (service == null)
+        return null!; // oder wirf eine Ausnahme, je nachdem wie du Fehler handhaben willst
+
+    // Mappe zur DTO
+    var dto = new ServiceDto
+    {
+        Id = service.Id,
+        Name = service.Name,
+        Description = service.Description,
+        CapacityPerSlot = service.CapacityPerSlot,
+        SlotDurationMinutes = service.SlotDurationMinutes
+    };
+
+    return dto;
+}
+
+
+
+
     }
 }

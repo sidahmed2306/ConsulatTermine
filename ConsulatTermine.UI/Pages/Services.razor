@@ -9,112 +9,149 @@
 @inject ISessionStorageService Session
 @inject NavigationManager Navigation
 
-<MudContainer MaxWidth="MaxWidth.Medium" Class="pa-4">
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mx-auto mt-8">
 
-    <!-- Fortschrittsanzeige -->
-    <MudStepper Linear="true" DisableNavigation="true" @bind-ActiveIndex="_activeStep" Class="mb-6">
-        <MudStep Title="1. Service" />
-        <MudStep Title="2. Termin wählen" />
-        <MudStep Title="3. Ihre Daten" />
+    <!-- STEPPER -->
+    <MudStepper Elevation="0" ActiveStep="0" Class="mb-6">
+        <MudStep Label="Services" Completed="true" />
+        <MudStep Label="Termine" />
+        <MudStep Label="Formular" />
+        <MudStep Label="Bestätigung" />
     </MudStepper>
 
-    <MudPaper Class="pa-4">
+    <MudCard Class="pa-6" Style="border-radius:12px">
+
+        <!-- HEADER -->
+        <MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Primary">
+            Termin buchen
+        </MudText>
+
+        <MudText Typo="Typo.subtitle1" Align="Align.Center" Class="mb-6">
+            Für wie viele Personen möchten Sie einen Termin buchen?
+        </MudText>
+
+        <!-- PERSON COUNTER -->
+        <MudStack Row JustifyContent="Center" AlignItems="AlignItems.Center" Spacing="2" Class="mb-6">
+            <MudIcon Icon="@Icons.Material.Filled.Person" Color="Color.Success" />
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Success"
+                       Disabled="@(_personCount == 1)"
+                       OnClick="DecrementPerson">
+                <MudIcon Icon="@Icons.Material.Filled.Remove" />
+            </MudButton>
+
+            <MudText Typo="Typo.h6">@_personCount</MudText>
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Success"
+                       Disabled="@(_personCount == MaxPersons)"
+                       OnClick="IncrementPerson">
+                <MudIcon Icon="@Icons.Material.Filled.Add" />
+            </MudButton>
+        </MudStack>
+
+        <MudDivider Class="mb-4" />
+
+        <!-- SERVICES -->
+        <MudText Typo="Typo.subtitle1" Class="mb-2">
+            Für welche Services möchten Sie Termine buchen?
+        </MudText>
 
         @if (_loading)
         {
-            <MudProgressCircular Indeterminate="true" />
-            <MudText>Lade Services...</MudText>
+            <MudProgressCircular Indeterminate />
         }
         else
         {
-            <!-- PERSONENANZAHL -->
-            <h3 class="title">Für wie viele Personen möchten Sie einen Termin buchen?</h3>
-
-            <div class="person-row">
-                <MudIcon Icon="@Icons.Material.Filled.Person" style="color:#006400;" Size="Size.Medium" />
-
-                <MudIconButton Icon="@Icons.Material.Filled.Remove"
-                               Disabled="@(_personCount <= 1)"
-                               OnClick="DecrementPerson"
-                               Class="counter-btn" />
-
-                <span class="counter">@_personCount</span>
-
-                <MudIconButton Icon="@Icons.Material.Filled.Add"
-                               Disabled="@(_personCount >= MaxPersons)"
-                               OnClick="IncrementPerson"
-                               Class="counter-btn" />
-            </div>
-
-            <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Class="info-box">
-                Weisen Sie mindestens einem Service unten Termine zu, um fortzufahren.
-            </MudAlert>
-
-            <h3 class="title">Für welchen Service benötigen Sie einen Termin?</h3>
-
             @foreach (var s in _services)
             {
-                var assigned = GetAssignedCount(s.Id);
-                var canIncrease = CanIncreaseForService(s.Id);
+                <MudCard Class="mb-3" Style="background:#f9f9f9">
+                    <MudCardContent>
 
-                <div class="service-card">
+                        <MudStack Row JustifyContent="SpaceBetween" AlignItems="AlignItems.Center">
 
-                    <div class="service-left">
-                        <div class="service-name">@s.Name</div>
-                        <div class="service-desc">@s.Description</div>
-                    </div>
+                            <!-- INFO -->
+                            <MudStack Class="flex-grow-1">
+                                <MudText Typo="Typo.h6">@s.Name</MudText>
 
-                    <div class="service-right">
+                                @if (!string.IsNullOrWhiteSpace(s.Description))
+                                {
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                        @s.Description
+                                    </MudText>
+                                }
 
-                        <MudIconButton Icon="@Icons.Material.Filled.Remove"
-                                       Disabled="@(assigned <= 0)"
-                                       OnClick="@(() => DecrementService(s.Id))"
-                                       Class="counter-btn" />
+                                <MudText Typo="Typo.caption">
+                                    Slotdauer: @s.SlotDurationMinutes Min ·
+                                    Kapazität: @(s.CapacityPerSlot > 0 ? s.CapacityPerSlot : 0)
+                                </MudText>
+                            </MudStack>
 
-                        <span class="counter">@assigned</span>
+                            <!-- COUNTER -->
+                            <MudStack Row AlignItems="AlignItems.Center" Spacing="1">
+                                <MudIconButton Icon="@Icons.Material.Filled.Remove"
+                                               Color="Color.Error"
+                                               Disabled="@(GetAssignedCount(s.Id) == 0)"
+                                               OnClick="@(() => DecrementService(s.Id))" />
 
-                        <MudIconButton Icon="@Icons.Material.Filled.Add"
-                                       Disabled="@(!canIncrease)"
-                                       OnClick="@(() => IncrementService(s.Id))"
-                                       Class="counter-btn" />
-                    </div>
+                                <MudText Typo="Typo.subtitle1">
+                                    @GetAssignedCount(s.Id)
+                                </MudText>
 
-                </div>
+                                <MudIconButton Icon="@Icons.Material.Filled.Add"
+                                               Color="Color.Success"
+                                               Disabled="@(TotalAssigned >= _personCount)"
+                                               OnClick="@(() => IncrementService(s.Id))" />
+                            </MudStack>
+
+                        </MudStack>
+
+                    </MudCardContent>
+                </MudCard>
             }
+        }
 
-            <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Class="info-box">
-                Falls Ihr benötigter Service nicht angezeigt wird, kontaktieren Sie bitte das Konsulat.
-            </MudAlert>
+        <MudDivider Class="mt-4" />
 
-            <div class="assigned-status">
-                Zugewiesene Personen: <b>@TotalAssigned</b> von <b>@_personCount</b>
-            </div>
+        <!-- FOOTER -->
+        <MudStack Row JustifyContent="FlexEnd" Spacing="2" Class="mt-4">
+
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Success"
+                       OnClick="ResetAll">
+                Zurücksetzen
+            </MudButton>
 
             <MudButton Variant="Variant.Filled"
-                       Color="Color.Primary"
+                       Color="Color.Success"
                        Disabled="!CanConfirm"
-                       Class="confirm-btn"
                        OnClick="ConfirmSelection">
                 Bestätigen
             </MudButton>
-        }
-    </MudPaper>
+
+        </MudStack>
+
+    </MudCard>
 </MudContainer>
 
 @code {
-    private int _activeStep = 0;
-    private const int MaxPersons = 5;
-
-    private List<Service> _services = new();
-    private bool _loading = true;
 
     private int _personCount = 1;
+    private const int MaxPersons = 5;
 
+    private bool _loading = true;
+    private List<Service> _services = new();
+
+    // ServiceId -> Personenanzahl
     private Dictionary<int, int> _serviceAssignments = new();
 
     private int TotalAssigned => _serviceAssignments.Values.Sum();
 
-    private bool CanConfirm => TotalAssigned == _personCount && _serviceAssignments.Count == 1;
+    private bool CanConfirm =>
+        _personCount > 0 &&
+        TotalAssigned == _personCount &&
+        _serviceAssignments.Values.All(v => v > 0);
 
     protected override async Task OnInitializedAsync()
     {
@@ -122,61 +159,78 @@
         _loading = false;
     }
 
+    private int GetAssignedCount(int serviceId)
+        => _serviceAssignments.TryGetValue(serviceId, out var v) ? v : 0;
+
     private void IncrementPerson()
     {
         if (_personCount < MaxPersons)
+        {
             _personCount++;
+            NormalizeAssignments();
+        }
     }
 
     private void DecrementPerson()
     {
         if (_personCount > 1)
+        {
             _personCount--;
+            NormalizeAssignments();
+        }
     }
 
-    private int GetAssignedCount(int id)
-        => _serviceAssignments.TryGetValue(id, out var count) ? count : 0;
-
-    private bool CanIncreaseForService(int id)
+    private void IncrementService(int serviceId)
     {
         if (TotalAssigned >= _personCount)
-            return false;
-
-        if (_serviceAssignments.Count == 0)
-            return true;
-
-        return _serviceAssignments.ContainsKey(id);
-    }
-
-    private void IncrementService(int id)
-    {
-        if (!CanIncreaseForService(id))
             return;
 
-        var current = GetAssignedCount(id);
-        _serviceAssignments[id] = current + 1;
+        if (!_serviceAssignments.ContainsKey(serviceId))
+            _serviceAssignments[serviceId] = 0;
+
+        _serviceAssignments[serviceId]++;
     }
 
-    private void DecrementService(int id)
+    private void DecrementService(int serviceId)
     {
-        var current = GetAssignedCount(id);
-        if (current <= 0) return;
+        if (!_serviceAssignments.ContainsKey(serviceId))
+            return;
 
-        if (current == 1)
-            _serviceAssignments.Remove(id);
-        else
-            _serviceAssignments[id] = current - 1;
+        _serviceAssignments[serviceId]--;
+
+        if (_serviceAssignments[serviceId] <= 0)
+            _serviceAssignments.Remove(serviceId);
     }
 
-    private void ConfirmSelection()
+    private void NormalizeAssignments()
     {
-        if (!CanConfirm) return;
+        while (TotalAssigned > _personCount)
+        {
+            var key = _serviceAssignments
+                .OrderByDescending(x => x.Value)
+                .First().Key;
 
-        var selected = _serviceAssignments.Keys.First();
+            _serviceAssignments[key]--;
 
-        Session.SetItemAsync("personCount", _personCount);
-        Session.SetItemAsync("selectedServiceId", selected);
+            if (_serviceAssignments[key] <= 0)
+                _serviceAssignments.Remove(key);
+        }
+    }
+
+    private async Task ConfirmSelection()
+    {
+        if (!CanConfirm)
+            return;
+
+        await Session.SetItemAsync("personCount", _personCount);
+        await Session.SetItemAsync("serviceAssignments", _serviceAssignments);
 
         Navigation.NavigateTo("/appointment");
+    }
+
+    private void ResetAll()
+    {
+        _personCount = 1;
+        _serviceAssignments.Clear();
     }
 }

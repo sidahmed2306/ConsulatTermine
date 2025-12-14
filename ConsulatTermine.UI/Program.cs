@@ -6,6 +6,9 @@ using MudBlazor.Services;
 using ConsulatTermine.Application.Interfaces;
 using ConsulatTermine.Infrastructure.Services;
 using Blazored.SessionStorage;
+using ConsulatTermine.Application.Interfaces.Booking;
+using ConsulatTermine.Infrastructure.Services.Booking;
+
 
 
 
@@ -29,6 +32,11 @@ builder.Services.AddScoped<IEmployeeAssignmentService, EmployeeAssignmentService
 builder.Services.AddScoped<IWorkingHoursService, WorkingHoursService>();
 builder.Services.AddScoped<IWorkingScheduleService, WorkingScheduleService>();
 builder.Services.AddScoped<IWorkingScheduleOverviewService, WorkingScheduleOverviewService>();
+builder.Services.AddScoped<IBookingReferenceGenerator, BookingReferenceGenerator>();
+builder.Services.AddScoped<IBookingValidationService, BookingValidationService>();
+builder.Services.AddScoped<ISlotAvailabilityService, SlotAvailabilityService>();
+builder.Services.AddScoped<IBookingService, BookingService>();
+
 
 
 

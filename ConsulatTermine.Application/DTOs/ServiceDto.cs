@@ -7,7 +7,7 @@ public class ServiceDto
 
     public string Description { get; set; } = string.Empty;
 
-    public int CapacityPerSlot { get; set; }
+    public int? CapacityPerSlot { get; set; }
 
     public int SlotDurationMinutes { get; set; }
 }

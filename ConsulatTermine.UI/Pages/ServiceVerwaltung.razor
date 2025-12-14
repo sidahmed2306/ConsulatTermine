@@ -51,8 +51,9 @@
                     <MudTh style="width:70px;">ID</MudTh>
                     <MudTh>Name</MudTh>
                     <MudTh>Beschreibung</MudTh>
-                    <MudTh style="width:150px;">Kapazität</MudTh>
+                    <MudTh> Kapazität pro Slot </MudTh>
                     <MudTh style="width:150px;">Slotdauer (Min)</MudTh>
+                    <MudTh>Zugewiesene Mitarbeitende</MudTh>
                     <MudTh style="width:140px;">Aktionen</MudTh>
                 </HeaderContent>
 
@@ -60,9 +61,21 @@
                     <MudTd DataLabel="ID">@context.Id</MudTd>
                     <MudTd DataLabel="Name">@context.Name</MudTd>
                     <MudTd DataLabel="Beschreibung">@context.Description</MudTd>
-                    <MudTd DataLabel="Kapazität">@context.CapacityPerSlot</MudTd>
+                    <MudTd DataLabel="Kapazität pro Slot">@(context.CapacityPerSlot ?? 0)</MudTd>
                     <MudTd DataLabel="Slotdauer">@context.SlotDurationMinutes</MudTd>
-
+                    <MudTd DataLabel="Zugewiesene Mitarbeitende">
+                        @if (context.AssignedEmployees != null && context.AssignedEmployees.Count > 0)
+                        {
+                            @foreach (var assignment in context.AssignedEmployees)
+                            {
+                                <div>@assignment.Employee.FullName</div>
+                            }
+                        }
+                        else
+                        {
+                            <div>Keine Mitarbeitenden zugewiesen</div>
+                        }
+                    </MudTd>                 
                     <MudTd DataLabel="Aktionen">
                         <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                        Color="Color.Primary"
@@ -108,11 +121,6 @@
                                       TextArea="true"
                                       Lines="3"
                                       @bind-Value="_model.Description" />
-
-                        <MudNumericField Label="Kapazität pro Slot"
-                                         Min="1"
-                                         Required="true"
-                                         @bind-Value="_model.CapacityPerSlot" />
 
                         <MudNumericField Label="Slotdauer (Min.)"
                                          Min="1"
@@ -205,7 +213,6 @@
         {
             Name = "",
             Description = "",
-            CapacityPerSlot = 1,
             SlotDurationMinutes = 10
         };
 
@@ -220,7 +227,6 @@
         {
             Name = s.Name,
             Description = s.Description,
-            CapacityPerSlot = s.CapacityPerSlot,
             SlotDurationMinutes = s.SlotDurationMinutes
         };
 

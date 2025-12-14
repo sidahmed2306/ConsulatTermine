@@ -15,6 +15,8 @@ namespace ConsulatTermine.Infrastructure.Services
         private readonly ApplicationDbContext _db;
         private readonly IServiceService _serviceService;
 
+    
+
         public WorkingScheduleOverviewService(
             ApplicationDbContext db,
             IServiceService serviceService)
@@ -82,7 +84,6 @@ namespace ConsulatTermine.Infrastructure.Services
             {
                 ServiceId = service.Id,
                 ServiceName = service.Name,
-                DefaultCapacityPerSlot = service.CapacityPerSlot,
                 SlotDurationMinutes = service.SlotDurationMinutes,
                 EmployeeCount = service.AssignedEmployees?.Count ?? 0
             };
@@ -96,6 +97,7 @@ namespace ConsulatTermine.Infrastructure.Services
 
         // --------------------------------------------------------------------
         // 4) Jahrespläne auf Basis der Overrides erstellen
+        //    -> hier verknüpfen wir WeeklyPatterns und DateOverrides richtig
         // --------------------------------------------------------------------
         private List<WorkingScheduleYearPlan> BuildYearPlans(Service service)
         {
@@ -115,28 +117,60 @@ namespace ConsulatTermine.Infrastructure.Services
                     ServiceId = service.Id,
                     ServiceName = service.Name,
                     Year = year,
-                    DefaultCapacityPerSlot = service.CapacityPerSlot,
                     SlotDurationMinutes = service.SlotDurationMinutes,
                     EmployeeCount = service.AssignedEmployees?.Count ?? 0
                 };
 
-                // Monate berechnen
-                yearPlan.Months = service.DayOverrides
-                    .Where(o => o.Date.Year == year)
-                    .Select(o => o.Date.Month)
-                    .Distinct()
-                    .OrderBy(m => m)
-                    .ToList();
+                // Monate berechnen (basierend auf DayOverrides)
+               // Monate aus REGULAEREN Arbeitszeiten ermitteln
+var months = new List<int>();
+
+if (service.WorkingHours.Any())
+{
+    // Wir verwenden Monate, die im Request abgelegt wurden.
+    // RegularHours existieren pro Wochentag – daher holen wir die Monate
+    // anhand aller Overrides (DateOverrides & WeeklyPatterns)
+    months = service.DayOverrides
+        .Where(o => o.Date.Year == year)
+        .Select(o => o.Date.Month)
+        .Distinct()
+        .OrderBy(m => m)
+        .ToList();
+}
+else
+{
+    // Falls keine WorkingHours vorhanden (unwahrscheinlich),
+    // extrahieren wir die Monate aus DateOverrides nur
+    months = service.DayOverrides
+        .Where(o => o.Date.Year == year)
+        .Select(o => o.Date.Month)
+        .Distinct()
+        .OrderBy(m => m)
+        .ToList();
+}
+
+yearPlan.Months = months;
+
 
                 // Reguläre Öffnungszeiten aus WorkingHours
                 yearPlan.RegularHours = ExtractRegularHours(service);
 
-                // Wöchentliche Muster-Aggregation
-                yearPlan.WeeklyOverrides = ExtractWeeklyPatterns(service, year);
+                // 1) Wöchentliche Muster-Aggregation
+                var weeklyPatterns = ExtractWeeklyPatterns(service, year);
+                yearPlan.WeeklyOverrides = weeklyPatterns;
 
-                // Datumsausnahmen
-                yearPlan.DateOverrides = ExtractDateOverrides(service, year, yearPlan.Months);
+                // 2) Alle Daten, die zu solchen WeeklyPatterns gehören, sammeln
+                var weeklyPatternDates = weeklyPatterns
+                    .SelectMany(p => p.AffectedDates ?? new List<DateTime>())
+                    .Select(d => d.Date)
+                    .Distinct()
+                    .ToHashSet();
 
+                // 3) Datumsausnahmen: nur Tage, die NICHT zu einem WeeklyPattern gehören
+                yearPlan.DateOverrides = ExtractDateOverrides(
+                    service,
+                    year,
+                    yearPlan.Months);
 
                 result.Add(yearPlan);
             }
@@ -145,106 +179,96 @@ namespace ConsulatTermine.Infrastructure.Services
         }
 
         // --------------------------------------------------------------------
-        // 5) Reguläre Öffnungszeiten aus WorkingHours extrahieren
+        // 5) Reguläre Öffnungszeiten aus WorkingHours extrahieren (je Wochentag nur einmal)
         // --------------------------------------------------------------------
-       // --------------------------------------------------------------------
-// 5) Reguläre Öffnungszeiten aus WorkingHours extrahieren (je Wochentag nur einmal)
-// --------------------------------------------------------------------
-private List<RegularOpeningInfo> ExtractRegularHours(Service service)
-{
-    return service.WorkingHours
-        .GroupBy(w => w.Day)
-        .Select(g => g.First())
-        .OrderBy(w => w.Day)
-        .Select(w => new RegularOpeningInfo
+        private List<RegularOpeningInfo> ExtractRegularHours(Service service)
         {
-            Day = w.Day,
-            StartTime = w.StartTime,
-            EndTime = w.EndTime
-        })
-        .ToList();
-}
-
+            return service.WorkingHours
+                .GroupBy(w => w.Day)
+                .Select(g => g.First())
+                .OrderBy(w => w.Day)
+                .Select(w => new RegularOpeningInfo
+                {
+                    Day = w.Day,
+                    StartTime = w.StartTime,
+                    EndTime = w.EndTime
+                })
+                .ToList();
+        }
 
         // --------------------------------------------------------------------
         // 6) Weekly Pattern erkennen
         // --------------------------------------------------------------------
-        private List<WeeklyOverridePatternInfo> ExtractWeeklyPatterns(Service service, int year)
+ private List<WeeklyOverridePatternInfo> ExtractWeeklyPatterns(Service service, int year)
+{
+    // 1) Alle weekly-overrides laden (egal wie viele Daten es gibt)
+    var weeklyOverrides = service.DayOverrides
+        .Where(o => o.IsWeeklyOverride && o.Date.Year == year)
+        .ToList();
+
+    // 2) Gruppieren nach WeeklyDay
+    var groups = weeklyOverrides
+        .GroupBy(o => o.WeeklyDay)
+        .ToList();
+
+    var result = new List<WeeklyOverridePatternInfo>();
+
+    foreach (var group in groups)
+    {
+        var first = group.First();   // alle Overrides im Group haben gleiche Werte
+
+        var item = new WeeklyOverridePatternInfo
         {
-            var overrides = service.DayOverrides
-                .Where(o => o.Date.Year == year)
-                .ToList();
+            Day = first.WeeklyDay!.Value,
+            IsClosed = first.IsClosed,
+            StartTime = first.StartTime,
+            EndTime = first.EndTime,
+            CapacityPerSlotOverride = first.CapacityPerSlotOverride,
 
-            // Gruppieren nach DayOfWeek
-            var groups = overrides
-                .GroupBy(o => o.Date.DayOfWeek)
-                .ToList();
+            // Optional: diese Liste kann leer bleiben
+            AffectedDates = new List<DateTime>()
+        };
 
-            var patterns = new List<WeeklyOverridePatternInfo>();
+        result.Add(item);
+    }
 
-            foreach (var g in groups)
-            {
-                // Prüfen, ob alle Overrides des Wochen-Tags identisch sind
-                bool allClosed = g.All(o => o.IsClosed);
+    return result;
+}
 
-                bool consistentTimes =
-                    g.All(o => !o.IsClosed)
-                    && g.Select(o => o.StartTime).Distinct().Count() == 1
-                    && g.Select(o => o.EndTime).Distinct().Count() == 1;
 
-                bool consistentCapacity =
-                    g.All(o => o.CapacityPerSlotOverride == g.First().CapacityPerSlotOverride);
 
-                if (!allClosed && !consistentTimes)
-                {
-                    // nicht konsistent = KEIN weekly pattern → wird einzeln in DateOverrides angezeigt
-                    continue;
-                }
-
-                var first = g.First();
-
-                var p = new WeeklyOverridePatternInfo
-                {
-                    Day = g.Key,
-                    IsClosed = allClosed,
-                    StartTime = allClosed ? null : first.StartTime,
-                    EndTime = allClosed ? null : first.EndTime,
-                    CapacityPerSlotOverride = first.CapacityPerSlotOverride
-                };
-
-                // alle echten betroffenen Daten
-                p.AffectedDates = g.Select(x => x.Date).OrderBy(d => d).ToList();
-
-                patterns.Add(p);
-            }
-
-            return patterns;
-        }
 
         // --------------------------------------------------------------------
         // 7) Einzelne Datumsausnahmen (NICHT weekly)
+        //    -> Jahr + ausgewählte Monate + konsolidiert pro Datum
+        //    -> excl. aller Dates, die schon in WeeklyPatterns verwendet werden
         // --------------------------------------------------------------------
-        private List<DateOverrideInfo> ExtractDateOverrides(Service service, int year, IEnumerable<int> planMonths)
+       private List<DateOverrideInfo> ExtractDateOverrides(
+    Service service,
+    int year,
+    IEnumerable<int> planMonths)
 {
-    // Filter auf das Jahr + Monate, die im Plan enthalten sind
-    var overrides = service.DayOverrides
-        .Where(o => o.Date.Year == year && planMonths.Contains(o.Date.Month))
+    // 1) Nur Datums-Ausnahmen -> IsWeeklyOverride = false
+    var dateOverrides = service.DayOverrides
+        .Where(o =>
+            !o.IsWeeklyOverride &&              // <-- nur DateOverrides
+            o.Date.Year == year &&
+            planMonths.Contains(o.Date.Month))  // nur gewählte Monate
         .ToList();
 
-    // Gruppieren pro Datum und nur einen Eintrag pro Tag auswählen
-    var grouped = overrides
+    // 2) Gruppieren pro Tag (falls mehrere Overrides am selben Datum)
+    var grouped = dateOverrides
         .GroupBy(o => o.Date.Date)
         .Select(g =>
         {
-            // Wahl: ersten Eintrag nehmen; alternativ könnte man Regeln definieren
-            var first = g.OrderBy(o => o.Date).First();
+            var first = g.First();
 
             return new DateOverrideInfo
             {
-                Date = first.Date.Date,
+                Date = first.Date,
                 IsClosed = first.IsClosed,
-                StartTime = first.StartTime,
-                EndTime = first.EndTime,
+                StartTime = first.IsClosed ? null : first.StartTime,
+                EndTime = first.IsClosed ? null : first.EndTime,
                 CapacityPerSlotOverride = first.CapacityPerSlotOverride
             };
         })

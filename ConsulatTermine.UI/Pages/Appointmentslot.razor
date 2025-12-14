@@ -1,209 +1,354 @@
 @page "/appointment"
 
-@using MudBlazor
-@using ConsulatTermine.Application.Interfaces
-@using ConsulatTermine.Application.DTOs
-@using ConsulatTermine.Domain.Entities
 @using Blazored.SessionStorage
+@using ConsulatTermine.Application.DTOs
+@using ConsulatTermine.Application.Interfaces
+@using ConsulatTermine.Application.ViewModels
+@using MudBlazor
 
-@inject ISessionStorageService Session
-@inject IAppointmentService AppointmentService
-@inject IServiceService ServiceService
 @inject NavigationManager Navigation
+@inject IServiceService ServiceService
+@inject ISessionStorageService Session
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="pa-4">
+<MudContainer MaxWidth="MaxWidth.Large" Class="mx-auto mt-8">
 
-    <!-- STEP 2 -->
-    <MudStepper Linear="true" DisableNavigation="true" @bind-ActiveIndex="_activeStep" Class="mb-6">
-        <MudStep Title="1. Service" Completed="true" />
-        <MudStep Title="2. Termin wählen" />
-        <MudStep Title="3. Ihre Daten" />
+    <!-- STEP INDICATOR -->
+    <MudStepper Elevation="0" Class="mb-6" ActiveStep="1">
+        <MudStep Label="1. Services" Completed="true" />
+        <MudStep Label="2. Termine" />
+        <MudStep Label="3. Formular" />
+        <MudStep Label="4. Bestätigung" />
     </MudStepper>
 
-    <MudPaper Class="pa-4">
+    <MudCard Class="pa-6" Style="box-shadow:0 6px 18px rgba(0,0,0,0.12); border-radius:12px;">
 
-        @if (_loading)
+        @if (_currentService != null)
         {
-            <MudProgressCircular Indeterminate="true" />
-            <MudText>Lade verfügbare Termine...</MudText>
-        }
-        else
-        {
-            <!-- Header -->
-            <h3 class="title">@_service?.Name</h3>
-            <MudText Typo="Typo.body2" Class="mb-3">
-                Sie können bis zu @_personCount Platz/Plätze auswählen.
+            <MudText Typo="Typo.h5" Align="Align.Center" Color="Color.Primary">
+                Termine für: @_currentService.Name
             </MudText>
 
-            <div class="appointment-layout">
+            <MudText Typo="Typo.subtitle2" Align="Align.Center" Class="mb-4">
+                Slot-Dauer: @_currentService.SlotDurationMinutes Minuten
+            </MudText>
+        }
 
-                <!-- KALENDER LINKS -->
-                <div class="calendar-container">
-                    <MudDatePicker Date="_selectedDate"
-                                   DateChanged="OnDateChanged"
-                                   PickerVariant="PickerVariant.Static"
-                                   Color="Color.Primary"
-                                   Class="calendar-ui" />
-                </div>
+        <MudGrid>
 
-                <!-- SLOTS RECHTS -->
-                <div class="slots-container">
-                    <h4 class="slot-title">@_selectedDate.ToLongDateString()</h4>
+            <!-- KALENDER -->
+            <MudItem xs="12" md="4">
+                <MudDatePicker
+                    Date="SelectedDate"
+                    DateChanged="OnDateChanged"
+                    PickerVariant="PickerVariant.Static"
+                    MinDate="DateTime.Today"
+                    Clearable="false"
+                    IsDateDisabledFunc="IsDateDisabled"
+                    DayClassFunc="GetDayClass" />
 
-                    @if (_availableSlots.Count == 0)
-                    {
-                        <MudText Typo="Typo.body1">Keine Termine verfügbar.</MudText>
-                    }
-                    else
-                    {
-                        @foreach (var slot in _availableSlots)
+                <MudText Typo="Typo.caption" Class="mt-2" Color="Color.Secondary">
+                    Grün markierte Tage haben verfügbare Termine.
+                </MudText>
+            </MudItem>
+
+            <!-- SLOTS -->
+            <MudItem xs="12" md="8">
+
+                @if (_loadingSlots)
+                {
+                    <MudProgressCircular Indeterminate="true" />
+                }
+                else if (_slots.Any())
+                {
+                    <MudStack Spacing="2">
+
+                        @foreach (var slot in _slots)
                         {
-                            <div class="slot-card @(IsSlotSelected(slot) ? "slot-selected" : "")"
-                                 @onclick="() => ToggleSlot(slot)">
-                                
-                                <div class="slot-left">
-                                    <div class="slot-time">
-                                        @slot.SlotStart.ToString(@"hh\:mm")
-                                    </div>
-                                    <div class="slot-capacity">
-                                        @slot.FreeCapacity Platz/Plätze frei
-                                    </div>
-                                </div>
+                            var selected = IsSelected(slot);
 
-                                @if (_personCount > 1 && IsSlotSelected(slot))
-                                {
-                                    <div class="slot-right">
+                            <MudButton FullWidth Variant="Variant.Outlined"
+                                       Color="@(selected ? Color.Success : Color.Default)"
+                                       Disabled="@(slot.FreeSlots <= 0)"
+                                       Style="@SlotStyle(selected)"
+                                       OnClick="@(() => ToggleSlot(slot))">
 
-                                        <MudIconButton Icon="@Icons.Material.Filled.Remove"
-                                                       Disabled="@(GetSlotAssigned(slot) <= 0)"
-                                                       OnClick="@(() => DecrementSlot(slot))"
-                                                       Class="counter-btn" />
+                                <MudStack Row JustifyContent="SpaceBetween" AlignItems="AlignItems.Center" Class="w-100">
 
-                                        <span class="counter">@GetSlotAssigned(slot)</span>
+                                    <MudText>
+                                        @slot.DisplayTime
+                                        <span class="mud-text-secondary">
+                                            (@slot.FreeSlots frei)
+                                        </span>
+                                    </MudText>
 
-                                        <MudIconButton Icon="@Icons.Material.Filled.Add"
-                                                       Disabled="@(GetSlotAssigned(slot) >= slot.FreeCapacity || TotalAssigned >= _personCount)"
-                                                       OnClick="@(() => IncrementSlot(slot))"
-                                                       Class="counter-btn" />
+                                    @if (selected && MaxSlots > 1)
+                                    {
+                                        <MudStack Row Spacing="1" AlignItems="AlignItems.Center">
+                                            <MudIconButton Icon="@Icons.Material.Filled.Remove"
+                                                           Disabled="@(GetCount(slot) <= 0)"
+                                                           OnClick="@(() => Decrement(slot))"
+                                                           onclickstopPropagation="true" />
 
-                                    </div>
-                                }
+                                            <MudText Typo="Typo.subtitle1">
+                                                @GetCount(slot)
+                                            </MudText>
 
-                            </div>
+                                            <MudIconButton Icon="@Icons.Material.Filled.Add"
+                                                           Disabled="@(TotalSelected >= MaxSlots || GetCount(slot) >= slot.FreeSlots)"
+                                                           OnClick="@(() => Increment(slot))"
+                                                           onclickstopPropagation="true" />
+                                        </MudStack>
+                                    }
+                                </MudStack>
+                            </MudButton>
                         }
+                    </MudStack>
+
+                    <MudText Typo="Typo.caption" Class="mt-2">
+                        Ausgewählt: @TotalSelected von @MaxSlots
+                    </MudText>
+
+                    @if (_minAllowedStart.HasValue && _personCount == 1 && _currentIndex > 0)
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            Nächster Termin frühestens ab @_minAllowedStart.Value.ToString("HH:mm")
+                        </MudText>
                     }
+                }
+                else
+                {
+                    <MudAlert Severity="Severity.Info">
+                        Keine freien Slots für diesen Tag.
+                    </MudAlert>
+                }
+
+                <!-- NAVIGATION -->
+                <MudStack Row JustifyContent="SpaceBetween" Class="mt-4">
+                    <MudButton Variant="Variant.Outlined" OnClick="Previous">
+                        Zurück
+                    </MudButton>
 
                     <MudButton Variant="Variant.Filled"
-                               Disabled="!CanConfirm"
-                               Class="confirm-btn"
-                               OnClick="ConfirmSelection">
-                        Kalender bestätigen
+                               Color="Color.Primary"
+                               Disabled="@(TotalSelected != MaxSlots)"
+                               OnClick="Next">
+                        Weiter
                     </MudButton>
-                </div>
+                </MudStack>
 
-            </div>
+            </MudItem>
+        </MudGrid>
 
-        }
-    </MudPaper>
-
+    </MudCard>
 </MudContainer>
+
+<style>
+.day-has-slots {
+    background: rgba(46,125,50,.15) !important;
+    border-radius: 999px;
+}
+</style>
 
 @code {
 
-    private int _activeStep = 1;
+    /* ---------- FLOW ---------- */
+    private List<ServiceDto> _services = new();
+    private ServiceDto? _currentService;
+    private int _currentIndex;
 
-    private int _personCount = 1;
-    private int _serviceId;
+    private int _personCount;
+    private Dictionary<int, int> _assignments = new();
 
-    private Service? _service;
+    /* ---------- CALENDAR ---------- */
+    private DateTime SelectedDate = DateTime.Today;
+    private readonly Dictionary<DateTime, bool> _dayHasSlots = new();
+    private int _cacheYear = -1;
+    private int _cacheMonth = -1;
 
-    private bool _loading = true;
+    /* ---------- SLOTS ---------- */
+    private List<SlotViewModel> _slots = new();
+    private readonly Dictionary<DateTime, int> _selected = new();
+    private bool _loadingSlots;
 
-    private DateTime _selectedDate = DateTime.Today;
-    private List<AvailableSlotDto> _availableSlots = new();
+    private int MaxSlots;
+    private int TotalSelected => _selected.Values.Sum();
 
-    private Dictionary<TimeSpan, int> _slotAssignments = new();
+    /* ---------- MULTI SERVICE CONSTRAINT ---------- */
+    private DateTime? _minAllowedStart;
 
-    private int TotalAssigned => _slotAssignments.Values.Sum();
-    private bool CanConfirm => _personCount == 1
-                            ? _slotAssignments.Count == 1
-                            : TotalAssigned == _personCount;
-
-    protected override async Task OnInitializedAsync()
+    /* ---------- INIT ---------- */
+    protected override async Task OnAfterRenderAsync(bool first)
     {
+        if (!first) return;
+
+        _assignments = await Session.GetItemAsync<Dictionary<int, int>>("serviceAssignments") ?? new();
         _personCount = await Session.GetItemAsync<int>("personCount");
-        _serviceId = await Session.GetItemAsync<int>("selectedServiceId");
 
-        _service = await ServiceService.GetServiceByIdAsync(_serviceId);
+        if (!_assignments.Any())
+        {
+            Navigation.NavigateTo("/services");
+            return;
+        }
 
-        _selectedDate = DateTime.Today;
+        foreach (var id in _assignments.Keys)
+        {
+            var svc = await ServiceService.GetByIdAsync(id);
+            if (svc != null) _services.Add(svc);
+        }
 
+        SetupCurrent();
+        await ApplyConstraint();
+        await LoadMonth();
         await LoadSlots();
-
-        _loading = false;
+        StateHasChanged();
     }
 
+    /* ---------- CORE LOGIC ---------- */
+    private void SetupCurrent()
+    {
+        _currentService = _services[_currentIndex];
+        MaxSlots = _assignments[_currentService.Id];
+        _selected.Clear();
+    }
+
+    private async Task ApplyConstraint()
+    {
+        _minAllowedStart = null;
+
+        if (_personCount != 1 || _currentIndex == 0) return;
+
+        var prev = _services[_currentIndex - 1];
+        var prevSlots = await Session.GetItemAsync<Dictionary<DateTime, int>>($"slots_{prev.Id}");
+        if (prevSlots?.Any() != true) return;
+
+        var start = prevSlots.Keys.Min();
+        _minAllowedStart = start.AddMinutes(prev.SlotDurationMinutes);
+    }
+
+    /* ---------- DATE ---------- */
     private async Task OnDateChanged(DateTime? date)
     {
         if (date == null) return;
-
-        _selectedDate = date.Value;
+        SelectedDate = date.Value;
         await LoadSlots();
     }
 
+    private async Task LoadMonth()
+    {
+        if (_cacheYear == SelectedDate.Year && _cacheMonth == SelectedDate.Month) return;
+
+        _cacheYear = SelectedDate.Year;
+        _cacheMonth = SelectedDate.Month;
+        _dayHasSlots.Clear();
+
+        for (var d = new DateTime(_cacheYear, _cacheMonth, 1);
+             d.Month == _cacheMonth;
+             d = d.AddDays(1))
+        {
+            var slots = await ServiceService.GetAvailableSlotsForServiceAsync(
+                _currentService!.Id,
+                DateOnly.FromDateTime(d));
+
+            _dayHasSlots[d.Date] = slots.Any(s => s.FreeSlots > 0);
+        }
+    }
+
+    private bool IsDateDisabled(DateTime d)
+        => d.Date < DateTime.Today || !_dayHasSlots.TryGetValue(d.Date, out var ok) || !ok;
+
+    private string GetDayClass(DateTime d)
+        => _dayHasSlots.TryGetValue(d.Date, out var ok) && ok ? "day-has-slots" : "";
+
+    /* ---------- SLOT HANDLING ---------- */
     private async Task LoadSlots()
     {
-        _availableSlots = await AppointmentService.GetAvailableSlotDtosAsync(_serviceId, _selectedDate);
+        _loadingSlots = true;
+        StateHasChanged();
 
-        if (_personCount == 1)
-            _slotAssignments.Clear();
+        var slots = await ServiceService.GetAvailableSlotsForServiceAsync(
+            _currentService!.Id,
+            DateOnly.FromDateTime(SelectedDate));
+
+        if (_minAllowedStart.HasValue && SelectedDate.Date == _minAllowedStart.Value.Date)
+            slots = slots.Where(s => s.DateTime >= _minAllowedStart).ToList();
+
+        _slots = slots;
+        _selected.Clear();
+        _loadingSlots = false;
     }
 
-    private bool IsSlotSelected(AvailableSlotDto slot)
-        => _slotAssignments.ContainsKey(slot.SlotStart.TimeOfDay);
-
-    private int GetSlotAssigned(AvailableSlotDto slot)
-        => _slotAssignments.TryGetValue(slot.SlotStart.TimeOfDay, out var v) ? v : 0;
-
-    private void ToggleSlot(AvailableSlotDto slot)
+    private void ToggleSlot(SlotViewModel s)
     {
-        if (_personCount == 1)
+        if (MaxSlots == 1)
         {
-            _slotAssignments.Clear();
-            _slotAssignments[slot.SlotStart.TimeOfDay] = 1;
+            _selected.Clear();
+            _selected[s.DateTime] = 1;
+            return;
         }
+
+        if (!_selected.ContainsKey(s.DateTime))
+            _selected[s.DateTime] = 1;
         else
+            _selected.Remove(s.DateTime);
+    }
+
+    private void Increment(SlotViewModel s)
+    {
+        if (TotalSelected >= MaxSlots || GetCount(s) >= s.FreeSlots) return;
+        _selected[s.DateTime]++;
+    }
+
+    private void Decrement(SlotViewModel s)
+    {
+        if (GetCount(s) <= 1)
+            _selected.Remove(s.DateTime);
+        else
+            _selected[s.DateTime]--;
+    }
+
+    private bool IsSelected(SlotViewModel s) => _selected.ContainsKey(s.DateTime);
+    private int GetCount(SlotViewModel s) => _selected.TryGetValue(s.DateTime, out var c) ? c : 0;
+
+    private string SlotStyle(bool selected)
+        => selected
+           ? "border:1px solid #2e7d32;background:rgba(46,125,50,.08)"
+           : "border:1px solid #ccc";
+
+    /* ---------- NAV ---------- */
+    private async Task Next()
+    {
+        await Session.SetItemAsync($"slots_{_currentService!.Id}", _selected);
+
+        if (_services.Count == 1 || ++_currentIndex >= _services.Count)
         {
-            if (!_slotAssignments.ContainsKey(slot.SlotStart.TimeOfDay))
-                _slotAssignments[slot.SlotStart.TimeOfDay] = 0;
+            Navigation.NavigateTo("/appointment-form");
+            return;
         }
+
+        SetupCurrent();
+        await ApplyConstraint();
+        await LoadMonth();
+        await LoadSlots();
     }
 
-    private void IncrementSlot(AvailableSlotDto slot)
+    private async Task Previous()
     {
-        var assigned = GetSlotAssigned(slot);
+        if (_currentIndex == 0)
+        {
+            Navigation.NavigateTo("/services");
+            return;
+        }
 
-        if (assigned < slot.FreeCapacity && TotalAssigned < _personCount)
-            _slotAssignments[slot.SlotStart.TimeOfDay] = assigned + 1;
-    }
+        _currentIndex--;
+        SetupCurrent();
 
-    private void DecrementSlot(AvailableSlotDto slot)
-    {
-        var assigned = GetSlotAssigned(slot);
+        var saved = await Session.GetItemAsync<Dictionary<DateTime, int>>($"slots_{_currentService!.Id}");
+        if (saved != null)
+            foreach (var kv in saved)
+                _selected[kv.Key] = kv.Value;
 
-        if (assigned <= 0) return;
-
-        if (assigned == 1)
-            _slotAssignments.Remove(slot.SlotStart.TimeOfDay);
-        else
-            _slotAssignments[slot.SlotStart.TimeOfDay] = assigned - 1;
-    }
-
-    private async Task ConfirmSelection()
-    {
-        await Session.SetItemAsync("selectedSlots", _slotAssignments);
-        await Session.SetItemAsync("selectedDate", _selectedDate);
-
-        Navigation.NavigateTo("/appointment-form");
+        await ApplyConstraint();
+        await LoadMonth();
+        await LoadSlots();
     }
 }

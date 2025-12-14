@@ -1,4 +1,5 @@
 using ConsulatTermine.Application.DTOs;
+using ConsulatTermine.Application.ViewModels;
 using ConsulatTermine.Domain.Entities;
 
 namespace ConsulatTermine.Application.Interfaces;
@@ -10,4 +11,6 @@ public interface IServiceService
     Task<bool> DeleteServiceAsync(int id);
     Task<Service?> GetServiceByIdAsync(int id);
     Task<List<Service>> GetAllServicesAsync();
+     Task<ServiceDto> GetByIdAsync(int id);
+    Task<List<SlotViewModel>> GetAvailableSlotsForServiceAsync(int serviceId, DateOnly date);
 }

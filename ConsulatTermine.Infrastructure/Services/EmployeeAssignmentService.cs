@@ -29,32 +29,55 @@ public class EmployeeAssignmentService : IEmployeeAssignmentService
     }
 
     public async Task<bool> AddAssignmentAsync(int employeeId, int serviceId)
+{
+    bool exists = await _db.EmployeeServiceAssignments
+        .AnyAsync(a => a.EmployeeId == employeeId && a.ServiceId == serviceId);
+
+    if (exists)
+        return false;
+
+    _db.EmployeeServiceAssignments.Add(new EmployeeServiceAssignment
     {
-        bool exists = await _db.EmployeeServiceAssignments
-            .AnyAsync(a => a.EmployeeId == employeeId && a.ServiceId == serviceId);
+        EmployeeId = employeeId,
+        ServiceId = serviceId
+    });
 
-        if (exists) return false;
+    var service = await _db.Services
+        .Include(s => s.AssignedEmployees)
+        .FirstOrDefaultAsync(s => s.Id == serviceId);
 
-        _db.EmployeeServiceAssignments.Add(new EmployeeServiceAssignment
-        {
-            EmployeeId = employeeId,
-            ServiceId = serviceId
-        });
+    if (service == null)
+        throw new Exception("Service nicht gefunden");
 
-        await _db.SaveChangesAsync();
-        return true;
-    }
+    // EINZIGE Stelle, die CapacityPerSlot ändert
+    service.CapacityPerSlot = service.AssignedEmployees.Count;
 
-    public async Task<bool> RemoveAssignmentAsync(int employeeId, int serviceId)
-    {
-        var entity = await _db.EmployeeServiceAssignments
-            .FirstOrDefaultAsync(a => a.EmployeeId == employeeId && a.ServiceId == serviceId);
+    await _db.SaveChangesAsync();
+    return true;
+}
 
-        if (entity == null) return false;
 
-        _db.EmployeeServiceAssignments.Remove(entity);
-        await _db.SaveChangesAsync();
+   public async Task<bool> RemoveAssignmentAsync(int employeeId, int serviceId)
+{
+    var assignment = await _db.EmployeeServiceAssignments
+        .FirstOrDefaultAsync(a => a.EmployeeId == employeeId && a.ServiceId == serviceId);
 
-        return true;
-    }
+    if (assignment == null)
+        return false;
+
+    _db.EmployeeServiceAssignments.Remove(assignment);
+
+    var service = await _db.Services
+        .Include(s => s.AssignedEmployees)
+        .FirstOrDefaultAsync(s => s.Id == serviceId);
+
+    if (service == null)
+        throw new Exception("Service nicht gefunden");
+
+    service.CapacityPerSlot = Math.Max(0, service.AssignedEmployees.Count - 1);
+
+    await _db.SaveChangesAsync();
+    return true;
+}
+
 }
