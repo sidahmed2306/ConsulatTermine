@@ -13,4 +13,8 @@ public interface IServiceService
     Task<List<Service>> GetAllServicesAsync();
      Task<ServiceDto> GetByIdAsync(int id);
     Task<List<SlotViewModel>> GetAvailableSlotsForServiceAsync(int serviceId, DateOnly date);
+    Task<List<AvailableSlotDto>> GetAvailableSlotDtosAsync(
+    int serviceId,
+    DateTime date);
+
 }

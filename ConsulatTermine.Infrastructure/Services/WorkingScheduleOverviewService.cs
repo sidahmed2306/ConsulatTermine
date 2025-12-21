@@ -1,7 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+
 using ConsulatTermine.Application.Interfaces;
 using ConsulatTermine.Application.ViewModels;
 using ConsulatTermine.Domain.Entities;

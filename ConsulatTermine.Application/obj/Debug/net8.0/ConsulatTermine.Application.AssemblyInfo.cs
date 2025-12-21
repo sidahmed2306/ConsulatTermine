@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ConsulatTermine.Application")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f951b3dec7e3431373953ee228e3d559d82522cb")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d5920367003500f5786a94abed863d90508e1919")]
 [assembly: System.Reflection.AssemblyProductAttribute("ConsulatTermine.Application")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ConsulatTermine.Application")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

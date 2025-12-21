@@ -2,47 +2,80 @@ using ConsulatTermine.Domain.Entities;
 
 public static class AppointmentCalculator
 {
-    /// <summary>
-    /// Berechnet alle theoretischen Zeit-Slots für ein bestimmtes Datum
-    /// anhand von WorkingHours, Overrides und SlotDuration.
-    /// </summary>
-    public static List<(TimeSpan Start, TimeSpan End)> GetDailySlots(Service service, DateTime date)
+    // ============================================================
+    // 1) TÄGLICHE SLOT-BERECHNUNG (BLEIBT WIE BEI DIR)
+    // ============================================================
+    public static List<(TimeSpan Start, TimeSpan End)> GetDailySlots(
+        Service service,
+        DateTime date,
+        List<WorkingHours> workingHours,
+        List<ServiceDayOverride> overrides)
     {
         var slots = new List<(TimeSpan Start, TimeSpan End)>();
 
-        var overrideDay = service.DayOverrides?
-            .FirstOrDefault(d => d.Date.Date == date.Date);
+        // 1️⃣ Datums-spezifische Override (höchste Priorität)
+        var dateOverride = overrides
+            .Where(o => !o.IsWeeklyOverride)
+            .FirstOrDefault(o => o.Date.Date == date.Date);
 
-        TimeSpan start;
-        TimeSpan end;
-
-        if (overrideDay != null)
+        if (dateOverride != null)
         {
-            if (overrideDay.IsClosed)
+            if (dateOverride.IsClosed)
                 return slots;
 
-            if (!overrideDay.StartTime.HasValue || !overrideDay.EndTime.HasValue)
+            if (!dateOverride.StartTime.HasValue || !dateOverride.EndTime.HasValue)
                 return slots;
 
-            start = overrideDay.StartTime.Value;
-            end   = overrideDay.EndTime.Value;
+            return BuildSlots(
+                dateOverride.StartTime.Value,
+                dateOverride.EndTime.Value,
+                service.SlotDurationMinutes
+            );
         }
-        else
+
+        // 2️⃣ Wöchentliche Override
+        var weeklyOverride = overrides
+            .Where(o => o.IsWeeklyOverride)
+            .FirstOrDefault(o => o.WeeklyDay == date.DayOfWeek);
+
+        if (weeklyOverride != null)
         {
-            var work = service.WorkingHours?
-                .FirstOrDefault(w => w.Day == date.DayOfWeek);
-
-            if (work == null)
+            if (weeklyOverride.IsClosed)
                 return slots;
 
-            start = work.StartTime;
-            end   = work.EndTime;
+            if (!weeklyOverride.StartTime.HasValue || !weeklyOverride.EndTime.HasValue)
+                return slots;
+
+            return BuildSlots(
+                weeklyOverride.StartTime.Value,
+                weeklyOverride.EndTime.Value,
+                service.SlotDurationMinutes
+            );
         }
+
+        // 3️⃣ Reguläre Öffnungszeiten
+        var work = workingHours.FirstOrDefault(w => w.Day == date.DayOfWeek);
+        if (work == null)
+            return slots;
+
+        return BuildSlots(
+            work.StartTime,
+            work.EndTime,
+            service.SlotDurationMinutes
+        );
+    }
+
+    private static List<(TimeSpan Start, TimeSpan End)> BuildSlots(
+        TimeSpan start,
+        TimeSpan end,
+        int slotDurationMinutes)
+    {
+        var slots = new List<(TimeSpan Start, TimeSpan End)>();
 
         if (start >= end)
             return slots;
 
-        var duration = TimeSpan.FromMinutes(service.SlotDurationMinutes);
+        var duration = TimeSpan.FromMinutes(slotDurationMinutes);
         var current = start;
 
         while (current + duration <= end)
@@ -54,37 +87,28 @@ public static class AppointmentCalculator
         return slots;
     }
 
-    /// <summary>
-    /// Effektive Kapazität = Anzahl der Mitarbeitenden
-    /// </summary>
-    public static int GetEffectiveCapacity(Service service)
+    // ============================================================
+    // 2) KAPAZITÄT (BLEIBT WIE BEI DIR)
+    // ============================================================
+    private static int GetEffectiveCapacity(Service service)
     {
         return service.AssignedEmployees?.Count ?? 0;
     }
 
-    /// <summary>
-    /// Berechnet verfügbare Slots (Zeitfenster + freie Mitarbeiter)
-    /// </summary>
     public static Dictionary<(TimeSpan Start, TimeSpan End), int> GetAvailableSlots(
         Service service,
         DateTime date,
+        List<WorkingHours> workingHours,
+        List<ServiceDayOverride> overrides,
         List<Appointment> existingAppointments)
     {
-        var slots = GetDailySlots(service, date);
+        var slots = GetDailySlots(service, date, workingHours, overrides);
         var result = new Dictionary<(TimeSpan Start, TimeSpan End), int>();
 
-        if (slots.Count == 0)
+        if (!slots.Any())
             return result;
 
-        int effectiveCapacity = GetEffectiveCapacity(service);
-
-        if (effectiveCapacity == 0)
-        {
-            foreach (var slot in slots)
-                result[slot] = 0;
-
-            return result;
-        }
+        int capacity = GetEffectiveCapacity(service);
 
         foreach (var slot in slots)
         {
@@ -94,9 +118,41 @@ public static class AppointmentCalculator
                 a.Date.TimeOfDay >= slot.Start &&
                 a.Date.TimeOfDay < slot.End);
 
-            result[slot] = Math.Max(0, effectiveCapacity - booked);
+            result[slot] = Math.Max(0, capacity - booked);
         }
 
         return result;
+    }
+
+    // ============================================================
+    // 3) ⭐ NEU ⭐ ZEIT-KOMPATIBILITÄT ZWISCHEN SERVICES
+    // ============================================================
+    public static bool IsSlotTimeCompatible(
+        DateTime candidateStart,
+        int candidateDurationMinutes,
+        IEnumerable<(DateTime Start, int DurationMinutes)> otherSelectedSlots,
+        TimeSpan buffer)
+    {
+        var candidateEnd = candidateStart.AddMinutes(candidateDurationMinutes);
+
+        foreach (var other in otherSelectedSlots)
+        {
+            var otherStart = other.Start;
+            var otherEnd = other.Start.AddMinutes(other.DurationMinutes);
+
+            // Kandidat liegt VOR dem anderen Slot
+            bool endsBefore =
+                candidateEnd.Add(buffer) <= otherStart;
+
+            // Kandidat liegt NACH dem anderen Slot
+            bool startsAfter =
+                candidateStart >= otherEnd.Add(buffer);
+
+            // Wenn weder vorher noch nachher → Kollision
+            if (!endsBefore && !startsAfter)
+                return false;
+        }
+
+        return true;
     }
 }

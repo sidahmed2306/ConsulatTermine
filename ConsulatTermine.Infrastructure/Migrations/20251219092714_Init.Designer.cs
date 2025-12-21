@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ConsulatTermine.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251210150200_AddWeeklyDayToServiceDayOverride2")]
-    partial class AddWeeklyDayToServiceDayOverride2
+    [Migration("20251219092714_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -32,6 +32,10 @@ namespace ConsulatTermine.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BookingReference")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("CheckedInAt")
                         .HasColumnType("datetime2");
@@ -52,6 +56,12 @@ namespace ConsulatTermine.Infrastructure.Migrations
                     b.Property<string>("FullName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsMainPerson")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("PersonIndex")
+                        .HasColumnType("int");
 
                     b.Property<int>("ServiceId")
                         .HasColumnType("int");
@@ -133,7 +143,7 @@ namespace ConsulatTermine.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("CapacityPerSlot")
+                    b.Property<int?>("CapacityPerSlot")
                         .HasColumnType("int");
 
                     b.Property<string>("Description")
@@ -175,6 +185,9 @@ namespace ConsulatTermine.Infrastructure.Migrations
                     b.Property<bool>("IsWeeklyOverride")
                         .HasColumnType("bit");
 
+                    b.Property<int?>("ServiceDayOverrideId")
+                        .HasColumnType("int");
+
                     b.Property<int>("ServiceId")
                         .HasColumnType("int");
 
@@ -184,9 +197,16 @@ namespace ConsulatTermine.Infrastructure.Migrations
                     b.Property<int?>("WeeklyDay")
                         .HasColumnType("int");
 
+                    b.Property<int>("WorkingSchedulePlanId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("ServiceId");
+                    b.HasIndex("ServiceDayOverrideId");
+
+                    b.HasIndex("WorkingSchedulePlanId");
+
+                    b.HasIndex("ServiceId", "WorkingSchedulePlanId", "Date");
 
                     b.ToTable("ServiceDayOverrides");
                 });
@@ -211,11 +231,53 @@ namespace ConsulatTermine.Infrastructure.Migrations
                     b.Property<TimeSpan>("StartTime")
                         .HasColumnType("time");
 
+                    b.Property<int>("WorkingSchedulePlanId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("ServiceId");
+                    b.HasIndex("WorkingSchedulePlanId");
+
+                    b.HasIndex("ServiceId", "WorkingSchedulePlanId", "Day");
 
                     b.ToTable("WorkingHours");
+                });
+
+            modelBuilder.Entity("ConsulatTermine.Domain.Entities.WorkingSchedulePlan", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<int>("ServiceId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateOnly>("ValidFromDate")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly>("ValidToDate")
+                        .HasColumnType("date");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ServiceId", "IsActive");
+
+                    b.HasIndex("ServiceId", "ValidFromDate", "ValidToDate");
+
+                    b.ToTable("WorkingSchedulePlans", (string)null);
                 });
 
             modelBuilder.Entity("ConsulatTermine.Domain.Entities.Appointment", b =>
@@ -250,19 +312,50 @@ namespace ConsulatTermine.Infrastructure.Migrations
 
             modelBuilder.Entity("ConsulatTermine.Domain.Entities.ServiceDayOverride", b =>
                 {
+                    b.HasOne("ConsulatTermine.Domain.Entities.ServiceDayOverride", null)
+                        .WithMany("DayOverrides")
+                        .HasForeignKey("ServiceDayOverrideId");
+
                     b.HasOne("ConsulatTermine.Domain.Entities.Service", "Service")
                         .WithMany("DayOverrides")
                         .HasForeignKey("ServiceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ConsulatTermine.Domain.Entities.WorkingSchedulePlan", "WorkingSchedulePlan")
+                        .WithMany()
+                        .HasForeignKey("WorkingSchedulePlanId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Service");
+
+                    b.Navigation("WorkingSchedulePlan");
                 });
 
             modelBuilder.Entity("ConsulatTermine.Domain.Entities.WorkingHours", b =>
                 {
                     b.HasOne("ConsulatTermine.Domain.Entities.Service", "Service")
                         .WithMany("WorkingHours")
+                        .HasForeignKey("ServiceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ConsulatTermine.Domain.Entities.WorkingSchedulePlan", "WorkingSchedulePlan")
+                        .WithMany()
+                        .HasForeignKey("WorkingSchedulePlanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Service");
+
+                    b.Navigation("WorkingSchedulePlan");
+                });
+
+            modelBuilder.Entity("ConsulatTermine.Domain.Entities.WorkingSchedulePlan", b =>
+                {
+                    b.HasOne("ConsulatTermine.Domain.Entities.Service", "Service")
+                        .WithMany()
                         .HasForeignKey("ServiceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -282,6 +375,11 @@ namespace ConsulatTermine.Infrastructure.Migrations
                     b.Navigation("DayOverrides");
 
                     b.Navigation("WorkingHours");
+                });
+
+            modelBuilder.Entity("ConsulatTermine.Domain.Entities.ServiceDayOverride", b =>
+                {
+                    b.Navigation("DayOverrides");
                 });
 #pragma warning restore 612, 618
         }

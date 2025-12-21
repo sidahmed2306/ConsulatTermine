@@ -15,22 +15,10 @@ namespace ConsulatTermine.Infrastructure.Services.Booking
             _db = db;
         }
 
-        /// <summary>
-        /// Prüft für alle in der Buchung enthaltenen Slots,
-        /// ob ausreichend Kapazität vorhanden ist.
-        /// 
-        /// Wir gehen pro Service + Datum vor:
-        /// - Service inkl. WorkingHours, DayOverrides, AssignedEmployees laden
-        /// - alle bestehenden Appointments an diesem Datum für diesen Service holen
-        /// - über AppointmentCalculator.GetAvailableSlots(...) die freien Plätze ermitteln
-        /// - pro angefragtem Slot prüfen, ob "needed <= free"
-        /// </summary>
         public async Task ValidateSlotCapacitiesAsync(CreateBookingRequestDto request)
         {
             var allPersons = GetAllPersons(request);
 
-            // Alle Slots der Buchung zusammenfassen:
-            // Key = (ServiceId, DateOnly), Value = Liste der SlotTimes (DateTime)
             var grouped = allPersons
                 .SelectMany(p => p.ServiceSlots.Select(s => new
                 {
@@ -45,28 +33,57 @@ namespace ConsulatTermine.Infrastructure.Services.Booking
                 int serviceId = group.Key.ServiceId;
                 DateTime date = group.Key.Date;
 
-                // Service inkl. relevanter Daten laden
+                // 1) Service laden (nur Basis + Employees für Kapazität)
                 var service = await _db.Services
-                    .Include(s => s.WorkingHours)
-                    .Include(s => s.DayOverrides)
                     .Include(s => s.AssignedEmployees)
                     .FirstOrDefaultAsync(s => s.Id == serviceId);
 
                 if (service == null)
                     throw new Exception($"Service {serviceId} not found.");
 
-                // Alle existierenden Termine für diesen Service + Tag laden
+                // 2) Aktiven Plan laden
+                var plan = await _db.WorkingSchedulePlans
+                    .Where(p => p.ServiceId == serviceId && p.IsActive)
+                    .OrderByDescending(p => p.ValidFromDate)
+                    .FirstOrDefaultAsync();
+
+                if (plan == null)
+                    throw new Exception($"No active WorkingSchedulePlan found for service {serviceId}.");
+
+                // 3) Datum muss im Plan-Zeitraum liegen
+                var planFrom = plan.ValidFromDate.ToDateTime(TimeOnly.MinValue);
+                var planTo = plan.ValidToDate.ToDateTime(TimeOnly.MaxValue);
+
+                if (date < planFrom || date > planTo)
+                    throw new Exception($"Requested date {date:yyyy-MM-dd} is outside active plan range for service {serviceId}.");
+
+                // 4) Plan-bezogene WorkingHours / Overrides laden
+                var workingHours = await _db.WorkingHours
+                    .Where(w =>
+                        w.ServiceId == serviceId &&
+                        w.WorkingSchedulePlanId == plan.Id)
+                    .ToListAsync();
+
+                var overrides = await _db.ServiceDayOverrides
+                    .Where(o =>
+                        o.ServiceId == serviceId &&
+                        o.WorkingSchedulePlanId == plan.Id)
+                    .ToListAsync();
+
+                // 5) Existierende Termine für diesen Tag laden
                 var existingAppointments = await _db.Appointments
                     .Where(a => a.ServiceId == serviceId && a.Date.Date == date.Date)
                     .ToListAsync();
 
-                // Freie Kapazitäten je Slot berechnen
+                // 6) Verfügbare Slots berechnen (NEUE Signatur)
                 var freeSlotsDict = AppointmentCalculator.GetAvailableSlots(
                     service,
                     date,
+                    workingHours,
+                    overrides,
                     existingAppointments);
 
-                // Nun den Bedarf pro Slot zählen (wie viele Personen wollen genau diesen Slot)
+                // 7) Bedarf pro Slot zählen
                 var requestedSlotsGrouped = group
                     .GroupBy(x => x.Time)
                     .ToList();
@@ -74,11 +91,10 @@ namespace ConsulatTermine.Infrastructure.Services.Booking
                 foreach (var slotGroup in requestedSlotsGrouped)
                 {
                     DateTime slotTime = slotGroup.Key;
-                    TimeSpan startTimeOfDay = slotTime.TimeOfDay;
+                    var timeOfDay = slotTime.TimeOfDay;
 
-                    // passenden Eintrag aus dem Dictionary finden
                     var matchingKey = freeSlotsDict.Keys
-                        .FirstOrDefault(k => k.Start == startTimeOfDay);
+                        .FirstOrDefault(k => k.Start == timeOfDay);
 
                     if (matchingKey.Start == default && matchingKey.End == default)
                     {
@@ -99,48 +115,70 @@ namespace ConsulatTermine.Infrastructure.Services.Booking
             }
         }
 
-        /// <summary>
-        /// Einzelnabfrage: ist dieser Slot für diesen Service noch mindestens 1x verfügbar?
-        /// </summary>
         public async Task<bool> IsSlotAvailableAsync(int serviceId, DateTime slotTime)
         {
             var date = slotTime.Date;
             var timeOfDay = slotTime.TimeOfDay;
 
+            // 1) Service laden
             var service = await _db.Services
-                .Include(s => s.WorkingHours)
-                .Include(s => s.DayOverrides)
                 .Include(s => s.AssignedEmployees)
                 .FirstOrDefaultAsync(s => s.Id == serviceId);
 
             if (service == null)
                 throw new Exception($"Service {serviceId} not found.");
 
+            // 2) Aktiven Plan laden
+            var plan = await _db.WorkingSchedulePlans
+                .Where(p => p.ServiceId == serviceId && p.IsActive)
+                .OrderByDescending(p => p.ValidFromDate)
+                .FirstOrDefaultAsync();
+
+            if (plan == null)
+                throw new Exception($"No active WorkingSchedulePlan found for service {serviceId}.");
+
+            // 3) Range Check
+            var planFrom = plan.ValidFromDate.ToDateTime(TimeOnly.MinValue);
+            var planTo = plan.ValidToDate.ToDateTime(TimeOnly.MaxValue);
+
+            if (date < planFrom || date > planTo)
+                return false;
+
+            // 4) Plan-bezogene WorkingHours / Overrides laden
+            var workingHours = await _db.WorkingHours
+                .Where(w =>
+                    w.ServiceId == serviceId &&
+                    w.WorkingSchedulePlanId == plan.Id)
+                .ToListAsync();
+
+            var overrides = await _db.ServiceDayOverrides
+                .Where(o =>
+                    o.ServiceId == serviceId &&
+                    o.WorkingSchedulePlanId == plan.Id)
+                .ToListAsync();
+
+            // 5) Existierende Appointments laden
             var existingAppointments = await _db.Appointments
                 .Where(a => a.ServiceId == serviceId && a.Date.Date == date)
                 .ToListAsync();
 
+            // 6) Slots berechnen (NEUE Signatur)
             var freeSlotsDict = AppointmentCalculator.GetAvailableSlots(
                 service,
                 date,
+                workingHours,
+                overrides,
                 existingAppointments);
 
             var matchingKey = freeSlotsDict.Keys
                 .FirstOrDefault(k => k.Start == timeOfDay);
 
             if (matchingKey.Start == default && matchingKey.End == default)
-            {
-                // Slot gehört nicht zu diesem Tag/Service (z. B. außerhalb der Öffnungszeiten)
                 return false;
-            }
 
-            int free = freeSlotsDict[matchingKey];
-            return free > 0;
+            return freeSlotsDict[matchingKey] > 0;
         }
 
-        // ------------------------------------------------------------
-        // Helper
-        // ------------------------------------------------------------
         private static List<BookingPersonDto> GetAllPersons(CreateBookingRequestDto request)
         {
             var list = new List<BookingPersonDto> { request.MainPerson };

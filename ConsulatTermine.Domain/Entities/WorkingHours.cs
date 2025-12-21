@@ -6,6 +6,9 @@ public class WorkingHours
 
     public int ServiceId { get; set; }
     public Service? Service { get; set; }
+    
+     public int WorkingSchedulePlanId { get; set; }
+    public WorkingSchedulePlan WorkingSchedulePlan { get; set; } = null!;
 
     public DayOfWeek Day { get; set; }
 

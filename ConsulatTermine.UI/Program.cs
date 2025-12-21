@@ -36,6 +36,10 @@ builder.Services.AddScoped<IBookingReferenceGenerator, BookingReferenceGenerator
 builder.Services.AddScoped<IBookingValidationService, BookingValidationService>();
 builder.Services.AddScoped<ISlotAvailabilityService, SlotAvailabilityService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
+builder.Services.AddScoped<IWorkingSchedulePlanService, WorkingSchedulePlanService>();
+builder.Services.AddScoped<IAppointmentCalendarQueryService, AppointmentCalendarQueryService>();
+
+
 
 
 

@@ -2,6 +2,7 @@
 
 @using System.Linq
 @using ConsulatTermine.Application.DTOs
+@using ConsulatTermine.Application.DTOs.WorkingSchedulePlan
 @using ConsulatTermine.Application.Interfaces
 @using ConsulatTermine.Application.ViewModels
 @using ConsulatTermine.Domain.Entities
@@ -10,6 +11,7 @@
 @inject IServiceService ServiceService
 @inject IWorkingScheduleService WorkingScheduleService
 @inject IWorkingScheduleOverviewService OverviewService
+@inject IWorkingSchedulePlanService WorkingSchedulePlanService
 @inject ISnackbar Snackbar
 
 <MudPaper Class="pa-4">
@@ -46,6 +48,8 @@
                         Mitarbeiter zugewiesen: <b>@GetEmployeeCount()</b> |
                         Slotdauer: <b>@GetSlotDuration()</b> Min
                     </MudAlert>
+
+                    
                 }
 
                 <MudStack Direction="Row" Justify="Justify.FlexEnd">
@@ -105,6 +109,13 @@
                     }
                 </MudSelect>
 
+                @if (IsStep2Valid && _selectedMonths.Any())
+                {
+                    <MudAlert Severity="Severity.Info" Dense="true">
+                        Geplanter Zeitraum (aus Min/Max): <b>@GetPlannedRangeText()</b>
+                    </MudAlert>
+                }
+
                 <MudStack Direction="Row" Justify="Justify.SpaceBetween">
                     <MudButton Variant="Variant.Text" OnClick="@(() => GoToStep(1))">Zurück</MudButton>
                     <MudButton Variant="Variant.Filled"
@@ -132,13 +143,10 @@
                                          UncheckedColor="Color.Default"
                                          Color="Color.Success"
                                          Value="_model.RegularDays.Contains(d)"
-                                         ValueChanged="@((bool v) => OnRegularDayChanged(d, v))"
-
-                                          />
+                                         ValueChanged="@((bool v) => OnRegularDayChanged(d, v))" />
                         </MudItem>
                     }
                 </MudGrid>
-                
 
                 <MudDivider Class="my-2" />
 
@@ -217,7 +225,6 @@
 
                         <MudStack Spacing="2">
 
-                            <!-- Beim Bearbeiten: Day nicht änderbar, damit keine Duplikat-/Key-Probleme entstehen -->
                             <MudSelect T="DayOfWeek"
                                        Label="Wochentag"
                                        @bind-Value="_newWeekly.Day"
@@ -234,7 +241,6 @@
                                          ValueChanged="OnWeeklyClosedChanged"
                                          ValueExpression="@(() => _newWeekly.IsClosed)"
                                          Label="Geschlossen" />
-
 
                             @if (!_newWeekly.IsClosed)
                             {
@@ -315,13 +321,11 @@
 
                             <MudDatePicker Label="Datum" @bind-Date="_newDate.Date" Disabled="@_isEditingDate" />
 
-                           <MudCheckBox T="bool"
-                                        Value="_newDate.IsClosed"
-                                        ValueChanged="OnDateClosedChanged"
-                                        ValueExpression="@(() => _newDate.IsClosed)"
-                                        Label="Geschlossen" />
-
-
+                            <MudCheckBox T="bool"
+                                         Value="_newDate.IsClosed"
+                                         ValueChanged="OnDateClosedChanged"
+                                         ValueExpression="@(() => _newDate.IsClosed)"
+                                         Label="Geschlossen" />
 
                             @if (!_newDate.IsClosed)
                             {
@@ -361,7 +365,6 @@
         <MudExpansionPanel Text="6. Speichern" Expanded="@(_activeStep == 5)" Disabled="@(!IsStep4Valid)">
             <MudStack Class="pa-4" Spacing="2">
 
-                <!-- ✅ NEU: Zusammenfassung vor dem Speichern -->
                 <MudText Typo="Typo.h6">Zusammenfassung</MudText>
 
                 <MudPaper Class="pa-3">
@@ -378,6 +381,9 @@
                                 </MudListItem>
                                 <MudListItem T="string">
                                     <MudText><b>Monate:</b> @FormatMonths(_model.Months)</MudText>
+                                </MudListItem>
+                                <MudListItem T="string">
+                                    <MudText><b>Zeitraum (Min/Max):</b> @GetPlannedRangeText()</MudText>
                                 </MudListItem>
                                 <MudListItem T="string">
                                     <MudText><b>Basis-Kapazität:</b> @(GetBaseCapacity()?.ToString() ?? "0")</MudText>
@@ -477,7 +483,7 @@
                 </MudPaper>
 
                 <MudAlert Severity="Severity.Info" Dense="true">
-                    Beim Speichern werden WorkingHours und ServiceDayOverrides generiert.
+                    Beim Speichern werden WorkingSchedulePlan, WorkingHours und ServiceDayOverrides generiert.
                 </MudAlert>
 
                 <MudStack Direction="Row" Justify="Justify.SpaceBetween" Spacing="2">
@@ -506,7 +512,7 @@
 
     <MudDivider Class="my-6" />
 
-    <!-- Overview -->
+    <!-- Overview (dein bestehender Überblick bleibt, damit du weiterhin "Bearbeiten/Löschen" wie bisher nutzen kannst) -->
     <MudStack Spacing="2">
         <MudText Typo="Typo.h6">Aktuelle Dienstplan-Übersicht</MudText>
 
@@ -545,10 +551,9 @@
                                     <MudTd DataLabel="Jahr">@context.Year</MudTd>
 
                                     <MudTd DataLabel="Monate">
-                                        @string.Join(", ", context.Months)
+                                        @string.Join(", ", context.Months.OrderBy(x => x))
                                     </MudTd>
 
-                                    <!-- ✅ NEU: Regulär kompakt (alle Tage + einmal Uhrzeit) -->
                                     <MudTd DataLabel="Regulär">
                                         @FormatRegularSummary(context)
                                     </MudTd>
@@ -639,6 +644,8 @@
     private List<WorkingScheduleOverviewItem> _overview = new();
     private bool _overviewLoading = true;
 
+  
+
     private readonly Dictionary<int, string> _monthNames = new()
     {
         {1,"Januar"},{2,"Februar"},{3,"März"},{4,"April"},{5,"Mai"},{6,"Juni"},
@@ -692,8 +699,6 @@
     private int? GetBaseCapacity()
         => GetSelectedService()?.CapacityPerSlot;
 
-    // Hinweis: GetAllServicesAsync liefert i.d.R. keine Assignments mit,
-    // daher kann das hier 0 sein. In deiner Übersicht kommt es korrekt aus OverviewService.
     private int GetEmployeeCount()
         => GetSelectedService()?.AssignedEmployees?.Count ?? 0;
 
@@ -703,8 +708,15 @@
     private async Task OnServiceChanged(int serviceId)
     {
         _model.ServiceId = serviceId;
+
+        // UX: Wenn Service gewechselt wird -> Formular zurücksetzen (aber Service beibehalten)
+        var keepServiceId = _model.ServiceId;
+        ResetForm();
+        _model.ServiceId = keepServiceId;
+
         PrefillCapacityFields();
-        await Task.CompletedTask;
+
+      
     }
 
     private void PrefillCapacityFields()
@@ -712,7 +724,6 @@
         var baseCap = GetBaseCapacity();
         var prefill = (baseCap.HasValue && baseCap.Value > 0) ? baseCap : null;
 
-        // UX: optional prefill – kann user überschreiben oder leer lassen
         _newWeekly.CapacityPerSlotOverride = prefill;
         _newDate.CapacityPerSlotOverride = prefill;
     }
@@ -720,7 +731,7 @@
     private void OnMonthsChanged(IEnumerable<int> values)
     {
         _selectedMonths = values.ToHashSet();
-        _model.Months = _selectedMonths.ToHashSet();
+        _model.Months = _selectedMonths.ToHashSet(); // unsortiert ok – Backend nimmt Min/Max
     }
 
     private void OnRegularDayChanged(DayOfWeek day, bool value)
@@ -738,11 +749,9 @@
     {
         get
         {
-            // Beim Hinzufügen: Duplikat verhindern
             if (!_isEditingWeekly && _model.WeeklyOverrides.Any(x => x.Day == _newWeekly.Day))
                 return false;
 
-            // Geschlossen -> immer ok
             if (_newWeekly.IsClosed)
                 return true;
 
@@ -751,36 +760,36 @@
                    _newWeekly.StartTime.Value < _newWeekly.EndTime.Value;
         }
     }
-    private async Task OnWeeklyClosedChanged(bool value)
-{
-    _newWeekly.IsClosed = value;
 
-    if (value)
+    private Task OnWeeklyClosedChanged(bool value)
     {
-        // Zeiten und Kapazität löschen
-        _newWeekly.StartTime = null;
-        _newWeekly.EndTime = null;
-        _newWeekly.CapacityPerSlotOverride = null;
+        _newWeekly.IsClosed = value;
+
+        if (value)
+        {
+            _newWeekly.StartTime = null;
+            _newWeekly.EndTime = null;
+            _newWeekly.CapacityPerSlotOverride = null;
+        }
+
+        StateHasChanged();
+        return Task.CompletedTask;
     }
 
-    StateHasChanged(); // zwingt UI-Refresh
-}
-
-private async Task OnDateClosedChanged(bool value)
-{
-    _newDate.IsClosed = value;
-
-    if (value)
+    private Task OnDateClosedChanged(bool value)
     {
-        _newDate.StartTime = null;
-        _newDate.EndTime = null;
-        _newDate.CapacityPerSlotOverride = null;
+        _newDate.IsClosed = value;
+
+        if (value)
+        {
+            _newDate.StartTime = null;
+            _newDate.EndTime = null;
+            _newDate.CapacityPerSlotOverride = null;
+        }
+
+        StateHasChanged();
+        return Task.CompletedTask;
     }
-
-    StateHasChanged();
-}
-
-
 
     private void BeginEditWeekly(WeeklyOverrideDto item)
     {
@@ -813,13 +822,11 @@ private async Task OnDateClosedChanged(bool value)
         var baseCap = GetBaseCapacity();
         int? capacityOverride = _newWeekly.CapacityPerSlotOverride;
 
-        // Kein Override speichern, wenn gleich Basis
         if (baseCap.HasValue && capacityOverride.HasValue && capacityOverride.Value == baseCap.Value)
             capacityOverride = null;
 
         if (_newWeekly.IsClosed)
         {
-            // UX-Regel: geschlossen = keine Zeiten
             _newWeekly.StartTime = null;
             _newWeekly.EndTime = null;
         }
@@ -850,7 +857,6 @@ private async Task OnDateClosedChanged(bool value)
 
     private void RemoveWeeklyOverride(WeeklyOverrideDto item)
     {
-        // Falls gerade der gleiche Datensatz bearbeitet wird, Edit abbrechen
         if (_isEditingWeekly && _editingWeeklyRef == item)
             CancelEditWeekly();
 
@@ -867,7 +873,6 @@ private async Task OnDateClosedChanged(bool value)
             if (!_newDate.Date.HasValue)
                 return false;
 
-            // Beim Hinzufügen: Duplikat verhindern
             if (!_isEditingDate &&
                 _model.DateOverrides.Any(x => x.Date.HasValue && x.Date.Value.Date == _newDate.Date.Value.Date))
                 return false;
@@ -965,7 +970,7 @@ private async Task OnDateClosedChanged(bool value)
 
         try
         {
-            _model.Months = _selectedMonths.ToHashSet();
+            _model.Months = _selectedMonths.ToHashSet(); 
 
             var ok = await WorkingScheduleService.GenerateScheduleAsync(_model);
 
@@ -992,8 +997,12 @@ private async Task OnDateClosedChanged(bool value)
 
     private void ResetForm()
     {
+        var keepServiceId = _model.ServiceId;
+
         _activeStep = 0;
         _model = new WorkingScheduleRequestDto();
+        _model.ServiceId = keepServiceId;
+
         _selectedMonths.Clear();
 
         CancelEditWeekly();
@@ -1007,7 +1016,7 @@ private async Task OnDateClosedChanged(bool value)
     }
 
     // -----------------------------
-    // OVERVIEW: Edit/Delete
+    // OVERVIEW: Edit/Delete (dein bestehender Flow)
     // -----------------------------
     private async Task OnDeleteYear(WorkingScheduleYearPlan year)
     {
@@ -1022,17 +1031,13 @@ private async Task OnDateClosedChanged(bool value)
 
     private async Task OnEditYear(WorkingScheduleYearPlan year)
     {
-        // Modell aus Übersicht bauen
         _model = await CreateRequestFromYearPlan(year);
         _selectedMonths = _model.Months.ToHashSet();
 
-        // ServiceId ist im dto gesetzt; damit Step 1 korrekt ist und Alerts passen:
         PrefillCapacityFields();
 
-        // UX: Beim Bearbeiten direkt zu "Regulär" springen, damit die Checkboxen sofort sichtbar sind.
         _activeStep = 0;
 
-        // Edit-Modi in Ausnahmen zurücksetzen
         CancelEditWeekly();
         CancelEditDate();
 
@@ -1046,10 +1051,7 @@ private async Task OnDateClosedChanged(bool value)
             ServiceId = year.ServiceId,
             Year = year.Year,
             Months = year.Months.ToHashSet(),
-
-            // ✅ Das sorgt dafür, dass beim Bearbeiten die Tage angehakt sind:
             RegularDays = year.RegularDays,
-
             StartTime = year.RegularStartTime,
             EndTime = year.RegularEndTime
         };
@@ -1098,13 +1100,11 @@ private async Task OnDateClosedChanged(bool value)
         return string.Join(", ", list.Select(d => d.ToString()));
     }
 
-    // ✅ Regulär kompakt: "Montag, Dienstag, ... | 09:00 - 15:00"
     private string FormatRegularSummary(WorkingScheduleYearPlan plan)
     {
         if (plan.RegularHours == null || plan.RegularHours.Count == 0)
             return "-";
 
-        // Wenn Zeiten konsistent: ein Zeitbereich
         var first = plan.RegularHours.First();
         bool consistent = plan.RegularHours.All(x => x.StartTime == first.StartTime && x.EndTime == first.EndTime);
 
@@ -1118,7 +1118,23 @@ private async Task OnDateClosedChanged(bool value)
             return $"{string.Join(", ", days)} | {first.StartTime:hh\\:mm} - {first.EndTime:hh\\:mm}";
         }
 
-        // Fallback (falls später mal unterschiedliche Zeiten pro Tag kommen sollten)
         return string.Join(" | ", plan.RegularHours.Select(r => r.ToString()));
+    }
+
+    private string GetPlannedRangeText()
+    {
+        if (_model.Year <= 0 || _selectedMonths.Count == 0)
+            return "-";
+
+        var fromMonth = _selectedMonths.Min();
+        var toMonth = _selectedMonths.Max();
+
+        return $"{fromMonth:00}/{_model.Year} bis {toMonth:00}/{_model.Year}";
+    }
+
+    private string FormatPlanRange(WorkingSchedulePlanDto p)
+    {
+        // erwartet DateOnly in DTO; falls DateTime: einfach ToString("dd.MM.yyyy") anpassen
+        return $"{p.ValidFromDate:dd.MM.yyyy} – {p.ValidToDate:dd.MM.yyyy}";
     }
 }

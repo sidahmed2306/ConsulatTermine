@@ -96,35 +96,86 @@ namespace ConsulatTermine.Infrastructure.Services
 
 public async Task<List<SlotViewModel>> GetAvailableSlotsForServiceAsync(int serviceId, DateOnly date)
 {
+    // 1️⃣ Aktiven Plan prüfen
+    var activePlan = await _context.WorkingSchedulePlans
+        .AsNoTracking()
+        .FirstOrDefaultAsync(p =>
+            p.ServiceId == serviceId &&
+            p.IsActive &&
+            p.ValidFromDate <= date &&
+            p.ValidToDate >= date);
+
+    if (activePlan == null)
+        return new List<SlotViewModel>(); // ❌ kein gültiger Plan → keine Slots
+
+    // 2️⃣ Service laden (Basisdaten)
     var service = await _context.Services
-        .Include(s => s.WorkingHours)
-        .Include(s => s.DayOverrides)
+        .AsNoTracking()
         .Include(s => s.AssignedEmployees)
         .FirstOrDefaultAsync(s => s.Id == serviceId);
 
-    if (service == null) 
+    if (service == null)
         return new List<SlotViewModel>();
 
-    var existing = await _context.Appointments
-        .Where(a => a.ServiceId == serviceId 
-                 && a.Date.Date == date.ToDateTime(TimeOnly.MinValue).Date)
+    // 3️⃣ WorkingHours NUR für diesen Plan
+    var workingHours = await _context.WorkingHours
+        .Where(w =>
+            w.ServiceId == serviceId &&
+            w.WorkingSchedulePlanId == activePlan.Id)
         .ToListAsync();
 
+    // 4️⃣ Overrides NUR für diesen Plan
+    var overrides = await _context.ServiceDayOverrides
+        .Where(o =>
+            o.ServiceId == serviceId &&
+            o.WorkingSchedulePlanId == activePlan.Id)
+        .ToListAsync();
+
+    // 5️⃣ Bestehende Termine
+    var existingAppointments = await _context.Appointments
+        .Where(a =>
+            a.ServiceId == serviceId &&
+            a.Date.Date == date.ToDateTime(TimeOnly.MinValue).Date)
+        .ToListAsync();
+
+    // 6️⃣ Slot-Berechnung
     var freeSlots = AppointmentCalculator.GetAvailableSlots(
         service,
         date.ToDateTime(TimeOnly.MinValue).Date,
-        existing);
+        workingHours,
+        overrides,
+        existingAppointments);
 
+    // 7️⃣ Mapping → ViewModel
     return freeSlots
-    .Select(kvp => new SlotViewModel
-    {
-        DateTime = date.ToDateTime(TimeOnly.FromTimeSpan(kvp.Key.Start)),
-        FreeSlots = kvp.Value,
-        BookedSlots = 0
-    })
-    .ToList();
-
+        .Select(kvp => new SlotViewModel
+        {
+            DateTime = date.ToDateTime(TimeOnly.FromTimeSpan(kvp.Key.Start)),
+            FreeSlots = kvp.Value,
+            BookedSlots = 0
+        })
+        .ToList();
 }
+
+public async Task<List<AvailableSlotDto>> GetAvailableSlotDtosAsync(
+    int serviceId,
+    DateTime date)
+{
+    var slots = await GetAvailableSlotsForServiceAsync(
+        serviceId,
+        DateOnly.FromDateTime(date));
+
+    return slots
+        .Select(s => new AvailableSlotDto
+        {
+            SlotStart = s.DateTime,
+            FreeCapacity = s.FreeSlots
+        })
+        .OrderBy(x => x.SlotStart)
+        .ToList();
+}
+
+
 
 public async Task<ServiceDto> GetByIdAsync(int id)
 {

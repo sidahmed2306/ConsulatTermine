@@ -118,52 +118,55 @@
     private List<ServiceDto> _services = new();
     private Dictionary<int,List<SlotViewModel>> _slotsByService = new();
 
-    protected override async Task OnInitializedAsync()
+   protected override async Task OnInitializedAsync()
+{
+    var selectedServiceSlots =
+        await Session.GetItemAsync<Dictionary<int, List<DateTime>>>("selectedServiceSlots");
+
+    if (selectedServiceSlots == null || selectedServiceSlots.Count == 0)
     {
-        // Session lesen
-        var assignments = await Session.GetItemAsync<Dictionary<int,int>>("serviceAssignments");
-        if (assignments == null || assignments.Count == 0)
-        {
-            Navigation.NavigateTo("/services");
-            return;
-        }
-
-        // Personen laden
-        var personCount = await Session.GetItemAsync<int>("personCount");
-        _formModel.Persons = new List<PersonFormModel>();
-        for (int i = 0; i < personCount; i++)
-            _formModel.Persons.Add(new PersonFormModel());
-
-        // Services und Slots laden
-        _services = new List<ServiceDto>();
-        foreach (var sid in assignments.Keys)
-        {
-            var svc = await Session.GetItemAsync<ServiceDto>($"service_{sid}");
-            if (svc == null)
-            {
-                Navigation.NavigateTo("/services");
-                return;
-            }
-            _services.Add(svc);
-
-            // Slots aus Session holen
-            var slotDict = await Session.GetItemAsync<Dictionary<DateTime,int>>($"slots_{sid}");
-            var flatSlots = slotDict?.Keys.OrderBy(d => d).ToList() ?? new List<DateTime>();
-            _slotsByService[sid] = flatSlots
-                .Select(dt => new SlotViewModel { DateTime = dt })
-                .ToList();
-        }
-
-        // Vorbereiten der Slot Arrays in jedem PersonModel
-        foreach (var p in _formModel.Persons)
-        {
-            p.SelectedSlots = new Dictionary<int, DateTime>();
-            foreach (var svc in _services)
-            {
-                p.SelectedSlots[svc.Id] = default;
-            }
-        }
+        Navigation.NavigateTo("/services");
+        return;
     }
+
+    var personCount = await Session.GetItemAsync<int>("personCount");
+    if (personCount <= 0)
+    {
+        Navigation.NavigateTo("/services");
+        return;
+    }
+
+    // Personen vorbereiten
+    _formModel.Persons = new List<PersonFormModel>();
+    for (int i = 0; i < personCount; i++)
+        _formModel.Persons.Add(new PersonFormModel());
+
+    // Services laden (direkt über ServiceService, NICHT Session)
+    _services = new List<ServiceDto>();
+    _slotsByService = new();
+
+    foreach (var kvp in selectedServiceSlots)
+    {
+        var serviceId = kvp.Key;
+        var slotList  = kvp.Value;
+
+        var svc = await ServiceService.GetByIdAsync(serviceId);
+        _services.Add(svc);
+
+        _slotsByService[serviceId] = slotList
+            .OrderBy(d => d)
+            .Select(d => new SlotViewModel { DateTime = d })
+            .ToList();
+    }
+
+    // Slot-Maps pro Person initialisieren
+    foreach (var p in _formModel.Persons)
+    {
+        p.SelectedSlots = new Dictionary<int, DateTime>();
+        foreach (var svc in _services)
+            p.SelectedSlots[svc.Id] = default;
+    }
+}
 
     // Wenn Form gültig abgesendet wird
     private async Task OnValidSubmit()
