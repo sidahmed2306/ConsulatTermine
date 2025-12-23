@@ -1,0 +1,35 @@
+@page "/appointment-cancel-success"
+@using Microsoft.AspNetCore.WebUtilities
+@using MudBlazor
+@inject NavigationManager Navigation
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mx-auto mt-8">
+    <MudCard Class="pa-6" Style="border-radius:12px">
+        <MudText Typo="Typo.h5" Class="mb-2">Termin abgesagt</MudText>
+
+        <MudText Typo="Typo.body1">
+            Ihr Termin wurde erfolgreich storniert.
+        </MudText>
+
+        <MudText Typo="Typo.body2" Class="mt-3">
+            Buchungsnummer: <b>@BookingReference</b>
+        </MudText>
+
+        <MudDivider Class="my-4" />
+
+        <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="@(()=>Navigation.NavigateTo("/"))">
+            Neue Termin buchen
+        </MudButton>
+    </MudCard>
+</MudContainer>
+
+@code {
+    private string? BookingReference;
+
+    protected override void OnInitialized()
+    {
+        var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+        var query = QueryHelpers.ParseQuery(uri.Query);
+        BookingReference = query.TryGetValue("ref", out var val) ? val.ToString() : "-";
+    }
+}

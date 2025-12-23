@@ -1,0 +1,175 @@
+@page "/appointment-cancel"
+
+@using ConsulatTermine.Domain.Entities
+@using ConsulatTermine.Domain.Enums
+@using Microsoft.AspNetCore.WebUtilities
+@using MudBlazor
+
+@inject ConsulatTermine.Application.Interfaces.IAppointmentService AppointmentService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mx-auto mt-8">
+
+    <MudCard Class="pa-6" Style="border-radius:12px">
+
+        <MudText Typo="Typo.h5" Class="mb-3">
+            Termin absagen
+        </MudText>
+
+        @if (IsLoading)
+        {
+            <MudProgressCircular Indeterminate="true" />
+        }
+        else if (ErrorMessage != null)
+        {
+            <MudAlert Severity="Severity.Error">
+                @ErrorMessage
+            </MudAlert>
+        }
+        else
+        {
+            <MudAlert Severity="Severity.Warning" Class="mb-4">
+                Möchten Sie diesen Termin wirklich absagen?
+            </MudAlert>
+
+            <MudTable Items="Appointments" Dense="true">
+                <HeaderContent>
+                    <MudTh>Service</MudTh>
+                    <MudTh>Datum</MudTh>
+                    <MudTh>Name</MudTh>
+                    <MudTh>Status</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.Service?.Name</MudTd>
+                    <MudTd>@context.Date.ToString("dd.MM.yyyy HH:mm")</MudTd>
+                    <MudTd>@context.FullName</MudTd>
+                    <MudTd>@context.Status</MudTd>
+                </RowTemplate>
+            </MudTable>
+
+            <MudDivider Class="my-4" />
+
+            <MudStack Row="true" Spacing="2">
+                <MudButton Variant="Variant.Outlined"
+                           OnClick="@(()=>Navigation.NavigateTo("/"))">
+                    Abbrechen
+                </MudButton>
+
+                <MudButton Color="Color.Error"
+                           Variant="Variant.Filled"
+                           Disabled="@IsCancelling"
+                           OnClick="ConfirmCancelAsync">
+                    @if (IsCancelling)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                        <span class="ml-2">Wird storniert…</span>
+                    }
+                    else
+                    {
+                        <span>Termin absagen</span>
+                    }
+                </MudButton>
+            </MudStack>
+        }
+
+    </MudCard>
+</MudContainer>
+
+@code {
+
+    private bool IsLoading = true;
+    private bool IsCancelling = false;
+    private string? ErrorMessage;
+
+    private string? BookingReference;
+    private string? CancelToken;
+
+    private List<Appointment> Appointments = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+            var query = QueryHelpers.ParseQuery(uri.Query);
+
+            BookingReference = query.TryGetValue("ref", out var r) ? r.ToString() : null;
+            CancelToken = query.TryGetValue("token", out var t) ? t.ToString() : null;
+
+            if (string.IsNullOrWhiteSpace(BookingReference) ||
+                string.IsNullOrWhiteSpace(CancelToken))
+            {
+                ErrorMessage = "Ungültiger Link.";
+                return;
+            }
+
+            // 1️⃣ Termine laden (per BookingReference)
+            Appointments = await AppointmentService
+                .GetByBookingReferenceAsync(BookingReference);
+
+            if (!Appointments.Any())
+            {
+                ErrorMessage = "Kein Termin gefunden.";
+                return;
+            }
+
+            // 2️⃣ Token + Ablauf prüfen
+            var first = Appointments.First();
+
+            if (first.CancelToken != CancelToken)
+            {
+                ErrorMessage = "Ungültiger oder manipulierter Link.";
+                return;
+            }
+
+            if (!first.CancelTokenExpiresAt.HasValue ||
+                first.CancelTokenExpiresAt.Value < DateTime.UtcNow)
+            {
+                ErrorMessage = "Dieser Absagelink ist abgelaufen.";
+                return;
+            }
+
+            // 3️⃣ Bereits abgesagt?
+            if (Appointments.All(a => a.Status == AppointmentStatus.Cancelled))
+            {
+                ErrorMessage = "Dieser Termin wurde bereits abgesagt.";
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = "Fehler beim Laden des Termins.";
+            Console.WriteLine(ex);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task ConfirmCancelAsync()
+    {
+        IsCancelling = true;
+
+        try
+        {
+            foreach (var appt in Appointments)
+            {
+                await AppointmentService.CancelAsync(appt.Id);
+            }
+
+            Navigation.NavigateTo(
+                $"/appointment-cancel-success?ref={Uri.EscapeDataString(BookingReference!)}");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Fehler beim Absagen des Termins.", Severity.Error);
+            Console.WriteLine(ex);
+        }
+        finally
+        {
+            IsCancelling = false;
+        }
+    }
+}

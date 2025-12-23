@@ -1,4 +1,5 @@
 using ConsulatTermine.Domain.Entities;
+using ConsulatTermine.Domain.Enums;
 
 public static class AppointmentCalculator
 {
@@ -113,10 +114,12 @@ public static class AppointmentCalculator
         foreach (var slot in slots)
         {
             int booked = existingAppointments.Count(a =>
-                a.ServiceId == service.Id &&
-                a.Date.Date == date.Date &&
-                a.Date.TimeOfDay >= slot.Start &&
-                a.Date.TimeOfDay < slot.End);
+    a.ServiceId == service.Id &&
+    a.Date.Date == date.Date &&
+    a.Date.TimeOfDay >= slot.Start &&
+    a.Date.TimeOfDay < slot.End &&
+    a.Status == AppointmentStatus.Booked);
+
 
             result[slot] = Math.Max(0, capacity - booked);
         }

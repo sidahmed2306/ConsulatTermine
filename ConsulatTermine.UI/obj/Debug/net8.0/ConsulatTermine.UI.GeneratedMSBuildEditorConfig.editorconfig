@@ -29,6 +29,18 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = UGFnZXMvQWRtaW5Xb3JraW5nSG91cnMucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
+[/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/Pages/AppointmentCancel.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvQXBwb2ludG1lbnRDYW5jZWwucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/Pages/AppointmentCancelSuccess.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvQXBwb2ludG1lbnRDYW5jZWxTdWNjZXNzLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/Pages/AppointmentConfirmation.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvQXBwb2ludG1lbnRDb25maXJtYXRpb24ucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
 [/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/Pages/AppointmentFormPage.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXMvQXBwb2ludG1lbnRGb3JtUGFnZS5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 

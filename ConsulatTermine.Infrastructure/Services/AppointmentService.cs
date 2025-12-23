@@ -148,6 +148,20 @@ namespace ConsulatTermine.Infrastructure.Services
                 .ToListAsync();
         }
 
+
+        public async Task<List<Appointment>> GetByBookingReferenceAsync(string bookingReference)
+{
+    if (string.IsNullOrWhiteSpace(bookingReference))
+        return new List<Appointment>();
+
+    return await _context.Appointments
+        .Include(a => a.Service)
+        .Where(a => a.BookingReference == bookingReference)
+        .OrderBy(a => a.Date)
+        .ToListAsync();
+}
+
+
         // -------------------------------------------------------------
         // CHECK-IN (Empfang)
         // -------------------------------------------------------------

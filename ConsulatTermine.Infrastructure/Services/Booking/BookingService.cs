@@ -1,8 +1,9 @@
 using ConsulatTermine.Application.DTOs.Booking;
+using ConsulatTermine.Application.Interfaces;
 using ConsulatTermine.Application.Interfaces.Booking;
 using ConsulatTermine.Domain.Entities;
+using ConsulatTermine.Domain.Enums;
 using ConsulatTermine.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 namespace ConsulatTermine.Infrastructure.Services.Booking
 {
@@ -12,17 +13,20 @@ namespace ConsulatTermine.Infrastructure.Services.Booking
         private readonly IBookingValidationService _validationService;
         private readonly ISlotAvailabilityService _slotService;
         private readonly IBookingReferenceGenerator _referenceGenerator;
+        private readonly IEmailService _emailService;
 
         public BookingService(
             ApplicationDbContext db,
             IBookingValidationService validationService,
             ISlotAvailabilityService slotService,
-            IBookingReferenceGenerator referenceGenerator)
+            IBookingReferenceGenerator referenceGenerator,
+            IEmailService emailService)
         {
             _db = db;
             _validationService = validationService;
             _slotService = slotService;
             _referenceGenerator = referenceGenerator;
+            _emailService = emailService;
         }
 
         // --------------------------------------------------------------------
@@ -33,6 +37,9 @@ namespace ConsulatTermine.Infrastructure.Services.Booking
             // 1) Buchungsreferenz erzeugen
             string bookingRef = _referenceGenerator.GenerateReference();
             request.BookingReference = bookingRef;
+
+            // 🔐 EIN Cancel-Token für die gesamte Buchung
+            string cancelToken = Guid.NewGuid().ToString("N");
 
             // 2) Validierung (Personenregeln, Service-Regeln, Zeitüberschneidungen)
             await _validationService.ValidateBookingRequestAsync(request);
@@ -51,6 +58,7 @@ namespace ConsulatTermine.Infrastructure.Services.Booking
                 await CreateAppointmentsForPersonAsync(
                     request.MainPerson,
                     bookingRef,
+                    cancelToken,
                     personIndex,
                     isMainPerson: true
                 );
@@ -62,6 +70,7 @@ namespace ConsulatTermine.Infrastructure.Services.Booking
                     await CreateAppointmentsForPersonAsync(
                         acc,
                         bookingRef,
+                        cancelToken,
                         personIndex,
                         isMainPerson: false
                     );
@@ -69,8 +78,27 @@ namespace ConsulatTermine.Infrastructure.Services.Booking
 
                 // Alles speichern
                 await _db.SaveChangesAsync();
-
                 await trx.CommitAsync();
+
+                // 📧 E-Mail asynchron (darf Buchung nicht blockieren)
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        if (!string.IsNullOrWhiteSpace(request.MainPerson.Email))
+                        {
+                            await _emailService.SendBookingConfirmationAsync(
+                                request.MainPerson.Email,
+                                request.MainPerson.FullName,
+                                bookingRef);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("EMAIL ERROR (ignored):");
+                        Console.WriteLine(ex.ToString());
+                    }
+                });
             }
             catch
             {
@@ -87,26 +115,47 @@ namespace ConsulatTermine.Infrastructure.Services.Booking
         private async Task CreateAppointmentsForPersonAsync(
             BookingPersonDto person,
             string bookingRef,
+            string cancelToken,
             int personIndex,
             bool isMainPerson)
         {
             foreach (var serviceSlot in person.ServiceSlots)
             {
+                // 🔐 Absage nur bis 24h vor Termin erlaubt
+                var cancelDeadlineUtc = serviceSlot.SlotTime
+                    .AddHours(-24)
+                    .ToUniversalTime();
+
+                if (cancelDeadlineUtc < DateTime.UtcNow)
+                {
+                    cancelDeadlineUtc = DateTime.UtcNow;
+                }
+
                 var appointment = new Appointment
                 {
                     FullName = person.FullName,
-                    Email = isMainPerson ? person.Email ?? "" : "",
+                    Email = isMainPerson ? person.Email ?? string.Empty : string.Empty,
+                    PhoneNumber = person.PhoneNumber ?? string.Empty,
+                    DateOfBirth = person.DateOfBirth,
+
                     Date = serviceSlot.SlotTime,
                     ServiceId = serviceSlot.ServiceId,
-                    Status = Domain.Enums.AppointmentStatus.Booked,
+                    Status = AppointmentStatus.Booked,
+
                     BookingReference = bookingRef,
                     PersonIndex = personIndex,
                     IsMainPerson = isMainPerson,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+
+                    // 🔐 Cancel-Link-Sicherheit
+                    CancelToken = cancelToken,
+                    CancelTokenExpiresAt = cancelDeadlineUtc
                 };
 
                 _db.Appointments.Add(appointment);
             }
+
+            await Task.CompletedTask;
         }
     }
 }

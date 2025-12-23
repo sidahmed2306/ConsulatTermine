@@ -19,4 +19,7 @@ public interface IAppointmentService
 
     Task<List<Appointment>> BookGroupAsync(GroupBookingDto dto);
 
+    Task<List<Appointment>> GetByBookingReferenceAsync(string bookingReference);
+
+
 }

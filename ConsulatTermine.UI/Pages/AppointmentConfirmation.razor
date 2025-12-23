@@ -1,0 +1,103 @@
+@page "/appointment-confirmation"
+
+@using MudBlazor
+@using Blazored.SessionStorage
+
+@inject ISessionStorageService Session
+@inject NavigationManager Navigation
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mx-auto mt-10">
+
+    <MudCard Class="pa-8" Style="border-radius:14px">
+
+        <MudStack Spacing="3" AlignItems="AlignItems.Center">
+
+            <!-- ICON -->
+            <MudIcon Icon="@Icons.Material.Filled.CheckCircle"
+                     Color="Color.Success"
+                     Size="Size.Large" />
+
+            <!-- TITLE -->
+            <MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Success">
+                Termin erfolgreich gebucht
+            </MudText>
+
+            <!-- TEXT -->
+            <MudText Typo="Typo.body1" Align="Align.Center">
+                Ihr Termin beim <b>Konsulat</b> wurde erfolgreich registriert.
+            </MudText>
+
+            <MudDivider Class="my-4" />
+
+            <!-- BOOKING INFO -->
+            @if (!string.IsNullOrWhiteSpace(_bookingReference))
+            {
+                <MudPaper Class="pa-4" Style="border-radius:10px; width:100%; background:#f9f9f9">
+
+                    <MudText Typo="Typo.subtitle1">
+                        <b>Buchungsnummer</b>
+                    </MudText>
+
+                    <MudText Typo="Typo.h6" Color="Color.Primary">
+                        @_bookingReference
+                    </MudText>
+
+                    @if (!string.IsNullOrWhiteSpace(_email))
+                    {
+                        <MudText Typo="Typo.body2" Class="mt-2">
+                            Eine Bestätigungs-E-Mail mit allen Informationen wurde an
+                            <b>@_email</b> gesendet.
+                        </MudText>
+
+                        <MudText Typo="Typo.caption" Style="opacity:.7">
+                            (Hinweis: Der E-Mail-Versand wird in Kürze technisch aktiviert.)
+                        </MudText>
+                    }
+                </MudPaper>
+            }
+            else
+            {
+                <MudAlert Severity="Severity.Warning">
+                    Es konnte keine Buchungsnummer ermittelt werden.
+                    Bitte kontaktieren Sie das Konsulat.
+                </MudAlert>
+            }
+
+            <MudDivider Class="my-4" />
+
+            <!-- FOOTER -->
+            <MudText Typo="Typo.caption" Align="Align.Center" Style="opacity:.8">
+                Bitte erscheinen Sie pünktlich zum gebuchten Termin und bringen Sie alle
+                erforderlichen Unterlagen mit.
+            </MudText>
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Success"
+                       Class="mt-4"
+                       OnClick="GoToHome">
+                Neue Terminbuchung
+            </MudButton>
+
+        </MudStack>
+
+    </MudCard>
+</MudContainer>
+
+@code {
+
+    private string? _bookingReference;
+    private string? _email;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _bookingReference = await Session.GetItemAsync<string>("bookingReference");
+
+        // Optional: E-Mail der Hauptperson anzeigen (falls gespeichert)
+        _email = await Session.GetItemAsync<string>("mainPersonEmail");
+    }
+
+    private void GoToHome()
+    {
+        Navigation.NavigateTo("/services", forceLoad: true);
+    }
+}

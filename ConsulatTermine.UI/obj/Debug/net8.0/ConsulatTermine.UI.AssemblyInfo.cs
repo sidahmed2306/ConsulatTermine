@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ConsulatTermine.UI")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d5920367003500f5786a94abed863d90508e1919")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+92dd89de30cfe3e673b0c286d3d5df0217979f43")]
 [assembly: System.Reflection.AssemblyProductAttribute("ConsulatTermine.UI")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ConsulatTermine.UI")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

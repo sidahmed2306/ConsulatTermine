@@ -1,6 +1,7 @@
 using ConsulatTermine.Application.DTOs.Booking;
 using ConsulatTermine.Application.Interfaces.Booking;
 using ConsulatTermine.Domain.Entities;
+using ConsulatTermine.Domain.Enums;
 using ConsulatTermine.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -72,8 +73,12 @@ namespace ConsulatTermine.Infrastructure.Services.Booking
 
                 // 5) Existierende Termine für diesen Tag laden
                 var existingAppointments = await _db.Appointments
-                    .Where(a => a.ServiceId == serviceId && a.Date.Date == date.Date)
-                    .ToListAsync();
+    .Where(a =>
+        a.ServiceId == serviceId &&
+        a.Date.Date == date.Date &&
+        a.Status == AppointmentStatus.Booked)
+    .ToListAsync();
+
 
                 // 6) Verfügbare Slots berechnen (NEUE Signatur)
                 var freeSlotsDict = AppointmentCalculator.GetAvailableSlots(
@@ -159,8 +164,12 @@ namespace ConsulatTermine.Infrastructure.Services.Booking
 
             // 5) Existierende Appointments laden
             var existingAppointments = await _db.Appointments
-                .Where(a => a.ServiceId == serviceId && a.Date.Date == date)
-                .ToListAsync();
+    .Where(a =>
+        a.ServiceId == serviceId &&
+        a.Date.Date == date &&
+        a.Status == AppointmentStatus.Booked)
+    .ToListAsync();
+
 
             // 6) Slots berechnen (NEUE Signatur)
             var freeSlotsDict = AppointmentCalculator.GetAvailableSlots(

@@ -66,4 +66,27 @@ public class Appointment
     /// (Empfänger der Bestätigungs-E-Mails usw.).
     /// </summary>
     public bool IsMainPerson { get; set; } = false;
+
+    /// <summary>
+/// Telefonnummer der Person (aus Formular).
+/// </summary>
+public string PhoneNumber { get; set; } = string.Empty;
+
+/// <summary>
+/// Geburtsdatum der Person (aus Formular).
+/// </summary>
+public DateTime? DateOfBirth { get; set; }
+
+/// <summary>
+/// Sicherheits-Token für die Terminabsage über E-Mail-Link.
+/// </summary>
+public string? CancelToken { get; set; }
+
+/// <summary>
+/// Ablaufdatum des Cancel-Links.
+/// Nach diesem Zeitpunkt ist eine Absage über den Link nicht mehr möglich.
+/// </summary>
+public DateTime? CancelTokenExpiresAt { get; set; }
+
+
 }
