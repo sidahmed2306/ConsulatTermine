@@ -15,14 +15,18 @@ namespace ConsulatTermine.Infrastructure.Services
         private readonly IHubContext<DisplayHub, IDisplayClient> _displayHub;
         private readonly IHubContext<EmployeeHub, IEmployeeClient> _employeeHub;
 
+        private readonly IEmailService _emailService;
+
         public AppointmentService(
             ApplicationDbContext context,
             IHubContext<DisplayHub, IDisplayClient> displayHub,
-            IHubContext<EmployeeHub, IEmployeeClient> employeeHub)
+            IHubContext<EmployeeHub, IEmployeeClient> employeeHub,
+            IEmailService emailService)
         {
             _context = context;
             _displayHub = displayHub;
             _employeeHub = employeeHub;
+            _emailService = emailService;
         }
 
         // -------------------------------------------------------------
@@ -118,24 +122,80 @@ namespace ConsulatTermine.Infrastructure.Services
 
             return appointment;
         }
+// -------------------------------------------------------------
+// TERMIN STORNIEREN (THREAD-SAFE, EF-CORRECT)
+// -------------------------------------------------------------
+public async Task<bool> CancelAsync(int appointmentId)
+{
+    // 🔎 Termin inkl. Service laden
+    var appointment = await _context.Appointments
+        .Include(a => a.Service)
+        .FirstOrDefaultAsync(a => a.Id == appointmentId);
 
-        // -------------------------------------------------------------
-        // TERMIN STORNIEREN
-        // -------------------------------------------------------------
-        public async Task<bool> CancelAsync(int appointmentId)
+    if (appointment == null)
+        return false;
+
+    if (appointment.Status == AppointmentStatus.Completed)
+        return false;
+
+    if (appointment.Status == AppointmentStatus.Cancelled)
+        return true; // idempotent
+
+    // ❌ Termin stornieren
+    appointment.Status = AppointmentStatus.Cancelled;
+    await _context.SaveChangesAsync();
+
+    // ---------------------------------------------------------
+    // 🔎 ALLE Termine dieser Buchung laden (GLEICHER THREAD)
+    // ---------------------------------------------------------
+    var allAppointments = await _context.Appointments
+        .Include(a => a.Service)
+        .Where(a => a.BookingReference == appointment.BookingReference)
+        .ToListAsync();
+
+    var mainPerson = allAppointments
+        .FirstOrDefault(a => a.IsMainPerson && !string.IsNullOrWhiteSpace(a.Email));
+
+    if (mainPerson == null)
+        return true;
+
+    var hasActiveAppointments = allAppointments
+        .Any(a => a.Status == AppointmentStatus.Booked);
+
+    // ---------------------------------------------------------
+    // 📧 E-MAIL (kein Task.Run, kein Parallelismus)
+    // ---------------------------------------------------------
+    try
+    {
+        if (hasActiveAppointments)
         {
-            var appointment = await _context.Appointments.FindAsync(appointmentId);
-            if (appointment == null)
-                return false;
-
-            if (appointment.Status == AppointmentStatus.Completed)
-                return false;
-
-            appointment.Status = AppointmentStatus.Cancelled;
-            await _context.SaveChangesAsync();
-
-            return true;
+            // 🟨 TEIL-ABSAGE
+            await _emailService.SendPartialCancellationAsync(
+                mainPerson.Email!,
+                appointment.FullName,
+                appointment.Service!.Name,
+                appointment.Date);
         }
+        else
+        {
+            // 🟥 VOLL-ABSAGE
+            await _emailService.SendCancellationConfirmationAsync(
+                mainPerson.Email!,
+                mainPerson.FullName,
+                appointment.BookingReference);
+        }
+    }
+    catch (Exception ex)
+    {
+        // Mail-Fehler dürfen Cancel NICHT verhindern
+        Console.WriteLine("EMAIL ERROR (ignored):");
+        Console.WriteLine(ex);
+    }
+
+    return true;
+}
+
+
 
         // -------------------------------------------------------------
         // TAGESLISTE FÜR EINEN SERVICE
@@ -356,6 +416,34 @@ namespace ConsulatTermine.Infrastructure.Services
 
             return result;
         }
+
+        public async Task<List<Appointment>> GetAppointmentsForServiceOnDateAsync(
+    int serviceId,
+    DateTime date)
+{
+    var targetDate = date.Date;
+
+    return await _context.Appointments
+        .Where(a =>
+            a.ServiceId == serviceId &&
+            a.Date.Date == targetDate)
+        .OrderBy(a => a.Date) // Uhrzeit
+        .ToListAsync();
+}
+
+public async Task<Appointment?> GetNextAppointmentForServiceOnDateAsync(
+    int serviceId,
+    DateTime date)
+{
+    var targetDate = date.Date;
+
+    return await _context.Appointments
+        .Where(a =>
+            a.ServiceId == serviceId &&
+            a.Date.Date == targetDate)
+        .OrderBy(a => a.Date)
+        .FirstOrDefaultAsync();
+}
 
         // -------------------------------------------------------------
         // Helpers: Active Plan + Range Check

@@ -39,6 +39,7 @@ builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IWorkingSchedulePlanService, WorkingSchedulePlanService>();
 builder.Services.AddScoped<IAppointmentCalendarQueryService, AppointmentCalendarQueryService>();
 builder.Services.AddScoped<IEmailService, SmtpEmailService>();
+builder.Services.AddScoped<IEmployeeAuthService, EmployeeAuthService>();
 
 
 

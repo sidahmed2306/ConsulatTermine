@@ -90,7 +90,7 @@ namespace ConsulatTermine.Infrastructure.Services.Booking
                             await _emailService.SendBookingConfirmationAsync(
                                 request.MainPerson.Email,
                                 request.MainPerson.FullName,
-                                bookingRef);
+                                bookingRef, cancelToken);
                         }
                     }
                     catch (Exception ex)

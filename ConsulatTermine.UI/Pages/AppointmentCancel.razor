@@ -30,7 +30,7 @@
         else
         {
             <MudAlert Severity="Severity.Warning" Class="mb-4">
-                Möchten Sie diesen Termin wirklich absagen?
+                Sie können einzelne Termine absagen. Andere Termine bleiben bestehen.
             </MudAlert>
 
             <MudTable Items="Appointments" Dense="true">
@@ -39,38 +39,45 @@
                     <MudTh>Datum</MudTh>
                     <MudTh>Name</MudTh>
                     <MudTh>Status</MudTh>
+                    <MudTh>Aktion</MudTh>
                 </HeaderContent>
+
                 <RowTemplate>
                     <MudTd>@context.Service?.Name</MudTd>
-                    <MudTd>@context.Date.ToString("dd.MM.yyyy HH:mm")</MudTd>
+
+                    <MudTd>
+                        @context.Date.ToString("dd.MM.yyyy HH:mm")
+                    </MudTd>
+
                     <MudTd>@context.FullName</MudTd>
+
                     <MudTd>@context.Status</MudTd>
+
+                    <MudTd>
+                        @if (context.Status == AppointmentStatus.Booked)
+                        {
+                            <MudButton Color="Color.Error"
+                                       Variant="Variant.Filled"
+                                       Size="Size.Small"
+                                       Disabled="@IsCancelling"
+                                       OnClick="@(() => CancelSingleAsync(context.Id))">
+                                Termin absagen
+                            </MudButton>
+                        }
+                        else
+                        {
+                            <MudText Color="Color.Secondary">—</MudText>
+                        }
+                    </MudTd>
                 </RowTemplate>
             </MudTable>
 
             <MudDivider Class="my-4" />
 
-            <MudStack Row="true" Spacing="2">
-                <MudButton Variant="Variant.Outlined"
-                           OnClick="@(()=>Navigation.NavigateTo("/"))">
-                    Abbrechen
-                </MudButton>
-
-                <MudButton Color="Color.Error"
-                           Variant="Variant.Filled"
-                           Disabled="@IsCancelling"
-                           OnClick="ConfirmCancelAsync">
-                    @if (IsCancelling)
-                    {
-                        <MudProgressCircular Size="Size.Small" Indeterminate="true" />
-                        <span class="ml-2">Wird storniert…</span>
-                    }
-                    else
-                    {
-                        <span>Termin absagen</span>
-                    }
-                </MudButton>
-            </MudStack>
+            <MudButton Variant="Variant.Outlined"
+                       OnClick="@(()=>Navigation.NavigateTo("/"))">
+                Abbrechen
+            </MudButton>
         }
 
     </MudCard>
@@ -104,7 +111,7 @@
                 return;
             }
 
-            // 1️⃣ Termine laden (per BookingReference)
+            // 1️⃣ Termine laden
             Appointments = await AppointmentService
                 .GetByBookingReferenceAsync(BookingReference);
 
@@ -114,7 +121,7 @@
                 return;
             }
 
-            // 2️⃣ Token + Ablauf prüfen
+            // 2️⃣ Token & Ablauf prüfen (EINMAL)
             var first = Appointments.First();
 
             if (first.CancelToken != CancelToken)
@@ -129,13 +136,6 @@
                 ErrorMessage = "Dieser Absagelink ist abgelaufen.";
                 return;
             }
-
-            // 3️⃣ Bereits abgesagt?
-            if (Appointments.All(a => a.Status == AppointmentStatus.Cancelled))
-            {
-                ErrorMessage = "Dieser Termin wurde bereits abgesagt.";
-                return;
-            }
         }
         catch (Exception ex)
         {
@@ -148,19 +148,26 @@
         }
     }
 
-    private async Task ConfirmCancelAsync()
+    private async Task CancelSingleAsync(int appointmentId)
     {
         IsCancelling = true;
 
         try
         {
-            foreach (var appt in Appointments)
-            {
-                await AppointmentService.CancelAsync(appt.Id);
-            }
+            await AppointmentService.CancelAsync(appointmentId);
 
-            Navigation.NavigateTo(
-                $"/appointment-cancel-success?ref={Uri.EscapeDataString(BookingReference!)}");
+            Snackbar.Add("Der Termin wurde erfolgreich abgesagt.", Severity.Success);
+
+            // 🔄 Liste neu laden
+            Appointments = await AppointmentService
+    .GetByBookingReferenceAsync(BookingReference!);
+
+// ✅ WENN alle Termine storniert sind → weiterleiten
+if (Appointments.All(a => a.Status == AppointmentStatus.Cancelled))
+{
+    Navigation.NavigateTo(
+        $"/appointment-cancel-success?ref={Uri.EscapeDataString(BookingReference!)}");
+}
         }
         catch (Exception ex)
         {

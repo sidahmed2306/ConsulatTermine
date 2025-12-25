@@ -68,7 +68,7 @@
                         {
                             @foreach (var assignment in context.AssignedEmployees)
                             {
-                                <div>@assignment.Employee.FullName</div>
+                                <div>@assignment?.Employee?.FirstName</div>
                             }
                         }
                         else

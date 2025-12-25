@@ -21,5 +21,16 @@ public interface IAppointmentService
 
     Task<List<Appointment>> GetByBookingReferenceAsync(string bookingReference);
 
+  
+
+Task<List<Appointment>> GetAppointmentsForServiceOnDateAsync(
+    int serviceId,
+    DateTime date);
+
+Task<Appointment?> GetNextAppointmentForServiceOnDateAsync(
+    int serviceId,
+    DateTime date);
+
+
 
 }

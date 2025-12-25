@@ -1,0 +1,62 @@
+@page "/employee/select-service"
+
+@using ConsulatTermine.Domain.Entities
+@using ConsulatTermine.Application.Interfaces
+@using MudBlazor
+
+@inject IEmployeeService EmployeeService
+@inject NavigationManager Navigation
+@inject Blazored.SessionStorage.ISessionStorageService Session
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+
+    <MudPaper Class="pa-6">
+        <MudText Typo="Typo.h5" Class="mb-4">Service auswählen</MudText>
+
+        @if (_services.Count == 0)
+        {
+            <MudText Color="Color.Error">
+                Ihnen sind aktuell keine Services zugeordnet.
+            </MudText>
+        }
+        else
+        {
+            <MudStack Spacing="2">
+                @foreach (var service in _services)
+                {
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               OnClick="() => SelectService(service.Id)">
+                        @service.Name
+                    </MudButton>
+                }
+            </MudStack>
+        }
+    </MudPaper>
+
+</MudContainer>
+
+@code {
+    private List<Service> _services = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var employeeId = await Session.GetItemAsync<int>("EmployeeId");
+            Console.WriteLine($"EmployeeId from session: {employeeId}");
+
+        var employee = await EmployeeService.GetEmployeeByIdAsync(employeeId);
+        if (employee != null)
+        {
+            _services = employee.AssignedServices?
+                .Select(a => a.Service)
+                .Where(s => s != null)
+                .Select(s => s!)
+                .ToList() ?? new();
+        }
+    }
+
+    private void SelectService(int serviceId)
+    {
+        Navigation.NavigateTo($"/employee/dashboard/{serviceId}");
+    }
+}

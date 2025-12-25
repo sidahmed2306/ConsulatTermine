@@ -1,8 +1,9 @@
-using ConsulatTermine.Application.Interfaces;
 using ConsulatTermine.Application.DTOs;
+using ConsulatTermine.Application.Interfaces;
 using ConsulatTermine.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 using ConsulatTermine.Infrastructure.Persistence;
+using ConsulatTermine.Infrastructure.Security;
+using Microsoft.EntityFrameworkCore;
 
 namespace ConsulatTermine.Infrastructure.Services
 {
@@ -10,10 +11,15 @@ namespace ConsulatTermine.Infrastructure.Services
     {
         private readonly ApplicationDbContext _context;
 
-        public EmployeeService(ApplicationDbContext context)
-        {
-            _context = context;
-        }
+       private readonly IEmailService _emailService;
+
+public EmployeeService(
+    ApplicationDbContext context,
+    IEmailService emailService)
+{
+    _context = context;
+    _emailService = emailService;
+}
 
         // -------------------------------------------------------------
         // GET ALL EMPLOYEES (inkl. Service Assignments)
@@ -24,7 +30,8 @@ namespace ConsulatTermine.Infrastructure.Services
                 .Include(e => e.AssignedServices)
                     .ThenInclude(a => a.Service)
                 .AsNoTracking()
-                .OrderBy(e => e.FullName)
+                .OrderBy(e => e.LastName)
+                .ThenBy(e => e.FirstName)
                 .ToListAsync();
         }
 
@@ -40,22 +47,102 @@ namespace ConsulatTermine.Infrastructure.Services
         }
 
         // -------------------------------------------------------------
-        // CREATE EMPLOYEE
+        // CREATE EMPLOYEE (mit Kennung: CDZ-001, CDZ-002, ...)
         // -------------------------------------------------------------
-        public async Task<Employee> CreateEmployeeAsync(EmployeeDto dto)
+       public async Task<Employee> CreateEmployeeAsync(EmployeeDto dto)
+{
+    // -------------------------------------------------
+    // 0) Basis-Validierung (fachlich, minimal)
+    // -------------------------------------------------
+    if (string.IsNullOrWhiteSpace(dto.FirstName))
+        throw new Exception("FirstName is required.");
+
+    if (string.IsNullOrWhiteSpace(dto.LastName))
+        throw new Exception("LastName is required.");
+
+    if (string.IsNullOrWhiteSpace(dto.Email))
+        throw new Exception("Email is required.");
+
+    // -------------------------------------------------
+    // 1) Nächste Mitarbeiter-Kennung generieren
+    // Format: CDZ-001, CDZ-002, ...
+    // -------------------------------------------------
+    var lastCode = await _context.Employees
+        .AsNoTracking()
+        .OrderByDescending(e => e.Id)
+        .Select(e => e.EmployeeCode)
+        .FirstOrDefaultAsync();
+
+    int nextNumber = 1;
+
+    if (!string.IsNullOrWhiteSpace(lastCode))
+    {
+        var parts = lastCode.Split('-');
+        if (parts.Length == 2 && int.TryParse(parts[1], out var parsed))
         {
-            var employee = new Employee
-            {
-                FullName = dto.FullName,
-                Email = dto.Email,
-                IdentityUserId = null
-            };
-
-            _context.Employees.Add(employee);
-            await _context.SaveChangesAsync();
-
-            return employee;
+            nextNumber = parsed + 1;
         }
+    }
+
+    string employeeCode = $"CDZ-{nextNumber:D3}";
+
+    // -------------------------------------------------
+    // 2) Einmal-Passwort generieren
+    // (temporär gespeichert, später durch Identity ersetzt)
+    // -------------------------------------------------
+    string temporaryPassword = TemporaryPasswordGenerator.Generate();
+
+    // -------------------------------------------------
+    // 3) Employee Entity erstellen
+    // -------------------------------------------------
+    var employee = new Employee
+    {
+        EmployeeCode = employeeCode,
+
+        FirstName = dto.FirstName.Trim(),
+        LastName = dto.LastName.Trim(),
+        Email = dto.Email.Trim(),
+        DateOfBirth = dto.DateOfBirth,
+
+        // Status
+        IsActive = true,
+
+        // Sicherheit
+        TemporaryPassword = temporaryPassword,
+        MustChangePassword = true,
+
+        // Vorbereitung für späteres Identity-Mapping
+        IdentityUserId = null,
+
+        // Meta
+        CreatedAt = DateTime.UtcNow
+    };
+
+    // -------------------------------------------------
+    // 4) Persistieren
+    // -------------------------------------------------
+   _context.Employees.Add(employee);
+await _context.SaveChangesAsync();
+
+// -------------------------------------------------
+// BLOCK A3 – Willkommens-E-Mail (E-Mail 1)
+// -------------------------------------------------
+
+var changePasswordLink =
+    $"http://localhost:5262/employee/change-password/{employee.Id}";
+
+await _emailService.SendEmployeeWelcomeEmailAsync(
+    toEmail: employee.Email,
+    fullName: $"{employee.FirstName} {employee.LastName}",
+    employeeCode: employee.EmployeeCode,
+    temporaryPassword: temporaryPassword,
+    changePasswordLink: changePasswordLink
+);
+
+return employee;
+
+}
+
 
         // -------------------------------------------------------------
         // UPDATE EMPLOYEE
@@ -66,9 +153,12 @@ namespace ConsulatTermine.Infrastructure.Services
             if (employee == null)
                 throw new Exception("Employee not found");
 
-            employee.FullName = dto.FullName;
+            employee.FirstName = dto.FirstName;
+            employee.LastName = dto.LastName;
             employee.Email = dto.Email;
+            employee.DateOfBirth = dto.DateOfBirth;
 
+            // EmployeeCode wird NICHT geändert (systemseitige Kennung)
             await _context.SaveChangesAsync();
             return employee;
         }
@@ -121,5 +211,11 @@ namespace ConsulatTermine.Infrastructure.Services
                 await _context.SaveChangesAsync();
             }
         }
+
+
+
+
     }
 }
+
+

@@ -53,8 +53,24 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = UGFnZXMvRW1wbG95ZWVBc3NpZ25tZW50cy5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
+[/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/Pages/EmployeeChangePassword.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvRW1wbG95ZWVDaGFuZ2VQYXNzd29yZC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/Pages/EmployeeDashboard.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvRW1wbG95ZWVEYXNoYm9hcmQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/Pages/EmployeeLogin.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvRW1wbG95ZWVMb2dpbi5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
 [/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/Pages/Employees.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXMvRW1wbG95ZWVzLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/Pages/EmployeeServiceSelection.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvRW1wbG95ZWVTZXJ2aWNlU2VsZWN0aW9uLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
 [/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/Pages/LandingPage.razor]

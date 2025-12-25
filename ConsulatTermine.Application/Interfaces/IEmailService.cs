@@ -15,6 +15,34 @@ namespace ConsulatTermine.Application.Interfaces
         Task SendBookingConfirmationAsync(
             string toEmail,
             string fullName,
-            string bookingReference);
+            string bookingReference,
+            string cancelToken);
+
+            Task SendCancellationConfirmationAsync(
+    string toEmail,
+    string fullName,
+    string bookingReference);
+
+    Task SendPartialCancellationAsync(
+    string toEmail,
+    string fullName,
+    string serviceName,
+    DateTime date);
+
+    Task SendEmployeeWelcomeEmailAsync(
+    string toEmail,
+    string fullName,
+    string employeeCode,
+    string temporaryPassword,
+    string changePasswordLink);
+
+Task SendEmployeePasswordChangedConfirmationEmailAsync(
+    string toEmail,
+    string fullName,
+    string loginLink);
+
+
     }
+
+    
 }

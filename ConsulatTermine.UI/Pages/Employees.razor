@@ -9,263 +9,112 @@
 @inject ISnackbar Snackbar
 
 <MudPaper Class="pa-4">
-
     <MudStack Spacing="2">
 
-        <!-- Header -->
-        <MudStack Direction="Row"
-                  Justify="Justify.SpaceBetween"
-                  AlignItems="AlignItems.Center">
-            <MudText Typo="Typo.h5">Mitarbeiter-Verwaltung</MudText>
+        <MudText Typo="Typo.h5">Mitarbeiter</MudText>
 
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Primary"
-                       OnClick="@NewEmployee">
-                <MudIcon Icon="@Icons.Material.Filled.Add" Class="me-2" />
-                Neuer Mitarbeiter
-            </MudButton>
-        </MudStack>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   OnClick="NewEmployee">
+            Neuer Mitarbeiter
+        </MudButton>
 
-        <!-- Ladeanzeige -->
-        @if (_loading)
-        {
-            <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="mt-4">
-                <MudProgressCircular Indeterminate="true" />
-                <MudText Class="mt-2">Lade Mitarbeiter...</MudText>
-            </MudStack>
-        }
-        else
-        {
-            @if (!string.IsNullOrEmpty(_errorMessage))
-            {
-                <MudAlert Severity="Severity.Error">@_errorMessage</MudAlert>
-            }
+        <MudTable Items="_employees" Hover Dense>
 
-            <!-- Tabelle -->
-            <MudTable Items="_employees" Hover="true" Dense="true">
+            <HeaderContent>
+                <MudTh>ID</MudTh>
+                <MudTh>Name</MudTh>
+                <MudTh>Email</MudTh>
+                <MudTh>Aktionen</MudTh>
+            </HeaderContent>
 
-                <HeaderContent>
-                    <MudTh style="width:70px;">ID</MudTh>
-                    <MudTh>Name</MudTh>
-                    <MudTh>Email</MudTh>
-                    <MudTh style="width:160px;">Aktionen</MudTh>
-                </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.Id</MudTd>
+                <MudTd>@($"{context.FirstName} {context.LastName}")</MudTd>
+                <MudTd>@context.Email</MudTd>
 
-                <RowTemplate>
-                    <MudTd>@context.Id</MudTd>
-                    <MudTd>@context.FullName</MudTd>
-                    <MudTd>@context.Email</MudTd>
+                <MudTd>
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                   OnClick="@(() => EditEmployee(context))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                   Color="Color.Error"
+                                   OnClick="@(() => DeleteEmployee(context))" />
+                </MudTd>
+            </RowTemplate>
 
-                    <MudTd>
-                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                       Color="Color.Primary"
-                                       Size="Size.Small"
-                                       OnClick="@(() => EditEmployee(context))" />
+        </MudTable>
 
-                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                       Color="Color.Error"
-                                       Size="Size.Small"
-                                       Class="ms-1"
-                                       OnClick="@(() => DeleteEmployee(context))" />
-                    </MudTd>
-                </RowTemplate>
-
-                <NoRecordsContent>
-                    <MudText>Keine Mitarbeiter vorhanden.</MudText>
-                </NoRecordsContent>
-
-            </MudTable>
-        }
-
-        <!-- Formular -->
         @if (_editOpen)
         {
             <MudPaper Class="pa-4 mt-4">
-
                 <MudText Typo="Typo.h6">
-                    @(_editId == 0 ? "Neuen Mitarbeiter anlegen" : "Mitarbeiter bearbeiten")
+                    @(_editId == 0 ? "Neuer Mitarbeiter" : "Mitarbeiter bearbeiten")
                 </MudText>
 
-                <EditForm Model="_model"
-                          OnValidSubmit="SaveAsync"
-                          OnInvalidSubmit="OnInvalidSubmit">
+                <MudStack Spacing="2">
 
-                    <DataAnnotationsValidator />
+                    <MudTextField Label="Vorname" @bind-Value="_model.FirstName" Required />
+                    <MudTextField Label="Nachname" @bind-Value="_model.LastName" Required />
+                    <MudTextField Label="E-Mail" @bind-Value="_model.Email" Required />
 
-                    <MudStack Spacing="2" Class="mt-3">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               OnClick="SaveAsync">
+                        Speichern
+                    </MudButton>
 
-                        <MudTextField Label="Name"
-                                      Required="true"
-                                      @bind-Value="_model.FullName" />
-
-                        <MudTextField Label="Email"
-                                      Required="true"
-                                      @bind-Value="_model.Email" />
-
-                        @if (!string.IsNullOrEmpty(_formError))
-                        {
-                            <MudAlert Severity="Severity.Error">@_formError</MudAlert>
-                        }
-
-                        <MudStack Direction="Row"
-                                  Spacing="2"
-                                  Justify="Justify.FlexEnd">
-
-                            <MudButton Variant="Variant.Text"
-                                       Color="Color.Default"
-                                       OnClick="@CancelEdit">
-                                Abbrechen
-                            </MudButton>
-
-                            <MudButton Variant="Variant.Filled"
-                                       Color="Color.Primary"
-                                       Disabled="_saving"
-                                       ButtonType="ButtonType.Submit">
-                                @if (_saving)
-                                {
-                                    <MudProgressCircular Indeterminate="true"
-                                                         Size="Size.Small"
-                                                         Class="me-2" />
-                                }
-                                Speichern
-                            </MudButton>
-
-                        </MudStack>
-
-                    </MudStack>
-
-                </EditForm>
-
+                </MudStack>
             </MudPaper>
         }
 
     </MudStack>
-
 </MudPaper>
 
 @code {
-
     private List<Employee> _employees = new();
-    private bool _loading = true;
-
-    private bool _editOpen = false;
-    private int _editId = 0;
+    private bool _editOpen;
+    private int _editId;
     private EmployeeDto _model = new();
-
-    private string? _errorMessage;
-    private string? _formError;
-    private bool _saving = false;
 
     protected override async Task OnInitializedAsync()
     {
-        Snackbar.Configuration.PositionClass = Defaults.Classes.Position.BottomLeft;
-        Snackbar.Configuration.SnackbarVariant = Variant.Filled;
-
-        await LoadEmployees();
-    }
-
-    private async Task LoadEmployees()
-    {
-        _loading = true;
-
-        try
-        {
-            _employees = await EmployeeService.GetAllEmployeesAsync();
-        }
-        catch (Exception ex)
-        {
-            _errorMessage = $"Fehler beim Laden: {ex.Message}";
-            Snackbar.Add(_errorMessage, Severity.Error);
-        }
-
-        _loading = false;
+        _employees = await EmployeeService.GetAllEmployeesAsync();
     }
 
     private void NewEmployee()
     {
-        _model = new EmployeeDto
-        {
-            FullName = "",
-            Email = ""
-        };
-
+        _model = new EmployeeDto();
         _editId = 0;
         _editOpen = true;
-        _formError = null;
     }
 
     private void EditEmployee(Employee e)
     {
         _model = new EmployeeDto
         {
-            FullName = e.FullName,
+            FirstName = e.FirstName,
+            LastName = e.LastName,
             Email = e.Email
         };
 
         _editId = e.Id;
         _editOpen = true;
-        _formError = null;
-    }
-
-    private void CancelEdit()
-    {
-        _editOpen = false;
-        _formError = null;
-    }
-
-    private async Task OnInvalidSubmit()
-    {
-        _formError = "Bitte alle Felder korrekt ausfüllen.";
-        Snackbar.Add(_formError, Severity.Error);
     }
 
     private async Task SaveAsync()
     {
-        _saving = true;
+        if (_editId == 0)
+            await EmployeeService.CreateEmployeeAsync(_model);
+        else
+            await EmployeeService.UpdateEmployeeAsync(_editId, _model);
 
-        try
-        {
-            if (_editId == 0)
-            {
-                await EmployeeService.CreateEmployeeAsync(_model);
-                Snackbar.Add("Mitarbeiter erfolgreich erstellt!", Severity.Success);
-            }
-            else
-            {
-                await EmployeeService.UpdateEmployeeAsync(_editId, _model);
-                Snackbar.Add("Mitarbeiter erfolgreich aktualisiert!", Severity.Success);
-            }
-
-            _editOpen = false;
-            await LoadEmployees();
-        }
-        catch (Exception ex)
-        {
-            _formError = $"Fehler beim Speichern: {ex.Message}";
-            Snackbar.Add(_formError, Severity.Error);
-        }
-
-        _saving = false;
+        _employees = await EmployeeService.GetAllEmployeesAsync();
+        _editOpen = false;
     }
 
     private async Task DeleteEmployee(Employee e)
     {
-        try
-        {
-            var ok = await EmployeeService.DeleteEmployeeAsync(e.Id);
-
-            if (!ok)
-            {
-                Snackbar.Add("Mitarbeiter konnte nicht gelöscht werden.", Severity.Error);
-                return;
-            }
-
-            Snackbar.Add("Mitarbeiter gelöscht.", Severity.Success);
-            await LoadEmployees();
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add($"Fehler beim Löschen: {ex.Message}", Severity.Error);
-        }
+        await EmployeeService.DeleteEmployeeAsync(e.Id);
+        _employees = await EmployeeService.GetAllEmployeesAsync();
     }
 }

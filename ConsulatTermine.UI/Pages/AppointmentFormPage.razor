@@ -239,13 +239,19 @@ protected override async Task OnAfterRenderAsync(bool firstRender)
         };
 
         foreach (var service in _services)
+{
+    var slot = mainPersonForm.SelectedSlots[service.Id];
+
+    if (slot != default)
+    {
+        request.MainPerson.ServiceSlots.Add(new BookingServiceSlotDto
         {
-            request.MainPerson.ServiceSlots.Add(new BookingServiceSlotDto
-            {
-                ServiceId = service.Id,
-                SlotTime = mainPersonForm.SelectedSlots[service.Id]
-            });
-        }
+            ServiceId = service.Id,
+            SlotTime = slot
+        });
+    }
+}
+
 
         // =========================
         // Begleitpersonen (PersonIndex = 2..n)
@@ -262,13 +268,19 @@ protected override async Task OnAfterRenderAsync(bool firstRender)
             };
 
             foreach (var service in _services)
-            {
-                personDto.ServiceSlots.Add(new BookingServiceSlotDto
-                {
-                    ServiceId = service.Id,
-                    SlotTime = p.SelectedSlots[service.Id]
-                });
-            }
+{
+    var slot = p.SelectedSlots[service.Id];
+
+    if (slot != default)
+    {
+        personDto.ServiceSlots.Add(new BookingServiceSlotDto
+        {
+            ServiceId = service.Id,
+            SlotTime = slot
+        });
+    }
+}
+
 
             request.AccompanyingPersons.Add(personDto);
         }
@@ -300,22 +312,24 @@ protected override async Task OnAfterRenderAsync(bool firstRender)
 
 private bool AreAllSlotsSelected(out string errorMessage)
 {
-    foreach (var person in _formModel.Persons)
+    foreach (var svc in _services)
     {
-        foreach (var svc in _services)
+        var hasAtLeastOneSlot = _formModel.Persons
+            .Any(p =>
+                p.SelectedSlots.TryGetValue(svc.Id, out var slot)
+                && slot != default);
+
+        if (!hasAtLeastOneSlot)
         {
-            if (!person.SelectedSlots.TryGetValue(svc.Id, out var slot)
-                || slot == default)
-            {
-                errorMessage = $"Bitte wählen Sie einen Termin für den Service '{svc.Name}'.";
-                return false;
-            }
+            errorMessage = $"Bitte wählen Sie einen Termin für den Service '{svc.Name}'.";
+            return false;
         }
     }
 
     errorMessage = string.Empty;
     return true;
 }
+
 
   private void SelectSlot(PersonFormModel person, int serviceId, DateTime dateTime)
 {
