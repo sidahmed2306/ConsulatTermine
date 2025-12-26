@@ -5,8 +5,13 @@
 @using MudBlazor
 
 @inject IEmployeeService EmployeeService
+@inject ConsulatTermine.UI.Authentication.EmployeeSessionService EmployeeSession
+
 @inject NavigationManager Navigation
-@inject Blazored.SessionStorage.ISessionStorageService Session
+
+
+@inherits ConsulatTermine.UI.Authentication.EmployeeProtectedComponentBase
+
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
 
@@ -39,24 +44,30 @@
 @code {
     private List<Service> _services = new();
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        var employeeId = await Session.GetItemAsync<int>("EmployeeId");
-            Console.WriteLine($"EmployeeId from session: {employeeId}");
+        await base.OnAfterRenderAsync(firstRender);
 
-        var employee = await EmployeeService.GetEmployeeByIdAsync(employeeId);
+        if (!firstRender || CurrentEmployeeId <= 0)
+            return;
+
+        var employee = await EmployeeService.GetEmployeeByIdAsync(CurrentEmployeeId);
         if (employee != null)
         {
-            _services = employee.AssignedServices?
+            _services = employee.AssignedServices
                 .Select(a => a.Service)
                 .Where(s => s != null)
                 .Select(s => s!)
-                .ToList() ?? new();
+                .ToList();
         }
+
+        StateHasChanged();
     }
 
-    private void SelectService(int serviceId)
-    {
-        Navigation.NavigateTo($"/employee/dashboard/{serviceId}");
-    }
+   private async Task SelectService(int serviceId)
+{
+    await EmployeeSession.SetActiveServiceAsync(serviceId);
+    Navigation.NavigateTo("/employee/dashboard");
+}
+
 }

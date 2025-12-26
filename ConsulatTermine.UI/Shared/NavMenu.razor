@@ -1,39 +1,54 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">ConsulatTermine.UI</a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-    </div>
-</div>
+﻿@using MudBlazor
+@using ConsulatTermine.UI.Authentication
 
-<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
-    <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="oi oi-home" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="oi oi-plus" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="fetchdata">
-                <span class="oi oi-list-rich" aria-hidden="true"></span> Fetch data
-            </NavLink>
-        </div>
-    </nav>
-</div>
+@inject EmployeeSessionService EmployeeSession
+@inject NavigationManager Navigation
+
+<MudNavMenu>
+
+    @if (_isAuthenticated)
+    {
+        <MudNavLink Href="/employee/home" Match="NavLinkMatch.All">
+            <MudIcon Icon="@Icons.Material.Filled.Home" />
+            <span class="ml-2">Home</span>
+        </MudNavLink>
+
+        <MudNavLink Href="/employee/dashboard">
+            <MudIcon Icon="@Icons.Material.Filled.Dashboard" />
+            <span class="ml-2">Dashboard</span>
+        </MudNavLink>
+
+        <MudNavLink Href="/employee/select-service">
+            <MudIcon Icon="@Icons.Material.Filled.SwapHoriz" />
+            <span class="ml-2">Service wechseln</span>
+        </MudNavLink>
+
+        <MudDivider Class="my-2" />
+
+        <MudNavLink OnClick="Logout">
+            <MudIcon Icon="@Icons.Material.Filled.Logout" />
+            <span class="ml-2">Logout</span>
+        </MudNavLink>
+    }
+</MudNavMenu>
 
 @code {
-    private bool collapseNavMenu = true;
+    private bool _isAuthenticated;
 
-    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
-
-    private void ToggleNavMenu()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        collapseNavMenu = !collapseNavMenu;
+        if (!firstRender)
+            return;
+
+        var result = await EmployeeSession.EnsureAuthenticatedAsync();
+        _isAuthenticated = result.IsAuthenticated;
+
+        StateHasChanged();
+    }
+
+    private async Task Logout()
+    {
+        await EmployeeSession.SignOutAsync();
+        Navigation.NavigateTo("/employee/login", replace: true);
     }
 }

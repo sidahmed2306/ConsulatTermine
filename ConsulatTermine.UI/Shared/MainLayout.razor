@@ -1,6 +1,9 @@
 ﻿@inherits LayoutComponentBase
 @using MudBlazor
 @using ConsulatTermine.UI.Theme
+@using ConsulatTermine.UI.Authentication
+
+@inject EmployeeSessionService EmployeeSession
 
 <MudThemeProvider Theme="AlgeriaTheme.DefaultTheme" />
 <MudPopoverProvider />
@@ -9,16 +12,54 @@
 
 <MudLayout>
 
-    <MudAppBar Elevation="4" Color="Color.Primary" Style="height: 120px; padding-top: 16px; margin-bottom: 50px;">
+    <!-- TOP BAR (für Bürger + Mitarbeiter identisch) -->
+    <MudAppBar Elevation="4"
+               Color="Color.Primary"
+               Style="height: 120px; padding-top: 16px; margin-bottom: 50px;">
         <div class="d-flex justify-center align-center" style="width:100%; padding: 40px 0;">
-            <MudImage Src="images/Alg_Logo.png" Alt="Consulat Algerien Logo"
+            <MudImage Src="images/Alg_Logo.png"
+                      Alt="Consulat Algerien Logo"
                       Style="height:90px; margin:12px;" />
-            <MudText Typo="Typo.h3" Class="mud-text-white">Consulat Général Algérien à Francfort</MudText>
+            <MudText Typo="Typo.h3" Class="mud-text-white">
+                Consulat Général Algérien à Francfort
+            </MudText>
         </div>
     </MudAppBar>
 
-    <MudMainContent Class="pa-0" Style="margin-top: 120px;">
+    <!-- LEFT NAV (NUR für eingeloggte Mitarbeiter) -->
+    @if (_showEmployeeNav)
+    {
+        <MudDrawer Open="true"
+                   Elevation="1"
+                   ClipMode="DrawerClipMode.Never"
+                   Variant="DrawerVariant.Persistent"
+                   Anchor="Anchor.Left"
+                   Width="260px">
+
+            <NavMenu />
+
+        </MudDrawer>
+    }
+
+    <!-- MAIN CONTENT -->
+    <MudMainContent Class="pa-0"
+                    Style="margin-top: 120px; @( _showEmployeeNav ? "margin-left:260px;" : "" )">
         @Body
     </MudMainContent>
 
 </MudLayout>
+
+@code {
+    private bool _showEmployeeNav;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        var result = await EmployeeSession.EnsureAuthenticatedAsync();
+        _showEmployeeNav = result.IsAuthenticated;
+
+        StateHasChanged();
+    }
+}

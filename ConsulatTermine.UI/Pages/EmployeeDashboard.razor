@@ -1,18 +1,21 @@
-@page "/employee/dashboard/{ServiceId:int}"
+@page "/employee/dashboard"
 
 @using ConsulatTermine.Domain.Entities
+@using ConsulatTermine.Application.DTOs
 @using ConsulatTermine.Application.Interfaces
 @using MudBlazor
 
-@inject IAppointmentService AppointmentService
+@inherits ConsulatTermine.UI.Authentication.EmployeeProtectedComponentBase
+
 @inject IServiceService ServiceService
-@inject NavigationManager Navigation
+@inject IAppointmentService AppointmentService
+@inject ConsulatTermine.UI.Authentication.EmployeeSessionService EmployeeSession
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
 
     <!-- Service Header -->
     <MudPaper Class="pa-4 mb-4">
-        <MudText Typo="Typo.h5">@(_service?.Name ?? $"Service #{ServiceId}")</MudText>
+        <MudText Typo="Typo.h5">@(_service?.Name ?? "Service")</MudText>
         <MudText Typo="Typo.subtitle2">Datum: @_today.ToString("dd.MM.yyyy")</MudText>
     </MudPaper>
 
@@ -55,7 +58,7 @@
             </MudPaper>
         </MudItem>
 
-        <!-- Statistik (ohne Status-Logik) -->
+        <!-- Statistik -->
         <MudItem xs="12" md="4">
             <MudPaper Class="pa-4">
                 <MudText Typo="Typo.h6" Class="mb-2">Statistik</MudText>
@@ -91,27 +94,59 @@
 </MudContainer>
 
 @code {
-    [Parameter] public int ServiceId { get; set; }
-
-    private Service? _service;
-    private List<Appointment> _appointments = new();
     private readonly DateTime _today = DateTime.Today;
+
+    // Bei dir liefert ServiceService.GetByIdAsync ein ServiceDto → daher ServiceDto verwenden
+    private ServiceDto? _service;
+
+    private List<Appointment> _appointments = new();
+    private bool _loaded;
 
     private int _pastCount;
     private int _upcomingCount;
     private string _nextTimeLabel = "-";
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        _service = await ServiceService.GetServiceByIdAsync(ServiceId);
+        await base.OnAfterRenderAsync(firstRender);
 
-        _appointments = await AppointmentService
-            .GetAppointmentsForServiceOnDateAsync(ServiceId, _today);
+        if (!firstRender || _loaded || CurrentEmployeeId <= 0)
+            return;
 
-        // Statistik rein zeitbasiert (Version 1 – ohne Status/CheckedIn)
+        _loaded = true;
+
+        // Aktiven Service aus Session holen
+        var serviceId = await EmployeeSession.GetActiveServiceAsync();
+        if (serviceId == null)
+        {
+            Navigation.NavigateTo("/employee/select-service", replace: true);
+            return;
+        }
+
+        // Service laden (DTO)
+        _service = await ServiceService.GetByIdAsync(serviceId.Value);
+        if (_service == null)
+        {
+            Navigation.NavigateTo("/employee/select-service", replace: true);
+            return;
+        }
+
+        // Termine für HEUTE + diesen Service (ohne CheckedIn Filter – Version 1)
+        _appointments = await AppointmentService.GetAppointmentsForServiceOnDateAsync(
+            serviceId.Value,
+            _today
+        );
+
+        RecalcStats();
+        StateHasChanged();
+    }
+
+    private void RecalcStats()
+    {
         var now = DateTime.Now;
+
         _pastCount = _appointments.Count(a => a.Date < now);
-        _upcomingCount = _appointments.Count - _pastCount;
+        _upcomingCount = _appointments.Count(a => a.Date >= now);
 
         var next = _appointments
             .Where(a => a.Date >= now)
@@ -119,42 +154,30 @@
             .FirstOrDefault();
 
         _nextTimeLabel = next == null ? "-" : next.Date.ToString("HH:mm");
-
-        // Optional: immer sortiert anzeigen
-        _appointments = _appointments.OrderBy(a => a.Date).ToList();
     }
 
-    private async Task CallNext()
+    // Platzhalter – NEXT-Logik kommt in BLOCK S6
+    private Task CallNext()
     {
-        var next = await AppointmentService
-            .GetNextAppointmentForServiceOnDateAsync(ServiceId, _today);
-
-        if (next != null)
-        {
-            // Status-Handling + Wartezimmer-Display folgt in Version 2
-            Navigation.NavigateTo($"/employee/call/{next.Id}");
-        }
+        // später: nächsten Termin bestimmen + Status/Anzeige aktualisieren
+        return Task.CompletedTask;
     }
 
-    // Appointment speichert nur FullName – wir leiten Vor-/Nachname für die Tabelle ab.
-    private static string GetLastName(string? fullName)
+    private static string GetFirstName(string fullName)
     {
         if (string.IsNullOrWhiteSpace(fullName))
             return "-";
 
         var parts = fullName.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        return parts.Length == 0 ? "-" : parts[^1];
+        return parts.Length <= 1 ? parts[0] : string.Join(' ', parts.Take(parts.Length - 1));
     }
 
-    private static string GetFirstName(string? fullName)
+    private static string GetLastName(string fullName)
     {
         if (string.IsNullOrWhiteSpace(fullName))
             return "-";
 
         var parts = fullName.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length <= 1)
-            return parts.Length == 1 ? parts[0] : "-";
-
-        return string.Join(' ', parts.Take(parts.Length - 1));
+        return parts.Length == 1 ? parts[0] : parts[^1];
     }
 }

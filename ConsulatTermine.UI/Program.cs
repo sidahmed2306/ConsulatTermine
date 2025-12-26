@@ -8,6 +8,8 @@ using ConsulatTermine.Infrastructure.Services;
 using Blazored.SessionStorage;
 using ConsulatTermine.Application.Interfaces.Booking;
 using ConsulatTermine.Infrastructure.Services.Booking;
+using ConsulatTermine.UI.Authentication;
+
 
 
 
@@ -40,6 +42,8 @@ builder.Services.AddScoped<IWorkingSchedulePlanService, WorkingSchedulePlanServi
 builder.Services.AddScoped<IAppointmentCalendarQueryService, AppointmentCalendarQueryService>();
 builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 builder.Services.AddScoped<IEmployeeAuthService, EmployeeAuthService>();
+builder.Services.AddScoped<EmployeeSessionService>();
+
 
 
 

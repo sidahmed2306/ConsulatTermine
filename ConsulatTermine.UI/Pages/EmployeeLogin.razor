@@ -1,7 +1,8 @@
 @page "/employee/login"
 @inject NavigationManager Navigation
 @inject ConsulatTermine.Application.Interfaces.IEmployeeAuthService AuthService
-@inject Blazored.SessionStorage.ISessionStorageService Session
+@inject ConsulatTermine.UI.Authentication.EmployeeSessionService EmployeeSession
+
 
 @inject ConsulatTermine.Application.Interfaces.IEmployeeService EmployeeService
 @using ConsulatTermine.Application.DTOs
@@ -108,9 +109,11 @@
             return;
         }
 
-        // ✅ SESSION SETZEN (KRITISCH)
-        await Session.SetItemAsync("EmployeeId", result.EmployeeId.Value);
-        await Session.SetItemAsync("EmployeeCode", result.EmployeeCode!);
+      await EmployeeSession.SignInAsync(
+    result.EmployeeId.Value,
+    result.EmployeeCode!
+);
+
 
         if (result.MustChangePassword)
         {
