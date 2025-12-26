@@ -4,9 +4,15 @@
 @using ConsulatTermine.Application.Interfaces
 @using ConsulatTermine.Application.DTOs
 @using ConsulatTermine.Domain.Entities
+@using ConsulatTermine.UI.Authentication
+
 
 @inject IEmployeeService EmployeeService
 @inject ISnackbar Snackbar
+
+@inject EmployeeSessionService EmployeeSession
+@inject NavigationManager Navigation
+
 
 <MudPaper Class="pa-4">
     <MudStack Spacing="2">
@@ -76,6 +82,23 @@
     private int _editId;
     private EmployeeDto _model = new();
 
+
+
+    // -------------------------------------------------
+    // LOGIN-GUARD (Admin Employees)
+    // -------------------------------------------------
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        var auth = await EmployeeSession.EnsureAuthenticatedAsync();
+        if (!auth.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/employee/login", true);
+            return;
+        }
+    }
     protected override async Task OnInitializedAsync()
     {
         _employees = await EmployeeService.GetAllEmployeesAsync();

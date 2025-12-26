@@ -42,24 +42,51 @@
     }
 
     <!-- MAIN CONTENT -->
-    <MudMainContent Class="pa-0"
-                    Style="margin-top: 120px; @( _showEmployeeNav ? "margin-left:260px;" : "" )">
-        @Body
-    </MudMainContent>
+   <MudMainContent Class="pa-0" Style="@MainContentStyle">
+    @Body
+</MudMainContent>
+
 
 </MudLayout>
 
+
 @code {
     private bool _showEmployeeNav;
+
+    private string MainContentStyle =>
+        _showEmployeeNav
+            ? "margin-top:120px; margin-left:260px;"
+            : "margin-top:120px;";
+
+    protected override void OnInitialized()
+    {
+        // ❗ KEIN async / KEIN JS
+        EmployeeSession.OnChange += HandleSessionChanged;
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender)
             return;
 
+        // ✅ JS ist JETZT erlaubt
         var result = await EmployeeSession.EnsureAuthenticatedAsync();
         _showEmployeeNav = result.IsAuthenticated;
 
         StateHasChanged();
     }
+
+    private void HandleSessionChanged()
+    {
+        _showEmployeeNav = EmployeeSession.IsAuthenticated;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        EmployeeSession.OnChange -= HandleSessionChanged;
+    }
 }
+
+
+

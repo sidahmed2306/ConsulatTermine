@@ -1,15 +1,12 @@
 @page "/employee/login"
-@inject NavigationManager Navigation
-@inject ConsulatTermine.Application.Interfaces.IEmployeeAuthService AuthService
-@inject ConsulatTermine.UI.Authentication.EmployeeSessionService EmployeeSession
-
-
-@inject ConsulatTermine.Application.Interfaces.IEmployeeService EmployeeService
-@using ConsulatTermine.Application.DTOs
-@using ConsulatTermine.Infrastructure.Services
-@using ConsulatTermine.Domain.Entities
 
 @using MudBlazor
+@using ConsulatTermine.Application.Interfaces
+@using ConsulatTermine.UI.Authentication
+
+@inject NavigationManager Navigation
+@inject IEmployeeAuthService AuthService
+@inject EmployeeSessionService EmployeeSession
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
     <MudCard>
@@ -41,7 +38,9 @@
 
                 @if (!string.IsNullOrEmpty(_errorMessage))
                 {
-                    <MudText Color="Color.Error" Class="mt-2">@_errorMessage</MudText>
+                    <MudText Color="Color.Error" Class="mt-2">
+                        @_errorMessage
+                    </MudText>
                 }
 
                 <MudButton Variant="Variant.Filled"
@@ -73,17 +72,10 @@
     private void TogglePasswordVisibility()
     {
         _showPassword = !_showPassword;
-
-        if (_showPassword)
-        {
-            _passwordInputType = InputType.Text;
-            _passwordIcon = Icons.Material.Filled.Visibility;
-        }
-        else
-        {
-            _passwordInputType = InputType.Password;
-            _passwordIcon = Icons.Material.Filled.VisibilityOff;
-        }
+        _passwordInputType = _showPassword ? InputType.Text : InputType.Password;
+        _passwordIcon = _showPassword
+            ? Icons.Material.Filled.Visibility
+            : Icons.Material.Filled.VisibilityOff;
     }
 
     private async Task PerformLogin()
@@ -92,7 +84,6 @@
             return;
 
         await _form.Validate();
-
         if (!_isValid)
             return;
 
@@ -109,12 +100,13 @@
             return;
         }
 
-      await EmployeeSession.SignInAsync(
-    result.EmployeeId.Value,
-    result.EmployeeCode!
-);
+        // ✅ ZENTRALER LOGIN-STATE
+        await EmployeeSession.SignInAsync(
+            result.EmployeeId.Value,
+            result.EmployeeCode!
+        );
 
-
+        // 🔒 Pflicht zur Passwortänderung
         if (result.MustChangePassword)
         {
             Navigation.NavigateTo(
@@ -123,26 +115,7 @@
             return;
         }
 
-        var employee = await EmployeeService.GetEmployeeByIdAsync(
-            result.EmployeeId.Value
-        );
-
-       var services = employee?.AssignedServices
-    .Select(a => a.Service)
-    .Where(s => s != null)
-    .ToList()
-    ?? new List<Service>();
-
-
-        if (services.Count == 1)
-        {
-            Navigation.NavigateTo(
-                $"/employee/dashboard/{services[0]!.Id}"
-            );
-        }
-        else
-        {
-            Navigation.NavigateTo("/employee/select-service");
-        }
+        // ✅ EINZIGER Redirect nach Login
+        Navigation.NavigateTo("/employee/home");
     }
 }

@@ -6,7 +6,12 @@
 @using ConsulatTermine.Application.Interfaces
 @using ConsulatTermine.Application.ViewModels
 @using ConsulatTermine.Domain.Entities
+@using ConsulatTermine.UI.Authentication
 @using MudBlazor
+
+
+@inject EmployeeSessionService EmployeeSession
+@inject NavigationManager Navigation
 
 @inject IServiceService ServiceService
 @inject IWorkingScheduleService WorkingScheduleService
@@ -644,7 +649,21 @@
     private List<WorkingScheduleOverviewItem> _overview = new();
     private bool _overviewLoading = true;
 
-  
+    // -------------------------------------------------
+    // LOGIN-GUARD (Admin Services)
+    // -------------------------------------------------
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        var auth = await EmployeeSession.EnsureAuthenticatedAsync();
+        if (!auth.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/employee/login", true);
+            return;
+        }
+    }
 
     private readonly Dictionary<int, string> _monthNames = new()
     {

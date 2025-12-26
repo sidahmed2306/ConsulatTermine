@@ -1,12 +1,17 @@
 @page "/admin/services"
 
+@using ConsulatTermine.UI.Authentication
 @using MudBlazor
 @using ConsulatTermine.Application.Interfaces
 @using ConsulatTermine.Application.DTOs
 @using ConsulatTermine.Domain.Entities
 
+
 @inject IServiceService ServiceService
 @inject ISnackbar Snackbar
+@inject EmployeeSessionService EmployeeSession
+@inject NavigationManager Navigation
+
 
 <MudPaper Class="pa-4">
 
@@ -181,6 +186,22 @@
     private bool _saving = false;
     private string? _errorMessage;
     private string? _formError;
+
+      // -------------------------------------------------
+    // LOGIN-GUARD (Admin Services)
+    // -------------------------------------------------
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        var auth = await EmployeeSession.EnsureAuthenticatedAsync();
+        if (!auth.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/employee/login", true);
+            return;
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {

@@ -1,13 +1,17 @@
 ﻿@using MudBlazor
 @using ConsulatTermine.UI.Authentication
 
-@inject EmployeeSessionService EmployeeSession
 @inject NavigationManager Navigation
+@inject EmployeeSessionService EmployeeSession
 
 <MudNavMenu>
 
     @if (_isAuthenticated)
     {
+        <!-- ========================= -->
+        <!-- EMPLOYEE BEREICH -->
+        <!-- ========================= -->
+
         <MudNavLink Href="/employee/home" Match="NavLinkMatch.All">
             <MudIcon Icon="@Icons.Material.Filled.Home" />
             <span class="ml-2">Home</span>
@@ -25,11 +29,43 @@
 
         <MudDivider Class="my-2" />
 
+        <!-- ========================= -->
+        <!-- ADMIN BEREICH -->
+        <!-- (Rollen kommen später) -->
+        <!-- ========================= -->
+
+        <MudNavLink Href="/admin/employees">
+            <MudIcon Icon="@Icons.Material.Filled.People" />
+            <span class="ml-2">Mitarbeiter</span>
+        </MudNavLink>
+
+        <MudNavLink Href="/admin/services">
+            <MudIcon Icon="@Icons.Material.Filled.BusinessCenter" />
+            <span class="ml-2">Services</span>
+        </MudNavLink>
+
+        <MudNavLink Href="/admin/assignments">
+            <MudIcon Icon="@Icons.Material.Filled.Link" />
+            <span class="ml-2">Service-Zuweisungen</span>
+        </MudNavLink>
+
+        <MudNavLink Href="/admin/working-schedule">
+            <MudIcon Icon="@Icons.Material.Filled.Schedule" />
+            <span class="ml-2">Service-Arbeitszeiten</span>
+        </MudNavLink>
+
+        <MudDivider Class="my-2" />
+
+        <!-- ========================= -->
+        <!-- LOGOUT -->
+        <!-- ========================= -->
+
         <MudNavLink OnClick="Logout">
             <MudIcon Icon="@Icons.Material.Filled.Logout" />
             <span class="ml-2">Logout</span>
         </MudNavLink>
     }
+
 </MudNavMenu>
 
 @code {
@@ -40,8 +76,8 @@
         if (!firstRender)
             return;
 
-        var result = await EmployeeSession.EnsureAuthenticatedAsync();
-        _isAuthenticated = result.IsAuthenticated;
+        var auth = await EmployeeSession.EnsureAuthenticatedAsync();
+        _isAuthenticated = auth.IsAuthenticated;
 
         StateHasChanged();
     }

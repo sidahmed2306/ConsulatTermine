@@ -3,11 +3,15 @@
 @using MudBlazor
 @using ConsulatTermine.Application.Interfaces
 @using ConsulatTermine.Domain.Entities
+@using ConsulatTermine.UI.Authentication
 
 @inject IEmployeeAssignmentService AssignmentService
 @inject IEmployeeService EmployeeService
 @inject IServiceService ServiceService
 @inject ISnackbar Snackbar
+
+@inject EmployeeSessionService EmployeeSession
+@inject NavigationManager Navigation
 
 <MudPaper Class="pa-4">
     <MudStack Spacing="3">
@@ -83,6 +87,23 @@
     private int _selectedEmployee;
     private int _selectedService;
 
+
+
+ // -------------------------------------------------
+    // LOGIN-GUARD (Admin Assignments)
+    // -------------------------------------------------
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        var auth = await EmployeeSession.EnsureAuthenticatedAsync();
+        if (!auth.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/employee/login", true);
+            return;
+        }
+    }
     protected override async Task OnInitializedAsync()
     {
         _employees = await EmployeeService.GetAllEmployeesAsync();

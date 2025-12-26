@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ConsulatTermine.Infrastructure")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b9698458bd8de548b6776f94161cbd606adf0c9c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+da1fb5835e2831bab5b0eba54b45aebeaa60900c")]
 [assembly: System.Reflection.AssemblyProductAttribute("ConsulatTermine.Infrastructure")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ConsulatTermine.Infrastructure")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
