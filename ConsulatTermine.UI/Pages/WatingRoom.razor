@@ -1,0 +1,152 @@
+@page "/tv/waiting-room"
+
+@using ConsulatTermine.Domain.Entities
+@using ConsulatTermine.Domain.Enums
+@using ConsulatTermine.Application.Interfaces
+@using MudBlazor
+@using Microsoft.AspNetCore.SignalR.Client
+
+@inject IAppointmentService AppointmentService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-8 waiting-room-root">
+
+    <MudText Typo="Typo.h3" Align="Align.Center" Class="mb-6">
+        Bitte begeben Sie sich zum angegebenen Schalter
+    </MudText>
+
+    @if (_loading)
+    {
+        <MudStack AlignItems="AlignItems.Center" Spacing="3">
+            <MudProgressCircular Indeterminate Size="Size.Large" />
+            <MudText Typo="Typo.h6">Aktualisiere Aufrufe…</MudText>
+        </MudStack>
+    }
+    else if (_calls.Count == 0)
+    {
+        <MudPaper Class="pa-10 text-center">
+            <MudText Typo="Typo.h4">
+                Momentan keine Aufrufe
+            </MudText>
+        </MudPaper>
+    }
+    else
+    {
+        <MudGrid GutterSize="GutterSize.Large">
+
+            @foreach (var call in _calls)
+            {
+                <MudItem xs="12" md="6" lg="4">
+                    <MudPaper Class="@($"pa-6 call-card{(_blink ? " blink" : string.Empty)}")">
+
+                        <MudText Typo="Typo.h4" Class="mb-2">
+                            @call.FullName
+                        </MudText>
+
+                        <MudDivider Class="my-2" />
+
+                        <MudText Typo="Typo.h6">
+                            🕒 @call.Date.ToString("HH:mm")
+                        </MudText>
+
+                        <MudText Typo="Typo.h6">
+                            🏢 Service: @call.Service?.Name
+                        </MudText>
+
+                        <MudText Typo="Typo.h6">
+                            📍 Etage: @call.Service?.Floor
+                        </MudText>
+
+                        <MudText Typo="Typo.h6">
+                            🚪 Büro: @_office
+                        </MudText>
+
+                        <MudText Typo="Typo.h6">
+                            🪑 Zimmer: @_room
+                        </MudText>
+
+                    </MudPaper>
+                </MudItem>
+            }
+
+        </MudGrid>
+    }
+
+</MudContainer>
+
+@code {
+
+    private bool _loading = true;
+    private bool _blink;
+
+    private List<Appointment> _calls = new();
+
+    private string _office = "Schalter";
+    private string _room = "Zimmer";
+
+    private HubConnection? _hub;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+
+        _hub = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/hubs/waiting-room"))
+            .WithAutomaticReconnect()
+            .Build();
+
+        _hub.On("CallStarted", async () =>
+        {
+            await RefreshAndSoundAsync();
+        });
+
+        _hub.On("Recall", async () =>
+        {
+            await RefreshAndSoundAsync();
+        });
+
+        _hub.On("Hide", async () =>
+        {
+            await LoadAsync();
+            StateHasChanged();
+        });
+
+        await _hub.StartAsync();
+
+        _loading = false;
+    }
+
+    private async Task RefreshAndSoundAsync()
+    {
+        _blink = true;
+
+        await LoadAsync();
+        StateHasChanged();
+
+        await JS.InvokeVoidAsync("waitingRoomSound.play");
+
+        await Task.Delay(2000);
+        _blink = false;
+        StateHasChanged();
+    }
+
+    private async Task LoadAsync()
+    {
+        var today = DateTime.Today;
+
+        _calls = (await AppointmentService
+            .GetAppointmentsForServiceOnDateAsync(0, today))
+            .Where(a =>
+                a.Status == AppointmentStatus.InProgress &&
+                a.IsVisibleInWaitingRoom)
+            .OrderByDescending(a => a.Date)
+            .ToList();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hub != null)
+            await _hub.DisposeAsync();
+    }
+}
