@@ -19,6 +19,8 @@ public class Service
     // Normal definierte Arbeitszeiten
     public List<WorkingHours> WorkingHours { get; set; } = new();
 
+     public string Floor { get; set; } = string.Empty;
+
     // Override für Feiertage / besondere Tage
     public List<ServiceDayOverride> DayOverrides { get; set; } = new();
 

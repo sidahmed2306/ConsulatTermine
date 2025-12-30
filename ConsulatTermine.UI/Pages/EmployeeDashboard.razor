@@ -1,183 +1,312 @@
 @page "/employee/dashboard"
+@implements IDisposable
 
 @using ConsulatTermine.Domain.Entities
-@using ConsulatTermine.Application.DTOs
+@using ConsulatTermine.Domain.Enums
 @using ConsulatTermine.Application.Interfaces
+@using ConsulatTermine.UI.Authentication
 @using MudBlazor
+@using Blazored.SessionStorage
 
-@inherits ConsulatTermine.UI.Authentication.EmployeeProtectedComponentBase
-
-@inject IServiceService ServiceService
 @inject IAppointmentService AppointmentService
-@inject ConsulatTermine.UI.Authentication.EmployeeSessionService EmployeeSession
+@inject EmployeeSessionService EmployeeSession
+@inject IWaitingRoomNotifier WaitingRoomNotifier
+@inject ISessionStorageService Session
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-6">
 
-    <!-- Service Header -->
-    <MudPaper Class="pa-4 mb-4">
-        <MudText Typo="Typo.h5">@(_service?.Name ?? "Service")</MudText>
-        <MudText Typo="Typo.subtitle2">Datum: @_today.ToString("dd.MM.yyyy")</MudText>
-    </MudPaper>
-
-    <!-- NEXT Button (zentriert) -->
-    <MudPaper Class="pa-6 mb-6">
-        <MudStack Row="true" Justify="Justify.Center">
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Primary"
-                       Size="Size.Large"
-                       Disabled="@(!_appointments.Any())"
-                       OnClick="CallNext">
-                Nächsten Termin aufrufen
-            </MudButton>
+    @if (_loading)
+    {
+        <MudStack AlignItems="AlignItems.Center" Spacing="2" Class="mt-8">
+            <MudProgressCircular Indeterminate />
+            <MudText>Dashboard wird geladen…</MudText>
         </MudStack>
-    </MudPaper>
+    }
+    else
+    {
+        <MudGrid>
 
-    <!-- Main Content -->
-    <MudGrid>
+            <!-- LINKS -->
+            <MudItem xs="12" md="9">
 
-        <!-- Termine Tabelle -->
-        <MudItem xs="12" md="8">
-            <MudPaper Class="pa-4">
-                <MudText Typo="Typo.h6" Class="mb-2">Termine heute</MudText>
+                <MudPaper Class="pa-4 mb-3">
+                    <MudText Typo="Typo.h5">Dashboard – @_serviceName</MudText>
+                    <MudText Typo="Typo.subtitle2" Color="Color.Secondary">
+                        Zimmer @_room · Büro @_office · @DateTime.Today.ToString("dd.MM.yyyy")
+                    </MudText>
+                </MudPaper>
+
+                <MudPaper Class="pa-4 mb-3">
+                    <MudStack Direction="Row" Spacing="2">
+
+                        <MudButton Color="Color.Primary"
+                                   Disabled="@(!_canNext)"
+                                   OnClick="NextAsync">
+                            ▶ NEXT
+                        </MudButton>
+
+                        <MudButton Color="Color.Warning"
+                                   Variant="Variant.Outlined"
+                                   Disabled="@(!_hasMyInProgress)"
+                                   OnClick="RecallAsync">
+                            🔔 NOCHMAL AUFRUFEN
+                        </MudButton>
+
+                        <MudButton Color="Color.Info"
+                                   Disabled="@(!_hasMyInProgress)"
+                                   OnClick="ArrivedAsync">
+                            👤 IST DA
+                        </MudButton>
+
+                        <MudButton Color="Color.Success"
+                                   Disabled="@(!_hasMyInProgress)"
+                                   OnClick="CompleteAsync">
+                            ✅ TERMIN ABSCHLIESSEN
+                        </MudButton>
+
+                    </MudStack>
+                </MudPaper>
 
                 <MudTable Items="_appointments" Dense Hover>
                     <HeaderContent>
-                        <MudTh>Nachname</MudTh>
-                        <MudTh>Vorname</MudTh>
                         <MudTh>Uhrzeit</MudTh>
-                        <MudTh>Service</MudTh>
+                        <MudTh>Name</MudTh>
+                        <MudTh>Status</MudTh>
                     </HeaderContent>
 
                     <RowTemplate>
-                        <MudTd>@GetLastName(context.FullName)</MudTd>
-                        <MudTd>@GetFirstName(context.FullName)</MudTd>
                         <MudTd>@context.Date.ToString("HH:mm")</MudTd>
-                        <MudTd>@(_service?.Name ?? "-")</MudTd>
+                        <MudTd>@context.FullName</MudTd>
+                        <MudTd>
+                            <MudChip T="String" Color="@GetStatusColor(context)" Size="Size.Small">
+                                @GetStatusText(context)
+                            </MudChip>
+                        </MudTd>
                     </RowTemplate>
                 </MudTable>
-            </MudPaper>
-        </MudItem>
 
-        <!-- Statistik -->
-        <MudItem xs="12" md="4">
-            <MudPaper Class="pa-4">
-                <MudText Typo="Typo.h6" Class="mb-2">Statistik</MudText>
+            </MudItem>
 
-                <MudList T="string" Dense>
-                    <MudListItem T="string">
-                        <MudText>Termine gesamt:</MudText>
-                        <MudText Typo="Typo.subtitle1">@_appointments.Count</MudText>
-                    </MudListItem>
+            <!-- RECHTS -->
+            <MudItem xs="12" md="3">
+                <MudPaper Class="pa-4">
+                    <MudText Typo="Typo.h6">Statistik</MudText>
+                    <MudDivider />
+                    <MudText>Gesamt: @_appointments.Count</MudText>
+                    <MudText>Wartend: @_appointments.Count(a => a.Status == AppointmentStatus.Booked)</MudText>
+                    <MudText>Bei mir: @_appointments.Count(a =>
+                        a.Status == AppointmentStatus.InProgress &&
+                        a.CurrentEmployeeId == _employeeId)</MudText>
+                </MudPaper>
+            </MudItem>
 
-                    <MudListItem T="string">
-                        <MudText>Vergangen:</MudText>
-                        <MudText Typo="Typo.subtitle1">@_pastCount</MudText>
-                    </MudListItem>
-
-                    <MudListItem T="string">
-                        <MudText>Kommend:</MudText>
-                        <MudText Typo="Typo.subtitle1">@_upcomingCount</MudText>
-                    </MudListItem>
-
-                    <MudDivider Class="my-2" />
-
-                    <MudListItem T="string">
-                        <MudText>Nächster Termin:</MudText>
-                        <MudText Typo="Typo.subtitle1">@_nextTimeLabel</MudText>
-                    </MudListItem>
-                </MudList>
-            </MudPaper>
-        </MudItem>
-
-    </MudGrid>
+        </MudGrid>
+    }
 
 </MudContainer>
 
 @code {
-    private readonly DateTime _today = DateTime.Today;
+    private bool _loading = true;
+    private bool _initialized;
+    private bool _disposed;
 
-    // Bei dir liefert ServiceService.GetByIdAsync ein ServiceDto → daher ServiceDto verwenden
-    private ServiceDto? _service;
+    private int _employeeId;
+    private int _serviceId;
+
+    private string _serviceName = "";
+    private string _office = "";
+    private string _room = "";
 
     private List<Appointment> _appointments = new();
-    private bool _loaded;
+    private Appointment? _myInProgress;
 
-    private int _pastCount;
-    private int _upcomingCount;
-    private string _nextTimeLabel = "-";
+    private readonly SemaphoreSlim _sync = new(1, 1);
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    // ✅ WAR FEHLEND
+    private bool _hasMyInProgress => _myInProgress != null;
+
+    private bool _canNext =>
+        _initialized &&
+        _myInProgress == null &&
+        _appointments.Any(a => a.Status == AppointmentStatus.Booked);
+
+    protected override Task OnInitializedAsync()
     {
-        await base.OnAfterRenderAsync(firstRender);
-
-        if (!firstRender || _loaded || CurrentEmployeeId <= 0)
-            return;
-
-        _loaded = true;
-
-        // Aktiven Service aus Session holen
-        var serviceId = await EmployeeSession.GetActiveServiceAsync();
-        if (serviceId == null)
-        {
-            Navigation.NavigateTo("/employee/select-service", replace: true);
-            return;
-        }
-
-        // Service laden (DTO)
-        _service = await ServiceService.GetByIdAsync(serviceId.Value);
-        if (_service == null)
-        {
-            Navigation.NavigateTo("/employee/select-service", replace: true);
-            return;
-        }
-
-        // Termine für HEUTE + diesen Service (ohne CheckedIn Filter – Version 1)
-        _appointments = await AppointmentService.GetAppointmentsForServiceOnDateAsync(
-            serviceId.Value,
-            _today
-        );
-
-        RecalcStats();
-        StateHasChanged();
-    }
-
-    private void RecalcStats()
-    {
-        var now = DateTime.Now;
-
-        _pastCount = _appointments.Count(a => a.Date < now);
-        _upcomingCount = _appointments.Count(a => a.Date >= now);
-
-        var next = _appointments
-            .Where(a => a.Date >= now)
-            .OrderBy(a => a.Date)
-            .FirstOrDefault();
-
-        _nextTimeLabel = next == null ? "-" : next.Date.ToString("HH:mm");
-    }
-
-    // Platzhalter – NEXT-Logik kommt in BLOCK S6
-    private Task CallNext()
-    {
-        // später: nächsten Termin bestimmen + Status/Anzeige aktualisieren
+        WaitingRoomNotifier.OnChanged += HandleChanged;
         return Task.CompletedTask;
     }
 
-    private static string GetFirstName(string fullName)
+    // ✅ SIGNATUR KORRIGIERT (Reason + AppointmentId)
+    private void HandleChanged(WaitingRoomChangeReason _, int? __)
     {
-        if (string.IsNullOrWhiteSpace(fullName))
-            return "-";
+        if (_disposed) return;
 
-        var parts = fullName.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        return parts.Length <= 1 ? parts[0] : string.Join(' ', parts.Take(parts.Length - 1));
+    InvokeAsync(async () =>
+{
+    if (_disposed || !_initialized) return;
+
+    await WithLockAsync(async () =>
+    {
+        await LoadAsync();
+    });
+
+    StateHasChanged();
+});
+
     }
 
-    private static string GetLastName(string fullName)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (string.IsNullOrWhiteSpace(fullName))
-            return "-";
+        if (!firstRender || _disposed) return;
 
-        var parts = fullName.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        return parts.Length == 1 ? parts[0] : parts[^1];
+        var auth = await EmployeeSession.EnsureAuthenticatedAsync();
+        if (!auth.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/employee/login", true);
+            return;
+        }
+
+        _employeeId = auth.EmployeeId;
+
+        var activeService = await EmployeeSession.GetActiveServiceAsync();
+        if (activeService == null)
+        {
+            Navigation.NavigateTo("/employee/select-service", true);
+            return;
+        }
+
+        _serviceId = activeService.Value;
+
+        _office = await Session.GetItemAsync<string>("OfficeName") ?? "";
+        _room = await Session.GetItemAsync<string>("RoomName") ?? "";
+        _serviceName = await Session.GetItemAsync<string>("ServiceName") ?? _serviceName;
+
+        await WithLockAsync(async () => await LoadAsync());
+
+        _initialized = true;
+        _loading = false;
+
+        StateHasChanged();
+    }
+
+    private async Task WithLockAsync(Func<Task> work)
+    {
+        await _sync.WaitAsync();
+        try
+        {
+            if (_disposed) return;
+            await work();
+        }
+        finally
+        {
+            _sync.Release();
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        _appointments = await AppointmentService
+            .GetAppointmentsForServiceOnDateAsync(_serviceId, DateTime.Today);
+
+        _myInProgress = _appointments.FirstOrDefault(a =>
+            (a.Status == AppointmentStatus.InProgress ||
+             a.Status == AppointmentStatus.AtDesk) &&
+            a.CurrentEmployeeId == _employeeId);
+    }
+
+    private async Task NextAsync()
+    {
+        if (!_initialized) return;
+
+        await WithLockAsync(async () =>
+        {
+            await LoadAsync();
+
+            var next = _appointments
+                .Where(a => a.Status == AppointmentStatus.Booked)
+                .OrderBy(a => a.Date)
+                .FirstOrDefault();
+
+            if (next == null) return;
+
+            var ok = await AppointmentService.StartProcessingAsync(next.Id, _employeeId);
+            if (!ok) return;
+
+            WaitingRoomNotifier.SetWorkplace(next.Id, _office, _room);
+            WaitingRoomNotifier.Notify(WaitingRoomChangeReason.Call, next.Id);
+
+         
+        });
+
+        StateHasChanged();
+    }
+
+    private Task RecallAsync()
+    {
+        if (_myInProgress == null) return Task.CompletedTask;
+
+        WaitingRoomNotifier.Notify(
+            WaitingRoomChangeReason.Recall,
+            _myInProgress.Id
+        );
+
+        return Task.CompletedTask;
+    }
+
+    private async Task ArrivedAsync()
+    {
+        if (_myInProgress == null) return;
+
+        await AppointmentService.HideFromWaitingRoomAsync(
+            _myInProgress.Id,
+            _employeeId
+        );
+
+     
+        StateHasChanged();
+    }
+
+    private async Task CompleteAsync()
+    {
+        if (_myInProgress == null) return;
+
+        await AppointmentService.CompleteAsync(
+            _myInProgress.Id,
+            _employeeId
+        );
+
+        WaitingRoomNotifier.Notify();
+      
+        StateHasChanged();
+    }
+
+    // ✅ WAR FEHLEND
+    private static Color GetStatusColor(Appointment a) => a.Status switch
+    {
+        AppointmentStatus.InProgress => Color.Warning,
+        AppointmentStatus.AtDesk     => Color.Info,
+        AppointmentStatus.Completed  => Color.Success,
+        _                            => Color.Default
+    };
+
+    // ✅ WAR FEHLEND
+    private string GetStatusText(Appointment a)
+    {
+        if (a.Status == AppointmentStatus.InProgress && a.CurrentEmployeeId == _employeeId)
+            return "Bei mir";
+
+        if (a.Status == AppointmentStatus.AtDesk && a.CurrentEmployeeId == _employeeId)
+            return "Ist da";
+
+        return a.Status.ToString();
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        WaitingRoomNotifier.OnChanged -= HandleChanged;
+        _sync.Dispose();
     }
 }

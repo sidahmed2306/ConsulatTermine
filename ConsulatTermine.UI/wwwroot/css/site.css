@@ -155,3 +155,103 @@ a,
   align-items: center;
   gap: 14px;
 }
+
+.waiting-room-root {
+  background-color: #f5f5f5;
+  min-height: 100vh;
+}
+
+.call-card {
+  border-left: 8px solid #2e7d32;
+}
+
+.blink {
+  animation: blink-animation 1.5s ease-in-out infinite;
+}
+
+@keyframes blink-animation {
+  0% {
+    background-color: #ffffff;
+  }
+  50% {
+    background-color: #e8f5e9;
+  }
+  100% {
+    background-color: #ffffff;
+  }
+}
+
+.waiting-room-card.flash {
+  animation: flashPulse 1.5s ease-in-out;
+}
+
+@keyframes flashPulse {
+  0% {
+    background-color: #e8f5e9;
+  }
+  50% {
+    background-color: #c8e6c9;
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+/* ======================================================
+   TV WAITING ROOM – DESIGN
+   ====================================================== */
+
+.tv-card {
+  border-radius: 18px;
+  background-color: #ffffff;
+}
+
+/* HEADER */
+.tv-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tv-name {
+  font-weight: 800;
+  font-size: 4rem;
+}
+
+.tv-service-chip {
+  font-size: 2rem;
+  padding: 10px 18px;
+}
+
+/* INFO GRID */
+.tv-info-item {
+  text-align: center;
+}
+
+.tv-ball {
+  width: 90px;
+  height: 90px;
+  margin: 0 auto 8px auto;
+
+  background-color: var(--alg-green);
+  color: #ffffff;
+
+  border-radius: 50%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 3rem;
+  font-weight: 800;
+}
+
+.tv-label {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #444;
+}
+
+/* STATUS */
+.tv-status {
+  text-align: center;
+}

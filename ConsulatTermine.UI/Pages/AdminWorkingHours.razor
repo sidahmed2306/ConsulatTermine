@@ -6,6 +6,7 @@
 @using ConsulatTermine.Application.Interfaces
 @using ConsulatTermine.Application.ViewModels
 @using ConsulatTermine.Domain.Entities
+@using ConsulatTermine.Domain.Enums
 @using ConsulatTermine.UI.Authentication
 @using MudBlazor
 
@@ -652,7 +653,7 @@
     // -------------------------------------------------
     // LOGIN-GUARD (Admin Services)
     // -------------------------------------------------
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender)
             return;
@@ -663,7 +664,15 @@
             Navigation.NavigateTo("/employee/login", true);
             return;
         }
+
+        var role = EmployeeSession.CurrentRole;
+        if (role != EmployeeRole.ServiceChef && role != EmployeeRole.Admin)
+        {
+            Navigation.NavigateTo("/employee/home", true);
+            return;
+        }
     }
+
 
     private readonly Dictionary<int, string> _monthNames = new()
     {

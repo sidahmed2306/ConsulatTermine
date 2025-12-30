@@ -45,6 +45,13 @@ public class ApplicationDbContext : DbContext
             .HasForeignKey(x => x.ServiceId)
             .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<Appointment>()
+    .HasOne(a => a.CurrentEmployee)
+    .WithMany()
+    .HasForeignKey(a => a.CurrentEmployeeId)
+    .OnDelete(DeleteBehavior.SetNull);
+
+
 
         // ====================================================
         // WorkingSchedulePlan (Plan-Header)

@@ -14,8 +14,9 @@ public interface IAppointmentService
     // --- Ablauf im Konsulat ---
     Task<bool> CheckInAsync(int appointmentId);          // Warten in Warteschlange
     Task<Appointment?> GetNextAsync(int serviceId);       // Nächster wartender Bürger
-    Task<bool> StartProcessingAsync(int appointmentId);   // Mitarbeiter bearbeitet diesen Bürger
-    Task<bool> CompleteAsync(int appointmentId);          // Fertig verarbeitet
+Task<bool> StartProcessingAsync(int appointmentId, int employeeId);
+Task<bool> CompleteAsync(int appointmentId, int employeeId);
+        // Fertig verarbeitet
 
     Task<List<Appointment>> BookGroupAsync(GroupBookingDto dto);
 
@@ -30,6 +31,12 @@ Task<List<Appointment>> GetAppointmentsForServiceOnDateAsync(
 Task<Appointment?> GetNextAppointmentForServiceOnDateAsync(
     int serviceId,
     DateTime date);
+
+    Task<bool> HideFromWaitingRoomAsync(int appointmentId, int employeeId);
+
+    Task RecallAsync(int appointmentId, int employeeId);
+
+
 
 
 

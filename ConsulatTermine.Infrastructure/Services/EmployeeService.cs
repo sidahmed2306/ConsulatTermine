@@ -1,6 +1,7 @@
 using ConsulatTermine.Application.DTOs;
 using ConsulatTermine.Application.Interfaces;
 using ConsulatTermine.Domain.Entities;
+using ConsulatTermine.Domain.Enums;
 using ConsulatTermine.Infrastructure.Persistence;
 using ConsulatTermine.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
@@ -103,6 +104,7 @@ public EmployeeService(
         LastName = dto.LastName.Trim(),
         Email = dto.Email.Trim(),
         DateOfBirth = dto.DateOfBirth,
+        Role = dto.Role,
 
         // Status
         IsActive = true,
@@ -211,6 +213,43 @@ return employee;
                 await _context.SaveChangesAsync();
             }
         }
+ public async Task EnsureInitialAdminAsync()
+{
+    var adminExists = await _context.Employees
+        .AnyAsync(e => e.Role == EmployeeRole.Admin);
+
+    if (adminExists)
+        return;
+
+    var tempPassword = "Admin123!"; // später austauschbar
+
+    var admin = new Employee
+    {
+        FirstName = "System",
+        LastName = "Administrator",
+        Email = "sidahmedbc1@gmail.com",
+        EmployeeCode = "ADMIN-001",
+        Role = EmployeeRole.Admin,
+
+        TemporaryPassword = tempPassword,
+        MustChangePassword = true,
+        IsActive = true
+    };
+
+    _context.Employees.Add(admin);
+    await _context.SaveChangesAsync();
+
+    var changePasswordLink =
+        "http://localhost:5262/employee/change-password/" + admin.Id;
+
+    await _emailService.SendEmployeeWelcomeEmailAsync(
+        toEmail: admin.Email,
+        fullName: $"{admin.FirstName} {admin.LastName}",
+        employeeCode: admin.EmployeeCode,
+        temporaryPassword: tempPassword,
+        changePasswordLink: changePasswordLink
+    );
+}
 
 
 

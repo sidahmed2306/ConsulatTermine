@@ -12,5 +12,8 @@ public interface IEmployeeService
     Task AssignServiceAsync(int employeeId, int serviceId);
     Task<bool> DeleteEmployeeAsync(int id);
 
+    Task EnsureInitialAdminAsync();
+    
+
 
 }

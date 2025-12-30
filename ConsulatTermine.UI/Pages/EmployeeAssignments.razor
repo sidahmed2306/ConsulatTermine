@@ -1,5 +1,6 @@
 @page "/admin/assignments"
 
+@using ConsulatTermine.Domain.Enums
 @using MudBlazor
 @using ConsulatTermine.Application.Interfaces
 @using ConsulatTermine.Domain.Entities
@@ -103,7 +104,15 @@
             Navigation.NavigateTo("/employee/login", true);
             return;
         }
+
+        var role = EmployeeSession.CurrentRole;
+        if (role != EmployeeRole.ServiceChef && role != EmployeeRole.Admin)
+        {
+            Navigation.NavigateTo("/employee/home", true);
+            return;
+        }
     }
+
     protected override async Task OnInitializedAsync()
     {
         _employees = await EmployeeService.GetAllEmployeesAsync();

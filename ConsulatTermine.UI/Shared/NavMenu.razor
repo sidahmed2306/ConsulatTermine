@@ -1,5 +1,6 @@
 ﻿@using MudBlazor
 @using ConsulatTermine.UI.Authentication
+@using ConsulatTermine.Domain.Enums
 
 @inject NavigationManager Navigation
 @inject EmployeeSessionService EmployeeSession
@@ -9,7 +10,7 @@
     @if (_isAuthenticated)
     {
         <!-- ========================= -->
-        <!-- EMPLOYEE BEREICH -->
+        <!-- EMPLOYEE (ALLE ROLLEN) -->
         <!-- ========================= -->
 
         <MudNavLink Href="/employee/home" Match="NavLinkMatch.All">
@@ -27,32 +28,41 @@
             <span class="ml-2">Service wechseln</span>
         </MudNavLink>
 
-        <MudDivider Class="my-2" />
-
         <!-- ========================= -->
-        <!-- ADMIN BEREICH -->
-        <!-- (Rollen kommen später) -->
+        <!-- SERVICE CHEF + ADMIN -->
         <!-- ========================= -->
 
-        <MudNavLink Href="/admin/employees">
-            <MudIcon Icon="@Icons.Material.Filled.People" />
-            <span class="ml-2">Mitarbeiter</span>
-        </MudNavLink>
+        @if (_role == EmployeeRole.ServiceChef || _role == EmployeeRole.Admin)
+        {
+            <MudDivider Class="my-2" />
 
-        <MudNavLink Href="/admin/services">
-            <MudIcon Icon="@Icons.Material.Filled.BusinessCenter" />
-            <span class="ml-2">Services</span>
-        </MudNavLink>
+            <MudNavLink Href="/admin/employees">
+                <MudIcon Icon="@Icons.Material.Filled.People" />
+                <span class="ml-2">Mitarbeiter</span>
+            </MudNavLink>
 
-        <MudNavLink Href="/admin/assignments">
-            <MudIcon Icon="@Icons.Material.Filled.Link" />
-            <span class="ml-2">Service-Zuweisungen</span>
-        </MudNavLink>
+            <MudNavLink Href="/admin/assignments">
+                <MudIcon Icon="@Icons.Material.Filled.Link" />
+                <span class="ml-2">Service-Zuweisungen</span>
+            </MudNavLink>
 
-        <MudNavLink Href="/admin/working-schedule">
-            <MudIcon Icon="@Icons.Material.Filled.Schedule" />
-            <span class="ml-2">Service-Arbeitszeiten</span>
-        </MudNavLink>
+            <MudNavLink Href="/admin/working-schedule">
+                <MudIcon Icon="@Icons.Material.Filled.Schedule" />
+                <span class="ml-2">Arbeitszeiten</span>
+            </MudNavLink>
+        }
+
+        <!-- ========================= -->
+        <!-- ADMIN -->
+        <!-- ========================= -->
+
+        @if (_role == EmployeeRole.Admin)
+        {
+            <MudNavLink Href="/admin/services">
+                <MudIcon Icon="@Icons.Material.Filled.BusinessCenter" />
+                <span class="ml-2">Services</span>
+            </MudNavLink>
+        }
 
         <MudDivider Class="my-2" />
 
@@ -70,6 +80,7 @@
 
 @code {
     private bool _isAuthenticated;
+    private EmployeeRole? _role;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -78,6 +89,7 @@
 
         var auth = await EmployeeSession.EnsureAuthenticatedAsync();
         _isAuthenticated = auth.IsAuthenticated;
+        _role = EmployeeSession.CurrentRole;
 
         StateHasChanged();
     }

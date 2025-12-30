@@ -53,6 +53,7 @@ namespace ConsulatTermine.Infrastructure.Services
                 Name = dto.Name,
                 Description = dto.Description,
                 CapacityPerSlot = dto.CapacityPerSlot,
+                Floor = dto.Floor,
                 SlotDurationMinutes = dto.SlotDurationMinutes
             };
 
@@ -74,6 +75,7 @@ namespace ConsulatTermine.Infrastructure.Services
             entity.Name = dto.Name;
             entity.Description = dto.Description;
             entity.CapacityPerSlot = dto.CapacityPerSlot;
+            entity.Floor = dto.Floor;
             entity.SlotDurationMinutes = dto.SlotDurationMinutes;
 
             await _context.SaveChangesAsync();

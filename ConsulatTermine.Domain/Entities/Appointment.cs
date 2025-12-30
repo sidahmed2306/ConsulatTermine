@@ -55,6 +55,13 @@ public class Appointment
     /// </summary>
     public string BookingReference { get; set; } = string.Empty;
 
+    // ---------------------------------------------------------------------
+// Wartezimmer / Display (Version 1)
+// ---------------------------------------------------------------------
+// true = im Wartezimmer-TV sichtbar (aufgerufen), false = ausblenden (ist da)
+public bool IsVisibleInWaitingRoom { get; set; } = false;
+
+
     /// <summary>
     /// Laufende Nummer der Person innerhalb dieser Buchung.
     /// 1 = Hauptbucher, 2..n = Begleitpersonen.
@@ -87,6 +94,13 @@ public string? CancelToken { get; set; }
 /// Nach diesem Zeitpunkt ist eine Absage über den Link nicht mehr möglich.
 /// </summary>
 public DateTime? CancelTokenExpiresAt { get; set; }
+
+// ---------------------------------------------------------------------
+// Mitarbeiter-Zuordnung für "Next"-Ablauf (wer bearbeitet den Termin)
+// ---------------------------------------------------------------------
+public int? CurrentEmployeeId { get; set; }
+public Employee? CurrentEmployee { get; set; }
+
 
 
 }

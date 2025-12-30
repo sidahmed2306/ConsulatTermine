@@ -49,6 +49,9 @@ namespace ConsulatTermine.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<int?>("CurrentEmployeeId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime2");
 
@@ -66,6 +69,9 @@ namespace ConsulatTermine.Infrastructure.Migrations
                     b.Property<bool>("IsMainPerson")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsVisibleInWaitingRoom")
+                        .HasColumnType("bit");
+
                     b.Property<int>("PersonIndex")
                         .HasColumnType("int");
 
@@ -80,6 +86,8 @@ namespace ConsulatTermine.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CurrentEmployeeId");
 
                     b.HasIndex("ServiceId");
 
@@ -124,6 +132,9 @@ namespace ConsulatTermine.Infrastructure.Migrations
 
                     b.Property<bool>("MustChangePassword")
                         .HasColumnType("bit");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("int");
 
                     b.Property<string>("TemporaryPassword")
                         .HasColumnType("nvarchar(max)");
@@ -180,6 +191,10 @@ namespace ConsulatTermine.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Floor")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -315,11 +330,18 @@ namespace ConsulatTermine.Infrastructure.Migrations
 
             modelBuilder.Entity("ConsulatTermine.Domain.Entities.Appointment", b =>
                 {
+                    b.HasOne("ConsulatTermine.Domain.Entities.Employee", "CurrentEmployee")
+                        .WithMany()
+                        .HasForeignKey("CurrentEmployeeId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("ConsulatTermine.Domain.Entities.Service", "Service")
                         .WithMany()
                         .HasForeignKey("ServiceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("CurrentEmployee");
 
                     b.Navigation("Service");
                 });

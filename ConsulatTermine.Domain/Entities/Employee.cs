@@ -1,3 +1,5 @@
+using ConsulatTermine.Domain.Enums;
+
 namespace ConsulatTermine.Domain.Entities;
 
 public class Employee
@@ -59,4 +61,10 @@ public List<EmployeeServiceAssignment> AssignedServices { get; set; } = new();
 /// Wird nach erstem Login ungültig
 /// </summary>
 public string? TemporaryPassword { get; set; }
+
+/// <summary>
+/// Rolle des Mitarbeiters (Employee, ServiceChef, Admin)
+/// </summary>
+public EmployeeRole Role { get; set; } = EmployeeRole.Employee;
+
 }

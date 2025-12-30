@@ -10,4 +10,6 @@ public class ServiceDto
     public int? CapacityPerSlot { get; set; }
 
     public int SlotDurationMinutes { get; set; }
+    public string Floor { get; set; } = string.Empty;
+
 }

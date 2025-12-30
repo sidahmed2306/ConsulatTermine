@@ -2,72 +2,119 @@
 
 @using ConsulatTermine.Domain.Entities
 @using ConsulatTermine.Application.Interfaces
+@using ConsulatTermine.UI.Authentication
 @using MudBlazor
 
 @inject IEmployeeService EmployeeService
-@inject ConsulatTermine.UI.Authentication.EmployeeSessionService EmployeeSession
-
+@inject EmployeeSessionService EmployeeSession
+@inject Blazored.SessionStorage.ISessionStorageService Session
 @inject NavigationManager Navigation
 
-
-@inherits ConsulatTermine.UI.Authentication.EmployeeProtectedComponentBase
-
-
-<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
 
     <MudPaper Class="pa-6">
-        <MudText Typo="Typo.h5" Class="mb-4">Service auswählen</MudText>
 
-        @if (_services.Count == 0)
+        <MudText Typo="Typo.h5" Class="mb-4">
+            Arbeitsstart – Service & Arbeitsplatz
+        </MudText>
+
+        @if (_loading)
         {
-            <MudText Color="Color.Error">
-                Ihnen sind aktuell keine Services zugeordnet.
-            </MudText>
+            <MudProgressCircular Indeterminate />
         }
         else
         {
-            <MudStack Spacing="2">
-                @foreach (var service in _services)
-                {
-                    <MudButton Variant="Variant.Filled"
-                               Color="Color.Primary"
-                               OnClick="() => SelectService(service.Id)">
-                        @service.Name
-                    </MudButton>
-                }
+            <MudStack Spacing="3">
+
+                <MudSelect T="Service"
+                           Label="Service"
+                           @bind-Value="_selectedService"
+                           Required="true">
+                    @foreach (var s in _services)
+                    {
+                        <MudSelectItem Value="s">@s.Name</MudSelectItem>
+                    }
+                </MudSelect>
+
+                <MudTextField Label="Büro"
+                              @bind-Value="_office"
+                              Required="true" />
+
+                <MudTextField Label="Zimmer"
+                              @bind-Value="_room"
+                              Required="true" />
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Disabled="@(!_canStart)"
+                           OnClick="StartAsync">
+                    Starten
+                </MudButton>
+
             </MudStack>
         }
-    </MudPaper>
 
+    </MudPaper>
 </MudContainer>
 
 @code {
     private List<Service> _services = new();
+    private Service? _selectedService;
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    private string _office = "";
+    private string _room = "";
+    private bool _loading = true;
+
+    private bool _canStart =>
+        _selectedService != null &&
+        !string.IsNullOrWhiteSpace(_office) &&
+        !string.IsNullOrWhiteSpace(_room);
+
+    protected override Task OnInitializedAsync()
+{
+    return Task.CompletedTask;
+}
+protected override async Task OnAfterRenderAsync(bool firstRender)
+{
+    if (!firstRender)
+        return;
+
+    var auth = await EmployeeSession.EnsureAuthenticatedAsync();
+    if (!auth.IsAuthenticated)
     {
-        await base.OnAfterRenderAsync(firstRender);
-
-        if (!firstRender || CurrentEmployeeId <= 0)
-            return;
-
-        var employee = await EmployeeService.GetEmployeeByIdAsync(CurrentEmployeeId);
-        if (employee != null)
-        {
-            _services = employee.AssignedServices
-                .Select(a => a.Service)
-                .Where(s => s != null)
-                .Select(s => s!)
-                .ToList();
-        }
-
-        StateHasChanged();
+        Navigation.NavigateTo("/employee/login", true);
+        return;
     }
 
-   private async Task SelectService(int serviceId)
-{
-    await EmployeeSession.SetActiveServiceAsync(serviceId);
-    Navigation.NavigateTo("/employee/dashboard");
+    var employee = await EmployeeService.GetEmployeeByIdAsync(auth.EmployeeId);
+
+    if (employee?.AssignedServices != null)
+    {
+        _services = employee.AssignedServices
+            .Select(a => a.Service!)
+            .ToList();
+    }
+
+    if (_services.Count == 1)
+        _selectedService = _services[0];
+
+    _loading = false;
+    StateHasChanged();
 }
 
+
+
+    private async Task StartAsync()
+    {
+        if (_selectedService == null)
+            return;
+
+        await EmployeeSession.SetActiveServiceAsync(_selectedService.Id);
+
+        await Session.SetItemAsync("OfficeName", _office);
+        await Session.SetItemAsync("RoomName", _room);
+
+        Navigation.NavigateTo("/employee/dashboard");
+    }
 }
+

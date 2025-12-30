@@ -11,10 +11,10 @@
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Infrastructure/obj/Debug/net8.0/ConsulatTermine.Infrastructure.AssemblyInfoInputs.cache
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Infrastructure/obj/Debug/net8.0/ConsulatTermine.Infrastructure.AssemblyInfo.cs
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Infrastructure/obj/Debug/net8.0/ConsulatTermine.Infrastructure.csproj.CoreCompileInputs.cache
+/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Infrastructure/obj/Debug/net8.0/ConsulatTermine.Infrastructure.sourcelink.json
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Infrastructure/obj/Debug/net8.0/Consulat.68690CAF.Up2Date
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Infrastructure/obj/Debug/net8.0/ConsulatTermine.Infrastructure.dll
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Infrastructure/obj/Debug/net8.0/refint/ConsulatTermine.Infrastructure.dll
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Infrastructure/obj/Debug/net8.0/ConsulatTermine.Infrastructure.pdb
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Infrastructure/obj/Debug/net8.0/ConsulatTermine.Infrastructure.genruntimeconfig.cache
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Infrastructure/obj/Debug/net8.0/ref/ConsulatTermine.Infrastructure.dll
-/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.Infrastructure/obj/Debug/net8.0/ConsulatTermine.Infrastructure.sourcelink.json

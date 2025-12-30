@@ -9,6 +9,9 @@ using Blazored.SessionStorage;
 using ConsulatTermine.Application.Interfaces.Booking;
 using ConsulatTermine.Infrastructure.Services.Booking;
 using ConsulatTermine.UI.Authentication;
+using ConsulatTermine.Infrastructure.SignalR;
+
+
 
 
 
@@ -43,6 +46,8 @@ builder.Services.AddScoped<IAppointmentCalendarQueryService, AppointmentCalendar
 builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 builder.Services.AddScoped<IEmployeeAuthService, EmployeeAuthService>();
 builder.Services.AddScoped<EmployeeSessionService>();
+builder.Services.AddSingleton<IWaitingRoomNotifier, WaitingRoomNotifier>();
+
 
 
 
@@ -85,12 +90,15 @@ app.UseHttpsRedirection();
 
 app.UseStaticFiles();
 
-app.UseRouting();
-
 app.MapBlazorHub();
+
 app.MapHub<DisplayHub>("/hubs/display");
 app.MapHub<EmployeeHub>("/hubs/employee");
+
+
+
 app.MapFallbackToPage("/_Host");
+
 
 
 app.Run();

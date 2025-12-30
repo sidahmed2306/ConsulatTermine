@@ -4,7 +4,9 @@ using ConsulatTermine.Domain.Entities;
 using ConsulatTermine.Domain.Enums;
 using ConsulatTermine.Infrastructure.Persistence;
 using Infrastructure.SignalR;
+using ConsulatTermine.Infrastructure.SignalR;
 using Microsoft.AspNetCore.SignalR;
+
 using Microsoft.EntityFrameworkCore;
 
 namespace ConsulatTermine.Infrastructure.Services
@@ -16,18 +18,23 @@ namespace ConsulatTermine.Infrastructure.Services
         private readonly IHubContext<EmployeeHub, IEmployeeClient> _employeeHub;
 
         private readonly IEmailService _emailService;
+        private readonly IHubContext<WaitingRoomHub, IWaitingRoomClient> _waitingRoomHub;
 
-        public AppointmentService(
-            ApplicationDbContext context,
-            IHubContext<DisplayHub, IDisplayClient> displayHub,
-            IHubContext<EmployeeHub, IEmployeeClient> employeeHub,
-            IEmailService emailService)
-        {
-            _context = context;
-            _displayHub = displayHub;
-            _employeeHub = employeeHub;
-            _emailService = emailService;
-        }
+
+       public AppointmentService(
+    ApplicationDbContext context,
+    IHubContext<DisplayHub, IDisplayClient> displayHub,
+    IHubContext<EmployeeHub, IEmployeeClient> employeeHub,
+    IHubContext<WaitingRoomHub, IWaitingRoomClient> waitingRoomHub,
+    IEmailService emailService)
+{
+    _context = context;
+    _displayHub = displayHub;
+    _employeeHub = employeeHub;
+    _waitingRoomHub = waitingRoomHub;
+    _emailService = emailService;
+}
+
 
         // -------------------------------------------------------------
         // FREIE SLOTS ALS DTOs (für UI)
@@ -257,55 +264,104 @@ public async Task<bool> CancelAsync(int appointmentId)
         // -------------------------------------------------------------
         // BEARBEITUNG STARTEN (Mitarbeiter nimmt Bürger dran)
         // -------------------------------------------------------------
-        public async Task<bool> StartProcessingAsync(int appointmentId)
-        {
-            // besser inkl. Service laden, damit Service.Name sicher ist
-            var appointment = await _context.Appointments
-                .Include(a => a.Service)
-                .FirstOrDefaultAsync(a => a.Id == appointmentId);
+public async Task<bool> StartProcessingAsync(int appointmentId, int employeeId)
+{
+    var appointment = await _context.Appointments
+        .Include(a => a.Service)
+        .FirstOrDefaultAsync(a => a.Id == appointmentId);
 
-            if (appointment == null)
-                return false;
+    if (appointment == null)
+        return false;
 
-            if (appointment.Status != AppointmentStatus.CheckedIn)
-                return false;
+    // Version 1: Alle Booked-Termine gelten als wartend
+    if (appointment.Status != AppointmentStatus.Booked)
+        return false;
 
-            appointment.Status = AppointmentStatus.InProgress;
+    appointment.Status = AppointmentStatus.InProgress;
+    appointment.CurrentEmployeeId = employeeId;
+    appointment.IsVisibleInWaitingRoom = true;
 
-            await _context.SaveChangesAsync();
+    await _context.SaveChangesAsync();
+await _waitingRoomHub.Clients.All.CallStarted();
 
-            await _displayHub.Clients.All.CitizenCalled(
-                appointment.Id,
-                appointment.FullName,
-                appointment.Service?.Name ?? "",
-                "" // counterName später
-            );
+    // Bestehende Echtzeit-Updates (falls vorhanden)
+    await _employeeHub.Clients.All.StatusUpdated(
+        appointment.Id,
+        appointment.Status
+    );
 
-            await _employeeHub.Clients.All.StatusUpdated(appointment.Id, appointment.Status);
+    return true;
+}
 
-            return true;
-        }
+public async Task RecallAsync(int appointmentId, int employeeId)
+{
+    // Kein Statuswechsel, kein DB-Zugriff nötig
+    await _waitingRoomHub.Clients.All.Recall();
+}
+
+
+
+
+
 
         // -------------------------------------------------------------
         // TERMIN ABSCHLIESSEN
         // -------------------------------------------------------------
-        public async Task<bool> CompleteAsync(int appointmentId)
-        {
-            var appointment = await _context.Appointments.FindAsync(appointmentId);
-            if (appointment == null)
-                return false;
+public async Task<bool> CompleteAsync(int appointmentId, int employeeId)
+{
+    var appointment = await _context.Appointments
+        .FirstOrDefaultAsync(a => a.Id == appointmentId);
 
-            if (appointment.Status != AppointmentStatus.InProgress)
-                return false;
+    if (appointment == null)
+        return false;
 
-            appointment.Status = AppointmentStatus.Completed;
-            appointment.CompletedAt = DateTime.UtcNow;
+    // Nur der eigene InProgress-Termin darf beendet werden
+    if (appointment.Status != AppointmentStatus.InProgress)
+        return false;
 
-            await _context.SaveChangesAsync();
-            await _employeeHub.Clients.All.StatusUpdated(appointment.Id, appointment.Status);
+    if (appointment.CurrentEmployeeId != employeeId)
+        return false;
 
-            return true;
-        }
+    appointment.Status = AppointmentStatus.Completed;
+    appointment.CompletedAt = DateTime.UtcNow;
+    appointment.CurrentEmployeeId = null;
+
+    await _context.SaveChangesAsync();
+
+    await _employeeHub.Clients.All.StatusUpdated(
+        appointment.Id,
+        appointment.Status
+    );
+
+    return true;
+}
+
+public async Task<bool> HideFromWaitingRoomAsync(int appointmentId, int employeeId)
+{
+    var appointment = await _context.Appointments
+        .FirstOrDefaultAsync(a => a.Id == appointmentId);
+
+    if (appointment == null)
+        return false;
+
+    // Nur der Mitarbeiter, der den Termin hat, darf ihn ausblenden
+    if (appointment.Status != AppointmentStatus.InProgress)
+        return false;
+
+    if (appointment.CurrentEmployeeId != employeeId)
+        return false;
+
+   appointment.IsVisibleInWaitingRoom = false;
+
+await _context.SaveChangesAsync();
+
+// ❌ aus TV entfernen
+await _waitingRoomHub.Clients.All.Hide();
+
+return true;
+
+}
+
 
         // -------------------------------------------------------------
         // GRUPPENBUCHUNG (1–5 Personen, mehrere Slots möglich)

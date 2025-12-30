@@ -7,6 +7,8 @@
 @inject NavigationManager Navigation
 @inject IEmployeeAuthService AuthService
 @inject EmployeeSessionService EmployeeSession
+@inject IEmployeeService EmployeeService
+
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
     <MudCard>
@@ -101,10 +103,24 @@
         }
 
         // ✅ ZENTRALER LOGIN-STATE
-        await EmployeeSession.SignInAsync(
-            result.EmployeeId.Value,
-            result.EmployeeCode!
-        );
+      // Employee inkl. Rolle laden
+var employee = await EmployeeService.GetEmployeeByIdAsync(
+    result.EmployeeId.Value
+);
+
+if (employee == null)
+{
+    _errorMessage = "Mitarbeiter nicht gefunden";
+    return;
+}
+
+// 🔐 Session inkl. Rolle setzen
+await EmployeeSession.SignInAsync(
+    employee.Id,
+    employee.EmployeeCode,
+    employee.Role
+);
+
 
         // 🔒 Pflicht zur Passwortänderung
         if (result.MustChangePassword)
