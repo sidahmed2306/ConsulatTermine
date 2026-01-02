@@ -255,3 +255,134 @@ a,
 .tv-status {
   text-align: center;
 }
+
+.slot-pill {
+  border: 1px solid #dcdcdc;
+  border-radius: 999px !important; /* ✅ erzwingen */
+  overflow: hidden; /* ✅ Kanten sauber */
+  padding: 8px 12px;
+  background: #fff;
+}
+
+.slot-pill.selected {
+  background: rgba(25, 135, 84, 0.08);
+  border-color: rgba(25, 135, 84, 0.4);
+}
+
+.slot-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+
+/* =====================================================
+   LOGIN CARD – FLAGGE ALS BACKGROUND
+   ===================================================== */
+
+.login-card {
+  position: relative;
+  overflow: hidden;
+
+  background-image: url("/images/flagge-von-algerien.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  border-radius: 14px;
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.079);
+}
+
+/* Dunkles Overlay für Lesbarkeit */
+.login-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background: rgba(255, 255, 255, 0.318);
+  /* weißes Overlay = seriös & ruhig */
+}
+
+/* Inhalt IMMER über dem Overlay */
+.login-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.slot-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0; /* ✅ wichtig */
+  flex: 1 1 auto;
+}
+
+.slot-availability {
+  font-size: 14px;
+  color: #555;
+  white-space: nowrap; /* ✅ nicht umbrechen */
+}
+
+.slot-counter-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 0 auto; /* ✅ Counter bleibt kompakt rechts */
+}
+
+.slot-time {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.slot-count {
+  min-width: 16px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.slot-single-btn {
+  border-radius: 999px;
+  min-width: 100px;
+  padding: 4px 10px;
+}
+@media (max-width: 600px) {
+  .slot-pill {
+    padding: 7px 10px;
+  }
+  .slot-time {
+    font-size: 15px;
+  }
+  .slot-availability {
+    font-size: 13px;
+  }
+  .slot-counter-inline {
+    gap: 0;
+  }
+}
+
+/* =====================================================
+   SLOTS PAPER – MOBILE FULLSCREEN
+   ===================================================== */
+
+.slots-paper {
+  border-radius: 12px;
+}
+
+/* 📱 Mobile */
+@media (max-width: 600px) {
+  .slots-paper {
+    width: 100vw;
+    min-height: 100vh;
+
+    margin-left: calc(-50vw + 50%);
+    margin-right: calc(-50vw + 50%);
+
+    border-radius: 0;
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-bottom: 24px;
+  }
+}

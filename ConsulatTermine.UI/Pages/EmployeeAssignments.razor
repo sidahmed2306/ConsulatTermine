@@ -10,7 +10,7 @@
 @inject IEmployeeService EmployeeService
 @inject IServiceService ServiceService
 @inject ISnackbar Snackbar
-
+@inject IDialogService DialogService
 @inject EmployeeSessionService EmployeeSession
 @inject NavigationManager Navigation
 
@@ -19,9 +19,8 @@
 
         <MudText Typo="Typo.h5">Mitarbeiter & Services</MudText>
 
-        <!-- Assignment Tabelle -->
+        <!-- Assignment Übersicht -->
         <MudTable Items="_assignments" Hover Dense>
-
             <HeaderContent>
                 <MudTh>Mitarbeiter</MudTh>
                 <MudTh>Service</MudTh>
@@ -40,10 +39,9 @@
                 <MudTd>
                     <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                    Color="Color.Error"
-                                   OnClick="@(() => DeleteAssignment(context))" />
+                                   OnClick="@(() => ConfirmDeleteAssignment(context))" />
                 </MudTd>
             </RowTemplate>
-
         </MudTable>
 
         <!-- Neue Zuordnung -->
@@ -81,6 +79,7 @@
 </MudPaper>
 
 @code {
+
     private List<EmployeeServiceAssignment> _assignments = new();
     private List<Employee> _employees = new();
     private List<Service> _services = new();
@@ -88,10 +87,10 @@
     private int _selectedEmployee;
     private int _selectedService;
 
+    private int _currentEmployeeId;
 
-
- // -------------------------------------------------
-    // LOGIN-GUARD (Admin Assignments)
+    // -------------------------------------------------
+    // LOGIN-GUARD
     // -------------------------------------------------
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -105,21 +104,67 @@
             return;
         }
 
+        _currentEmployeeId = auth.EmployeeId;
+
         var role = EmployeeSession.CurrentRole;
         if (role != EmployeeRole.ServiceChef && role != EmployeeRole.Admin)
         {
             Navigation.NavigateTo("/employee/home", true);
             return;
         }
+
+        await LoadDataAsync();
+        StateHasChanged();
     }
 
-    protected override async Task OnInitializedAsync()
+    // -------------------------------------------------
+    // DATA LOAD
+    // -------------------------------------------------
+    private async Task LoadDataAsync()
     {
-        _employees = await EmployeeService.GetAllEmployeesAsync();
-        _services = await ServiceService.GetAllServicesAsync();
-        _assignments = await AssignmentService.GetAllAssignmentsAsync();
+        // Services
+        if (EmployeeSession.CurrentRole == EmployeeRole.Admin)
+            _services = await ServiceService.GetAllServicesAsync();
+        else
+            _services = await ServiceService.GetServicesForEmployeeAsync(_currentEmployeeId);
+
+        // Assignments
+        var allAssignments = await AssignmentService.GetAllAssignmentsAsync();
+
+        if (EmployeeSession.CurrentRole == EmployeeRole.Admin)
+        {
+            _assignments = allAssignments;
+        }
+        else
+        {
+            var allowedServiceIds = _services.Select(s => s.Id).ToHashSet();
+            _assignments = allAssignments
+                .Where(a => allowedServiceIds.Contains(a.ServiceId))
+                .ToList();
+        }
+
+        // Employees
+        var allEmployees = await EmployeeService.GetAllEmployeesAsync();
+
+        if (EmployeeSession.CurrentRole == EmployeeRole.Admin)
+        {
+            _employees = allEmployees;
+        }
+        else
+        {
+            var allowedServiceIds = _services.Select(s => s.Id).ToHashSet();
+
+            _employees = allEmployees
+                .Where(e =>
+                    !e.AssignedServices.Any() ||
+                    e.AssignedServices.Any(a => allowedServiceIds.Contains(a.ServiceId)))
+                .ToList();
+        }
     }
 
+    // -------------------------------------------------
+    // ADD
+    // -------------------------------------------------
     private async Task AddAssignment()
     {
         if (_selectedEmployee == 0 || _selectedService == 0)
@@ -128,13 +173,71 @@
             return;
         }
 
-        await AssignmentService.AddAssignmentAsync(_selectedEmployee, _selectedService);
-        _assignments = await AssignmentService.GetAllAssignmentsAsync();
+        try
+        {
+            var ok = await AssignmentService.AddAssignmentAsync(_selectedEmployee, _selectedService);
+
+            if (ok)
+            {
+                Snackbar.Add("✅ Zuordnung erfolgreich hinzugefügt.", Severity.Success);
+                await LoadDataAsync();
+            }
+            else
+            {
+                Snackbar.Add("ℹ️ Diese Zuordnung existiert bereits.", Severity.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"❌ Fehler beim Hinzufügen der Zuordnung: {ex.Message}", Severity.Error);
+        }
+    }
+
+    // -------------------------------------------------
+    // DELETE
+    // -------------------------------------------------
+    private async Task ConfirmDeleteAssignment(EmployeeServiceAssignment assignment)
+    {
+        var parameters = new DialogParameters
+        {
+            ["Title"] = "Zuweisung löschen",
+            ["Message"] =
+                $"Möchtest du die Zuweisung " +
+                $"**{assignment.Employee?.FirstName} {assignment.Employee?.LastName}** → " +
+                $"**{assignment.Service?.Name}** wirklich löschen?"
+        };
+
+        var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>(
+            "Bestätigung",
+            parameters);
+
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            await DeleteAssignment(assignment);
+        }
     }
 
     private async Task DeleteAssignment(EmployeeServiceAssignment a)
     {
-        await AssignmentService.RemoveAssignmentAsync(a.EmployeeId, a.ServiceId);
-        _assignments = await AssignmentService.GetAllAssignmentsAsync();
+        try
+        {
+            var ok = await AssignmentService.RemoveAssignmentAsync(a.EmployeeId, a.ServiceId);
+
+            if (ok)
+            {
+                Snackbar.Add("✅ Zuordnung erfolgreich gelöscht.", Severity.Success);
+                await LoadDataAsync();
+            }
+            else
+            {
+                Snackbar.Add("ℹ️ Zuordnung wurde nicht gefunden.", Severity.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"❌ Fehler beim Löschen der Zuordnung: {ex.Message}", Severity.Error);
+        }
     }
 }

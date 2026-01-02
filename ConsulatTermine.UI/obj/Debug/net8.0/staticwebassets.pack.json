@@ -65,6 +65,10 @@
       "PackagePath": "staticwebassets/images/Alg_Logo.png"
     },
     {
+      "Id": "/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/wwwroot/images/flagge-von-algerien.jpg",
+      "PackagePath": "staticwebassets/images/flagge-von-algerien.jpg"
+    },
+    {
       "Id": "/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/wwwroot/js/sounds.js",
       "PackagePath": "staticwebassets/js/sounds.js"
     },

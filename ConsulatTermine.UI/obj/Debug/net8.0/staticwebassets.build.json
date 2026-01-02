@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "gD3Ejuiw9jwRGeDuCInn7EqPI1woQATf2TYgEH33HZE=",
+  "Hash": "tN/6NrEX4hNuGdpPkhzp0dmcJwUCujppQ96Yv5uwmJI=",
   "Source": "ConsulatTermine.UI",
   "BasePath": "_content/ConsulatTermine.UI",
   "Mode": "Default",
@@ -376,6 +376,25 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot/images/Alg_Logo.png"
+    },
+    {
+      "Identity": "/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/wwwroot/images/flagge-von-algerien.jpg",
+      "SourceId": "ConsulatTermine.UI",
+      "SourceType": "Discovered",
+      "ContentRoot": "/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/wwwroot/",
+      "BasePath": "_content/ConsulatTermine.UI",
+      "RelativePath": "images/flagge-von-algerien.jpg",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/images/flagge-von-algerien.jpg"
     },
     {
       "Identity": "/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/wwwroot/js/sounds.js",

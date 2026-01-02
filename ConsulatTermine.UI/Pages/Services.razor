@@ -84,11 +84,6 @@
                                         @service.Description
                                     </MudText>
                                 }
-
-                                <MudText Typo="Typo.caption">
-                                    Slotdauer: @service.SlotDurationMinutes Min ·
-                                    Kapazität: @service.CapacityPerSlot
-                                </MudText>
                             </MudStack>
 
                             <!-- COUNTER -->
@@ -171,13 +166,20 @@
     private int GetAssignedCount(int serviceId)
         => _serviceAssignments.TryGetValue(serviceId, out var v) ? v : 0;
 
-    private bool IsAddDisabled(int serviceId)
-    {
-        if (TotalAssigned >= MaxTotalAssignments)
-            return true;
+   private bool IsAddDisabled(int serviceId)
+{
+    // Gesamtlimit erreicht
+    if (TotalAssigned >= MaxTotalAssignments)
+        return true;
 
-        return false;
-    }
+    // ❗ NEU: Service darf nicht mehr als Personenzahl bekommen
+    var assignedForService = GetAssignedCount(serviceId);
+    if (assignedForService >= _personCount)
+        return true;
+
+    return false;
+}
+
 
     /* ---------- PERSON ---------- */
     private void IncrementPerson()

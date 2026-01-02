@@ -1,3 +1,5 @@
+
+
 @page "/appointment"
 
 @using MudBlazor
@@ -10,6 +12,8 @@
 @inject IServiceService ServiceService
 @inject NavigationManager Navigation
 
+
+
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
 
     <!-- STEPPER -->
@@ -20,7 +24,8 @@
         <MudStep Label="Bestätigung" />
     </MudStepper>
 
-    <MudPaper Class="pa-6" Style="border-radius:12px">
+    <MudPaper Class="pa-4 slots-paper">
+
 
         @if (!_isReady)
         {
@@ -89,58 +94,57 @@
                                 @foreach (var slot in _slots)
                                 {
                                     var slotStart = slot.SlotStart;
+                                    var selectedOnThisSlot = GetCount(slotStart);
+                                    var remaining = DisplayFreeCapacity(slot); // remaining capacity for this slot
+                                    var isSelected = selectedOnThisSlot > 0;
 
-                                    <MudItem xs="12" sm="6">
-                                        <MudPaper Class="pa-2" Style="border-radius:999px">
+                              <MudItem xs="12" sm="6">
+    <MudPaper Class="@($"slot-pill {(isSelected ? "selected" : "")}")" Elevation="0">
 
-                                            <MudStack Direction="Row" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+        <div class="slot-row">
+            <!-- LEFT -->
+            <div class="slot-left">
+                <span class="slot-time">@slotStart.ToString("HH:mm")</span>
+                <span class="slot-availability">
+                    @($"{remaining} {(remaining == 1 ? "Platz" : "Plätze")} frei")
+                </span>
+            </div>
 
-                                                <!-- LEFT: time + (optional capacity) -->
-                                                <MudText Typo="Typo.subtitle1" Style="font-weight:600;">
-                                                    @slotStart.ToString("HH:mm")
-                                                    @if (_requiredCountForCurrentService > 1)
-                                                    {
-                                                        <span style="opacity:.8"> (@DisplayFreeCapacity(slot) frei)</span>
-                                                    }
-                                                </MudText>
+            <!-- RIGHT -->
+            @if (_requiredCountForCurrentService == 1)
+            {
+                <MudButton
+                    Disabled="@(remaining <= 0)"
+                    Variant="Variant.Outlined"
+                    Color="Color.Success"
+                    Class="slot-single-btn"
+                    OnClick="@(() => SelectSingleSlot(slot))">
+                    @(IsSelected(slotStart) ? "Ausgewählt" : "Wählen")
+                </MudButton>
+            }
+            else
+            {
+                <div class="slot-counter-inline">
+                    <MudIconButton
+                        Icon="@Icons.Material.Filled.Remove"
+                        Color="Color.Error"
+                        Disabled="@(selectedOnThisSlot <= 0)"
+                        OnClick="@(() => Decrease(slot))" />
 
-                                                <!-- RIGHT: selection UI -->
-                                                @if (_requiredCountForCurrentService == 1)
-                                                {
-                                                    <MudButton
-                                                        Disabled="@(DisplayFreeCapacity(slot) <= 0)"
-                                                        Variant="Variant.Outlined"
-                                                        Color="Color.Primary"
-                                                        OnClick="@(() => SelectSingleSlot(slot))"
-                                                        Style="border-radius:999px; min-width:120px;">
-                                                        @(IsSelected(slotStart) ? "Ausgewählt" : "Wählen")
-                                                    </MudButton>
-                                                }
-                                                else
-                                                {
-                                                    <MudStack Direction="Row" Spacing="1" AlignItems="AlignItems.Center">
+                    <span class="slot-count">@selectedOnThisSlot</span>
 
-                                                        <MudIconButton
-                                                            Icon="@Icons.Material.Filled.RemoveCircleOutline"
-                                                            Disabled="@(GetCount(slotStart) <= 0)"
-                                                            OnClick="@(() => Decrease(slot))" />
+                    <MudIconButton
+                        Icon="@Icons.Material.Filled.Add"
+                        Color="Color.Success"
+                        Disabled="@(remaining <= 0 || SelectedCountForCurrentService >= _requiredCountForCurrentService)"
+                        OnClick="@(() => Increase(slot))" />
+                </div>
+            }
+        </div>
 
-                                                        <MudText Typo="Typo.subtitle1" Style="min-width:26px; text-align:center;">
-                                                            @GetCount(slotStart)
-                                                        </MudText>
+    </MudPaper>
+</MudItem>
 
-                                                        <MudIconButton
-                                                            Icon="@Icons.Material.Filled.AddCircleOutline"
-                                                            Disabled="@(GetCount(slotStart) >= DisplayFreeCapacity(slot) || SelectedCountForCurrentService >= _requiredCountForCurrentService)"
-                                                            OnClick="@(() => Increase(slot))" />
-
-                                                    </MudStack>
-                                                }
-
-                                            </MudStack>
-
-                                        </MudPaper>
-                                    </MudItem>
                                 }
                             </MudGrid>
                         }
@@ -279,7 +283,7 @@
         // cache duration
         _serviceDurationById[_currentServiceId] = _currentSlotDuration;
 
-        // ✅ FIX (Problem 1): Service-Wechsel darf kein Datum erzwingen
+        // ✅ Service-Wechsel darf kein Datum erzwingen
         _selectedDate = null;
         _slots.Clear();
     }
@@ -348,7 +352,6 @@
                 _currentServiceId,
                 date.ToDateTime(TimeOnly.MinValue));
 
-            // ✅ FIX (Problem 2): Bookable wenn irgendein Slot zeitlich kompatibel ist (vor ODER nach)
             var otherSelected = BuildOtherSelectedSlotsForCompatibility();
 
             bool anyValid = raw.Any(s =>
@@ -371,7 +374,6 @@
 
         var otherSelected = BuildOtherSelectedSlotsForCompatibility();
 
-        // ✅ FIX (Problem 2): Filter symmetrisch (vor ODER nach) – nicht nur "ab earliest"
         _slots = raw
             .Where(x => x.FreeCapacity > 0)
             .Where(x => AppointmentCalculator.IsSlotTimeCompatible(
@@ -405,7 +407,6 @@
 
                 if (count <= 0) continue;
 
-                // add "count" times to reflect multiple persons on same slot
                 for (int i = 0; i < count; i++)
                     list.Add((slotStart, dur));
             }
@@ -428,7 +429,7 @@
 
     private int DisplayFreeCapacity(AvailableSlotDto slot)
     {
-        // UI zeigt "frei" dynamisch: backend free - already selected on same slot for this service
+        // remaining = backend free - already selected on same slot (this service)
         var selectedOnThisSlot = GetCount(slot.SlotStart);
         return Math.Max(0, slot.FreeCapacity - selectedOnThisSlot);
     }
@@ -444,15 +445,16 @@
     {
         var map = _allocations[_currentServiceId];
         var current = GetCount(slot.SlotStart);
+        var remaining = DisplayFreeCapacity(slot);
 
         if (SelectedCountForCurrentService >= _requiredCountForCurrentService) return;
-        if (current >= DisplayFreeCapacity(slot)) return;
+        if (remaining <= 0) return;                 // ✅ FIX: only block when slot is actually full
 
         map[slot.SlotStart] = current + 1;
     }
 
     private void Decrease(AvailableSlotDto slot)
-    {
+    { 
         var map = _allocations[_currentServiceId];
         var current = GetCount(slot.SlotStart);
         if (current <= 0) return;
@@ -505,10 +507,8 @@
 
         await LoadCurrentServiceAsync();
 
-        // Keep month as user is viewing, but refresh availability for the new service
         await LoadMonthAvailabilityAsync(_currentMonth);
 
-        // IMPORTANT: no date carry-over across services
         _selectedDate = null;
         _slots.Clear();
 

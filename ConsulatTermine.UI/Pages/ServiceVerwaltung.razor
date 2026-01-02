@@ -7,6 +7,7 @@
 @using ConsulatTermine.Application.DTOs
 @using ConsulatTermine.Domain.Entities
 
+@inject IDialogService DialogService
 @inject IServiceService ServiceService
 @inject ISnackbar Snackbar
 @inject EmployeeSessionService EmployeeSession
@@ -53,7 +54,6 @@
                     <MudTh>Name</MudTh>
                     <MudTh>Beschreibung</MudTh>
                     <MudTh>Etage</MudTh>
-                    <MudTh>Kapazität / Slot</MudTh>
                     <MudTh>Slotdauer</MudTh>
                     <MudTh>Aktionen</MudTh>
                 </HeaderContent>
@@ -63,7 +63,6 @@
                     <MudTd>@context.Name</MudTd>
                     <MudTd>@context.Description</MudTd>
                     <MudTd>@context.Floor</MudTd>
-                    <MudTd>@(context.CapacityPerSlot ?? 0)</MudTd>
                     <MudTd>@context.SlotDurationMinutes</MudTd>
 
                     <MudTd>
@@ -73,7 +72,7 @@
                         <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                        Color="Color.Error"
                                        Class="ms-1"
-                                       OnClick="@(() => DeleteService(context))" />
+                                       OnClick="@(() => ConfirmDeleteService(context))" />
                     </MudTd>
                 </RowTemplate>
 
@@ -117,9 +116,6 @@
                                          Required="true"
                                          @bind-Value="_model.SlotDurationMinutes" />
 
-                        <MudNumericField Label="Kapazität pro Slot"
-                                         Min="1"
-                                         @bind-Value="_model.CapacityPerSlot" />
 
                         @if (!string.IsNullOrEmpty(_formError))
                         {
@@ -233,23 +229,84 @@
         _formError = "Bitte alle Pflichtfelder ausfüllen.";
     }
 
-    private async Task SaveAsync()
-    {
-        _saving = true;
+private async Task SaveAsync()
+{
+    _saving = true;
 
-        if (_editId == 0)
+    try
+    {
+        var isCreate = _editId == 0;
+
+        if (isCreate)
             await ServiceService.CreateServiceAsync(_model);
         else
             await ServiceService.UpdateServiceAsync(_editId, _model);
 
         _editOpen = false;
         await LoadServices();
+
+        Snackbar.Add(
+            isCreate
+                ? $"Service \"{_model.Name}\" wurde erfolgreich angelegt."
+                : $"Service \"{_model.Name}\" wurde erfolgreich aktualisiert.",
+            Severity.Success);
+    }
+    catch (Exception ex)
+    {
+        Snackbar.Add(
+            ex.Message,
+            Severity.Error);
+
+        Console.Error.WriteLine(ex);
+    }
+    finally
+    {
         _saving = false;
     }
+}
 
-    private async Task DeleteService(Service s)
+
+    private async Task ConfirmDeleteService(Service s)
+{
+    var parameters = new DialogParameters
+    {
+        ["Title"] = "Service löschen",
+        ["Message"] =
+            $"Möchtest du den Service **{s.Name}** wirklich löschen?"
+    };
+
+    var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>(
+        "Bestätigung",
+        parameters);
+
+    var result = await dialog.Result;
+
+    if (result is { Canceled: false })
+    {
+        await DeleteService(s); // ✅ EXISTIERENDE Methode
+    }
+}
+
+
+  private async Task DeleteService(Service s)
+{
+    try
     {
         await ServiceService.DeleteServiceAsync(s.Id);
         await LoadServices();
+
+        Snackbar.Add(
+            $"Service \"{s.Name}\" wurde erfolgreich gelöscht.",
+            Severity.Success);
     }
+    catch (Exception ex)
+    {
+        Snackbar.Add(
+            ex.Message,
+            Severity.Error);
+
+        Console.Error.WriteLine(ex);
+    }
+}
+
 }

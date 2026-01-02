@@ -12,6 +12,7 @@
 
 @inject IEmployeeService EmployeeService
 @inject ISnackbar Snackbar
+@inject IDialogService DialogService
 
 @inject EmployeeSessionService EmployeeSession
 @inject NavigationManager Navigation
@@ -33,6 +34,7 @@
             <HeaderContent>
                 <MudTh>ID</MudTh>
                 <MudTh>Name</MudTh>
+                <MudTh>Rolle</MudTh>
                 <MudTh>Email</MudTh>
                 <MudTh>Aktionen</MudTh>
             </HeaderContent>
@@ -40,6 +42,7 @@
             <RowTemplate>
                 <MudTd>@context.Id</MudTd>
                 <MudTd>@($"{context.FirstName} {context.LastName}")</MudTd>
+                <MudTd>@context.Role</MudTd>
                 <MudTd>@context.Email</MudTd>
 
                 <MudTd>
@@ -47,7 +50,7 @@
                                    OnClick="@(() => EditEmployee(context))" />
                     <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                    Color="Color.Error"
-                                   OnClick="@(() => DeleteEmployee(context))" />
+                                   OnClick="@(() => ConfirmDeleteEmployee(context))" />
                 </MudTd>
             </RowTemplate>
 
@@ -64,6 +67,7 @@
 
                     <MudTextField Label="Vorname" @bind-Value="_model.FirstName" Required />
                     <MudTextField Label="Nachname" @bind-Value="_model.LastName" Required />
+                
                     <MudTextField Label="E-Mail" @bind-Value="_model.Email" Required />
                     <MudSelect T="EmployeeRole" Label="Rolle" @bind-Value="_model.Role" Required>
                         <MudSelectItem Value="EmployeeRole.Employee">Mitarbeiter</MudSelectItem>
@@ -138,27 +142,105 @@
         {
             FirstName = e.FirstName,
             LastName = e.LastName,
-            Email = e.Email
+            Email = e.Email,
+            Role = e.Role
         };
 
         _editId = e.Id;
         _editOpen = true;
     }
 
-    private async Task SaveAsync()
+ private async Task SaveAsync()
+{
+    try
     {
-        if (_editId == 0)
+        var isCreate = _editId == 0;
+
+        if (isCreate)
             await EmployeeService.CreateEmployeeAsync(_model);
         else
             await EmployeeService.UpdateEmployeeAsync(_editId, _model);
 
         _employees = await EmployeeService.GetAllEmployeesAsync();
         _editOpen = false;
+
+        Snackbar.Add(
+            isCreate
+                ? $"Mitarbeiter {_model.FirstName} {_model.LastName} wurde erfolgreich angelegt."
+                : $"Mitarbeiter {_model.FirstName} {_model.LastName} wurde erfolgreich aktualisiert.",
+            Severity.Success);
     }
+   catch (Exception ex)
+{
+    var message =
+        string.IsNullOrWhiteSpace(ex.Message)
+            ? "Fehler beim Speichern des Mitarbeiters."
+            : ex.Message;
+
+    Snackbar.Add(message, Severity.Error);
+
+    // optional für Debugging
+    Console.Error.WriteLine(ex);
+}
+
+}
+
 
     private async Task DeleteEmployee(Employee e)
+{
+    try
     {
         await EmployeeService.DeleteEmployeeAsync(e.Id);
+
         _employees = await EmployeeService.GetAllEmployeesAsync();
+
+        Snackbar.Add(
+            $"Mitarbeiter {e.FirstName} {e.LastName} wurde erfolgreich gelöscht.",
+            Severity.Success);
     }
+    catch (Exception ex)
+    {
+        Snackbar.Add(
+            $"Fehler beim Löschen des Mitarbeiters {e.FirstName} {e.LastName}.",
+            Severity.Error);
+
+        // Optional: für Debugging (kannst du später entfernen)
+        Console.Error.WriteLine(ex);
+    }
+}
+
+
+   private async Task ConfirmDeleteEmployee(Employee employee)
+{
+    var parameters = new DialogParameters
+    {
+        ["Title"] = "Mitarbeiter löschen",
+        ["Message"] =
+            $"Bist du sicher, dass du den Mitarbeiter **{employee.FirstName} {employee.LastName}** löschen möchtest?"
+    };
+
+    var options = new DialogOptions
+    {
+        CloseButton = true,
+        MaxWidth = MaxWidth.Small,
+        FullWidth = true
+    };
+
+    // ✅ MudBlazor neu: ShowAsync statt Show
+    var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>(
+        "Bestätigung",
+        parameters,
+        options);
+
+    // ✅ Result funktioniert weiterhin ganz normal
+    var result = await dialog.Result;
+
+    if (result is { Canceled: false })
+    {
+        await DeleteEmployee(employee); // ✅ DEINE bestehende Methode
+    }
+}
+
+
+
 }

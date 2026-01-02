@@ -10,7 +10,6 @@
 @using ConsulatTermine.UI.Authentication
 @using MudBlazor
 
-
 @inject EmployeeSessionService EmployeeSession
 @inject NavigationManager Navigation
 
@@ -19,6 +18,7 @@
 @inject IWorkingScheduleOverviewService OverviewService
 @inject IWorkingSchedulePlanService WorkingSchedulePlanService
 @inject ISnackbar Snackbar
+@inject IDialogService DialogService
 
 <MudPaper Class="pa-4">
 
@@ -54,8 +54,6 @@
                         Mitarbeiter zugewiesen: <b>@GetEmployeeCount()</b> |
                         Slotdauer: <b>@GetSlotDuration()</b> Min
                     </MudAlert>
-
-                    
                 }
 
                 <MudStack Direction="Row" Justify="Justify.FlexEnd">
@@ -75,7 +73,9 @@
 
                 <MudSelect T="int"
                            Label="Jahr"
-                           @bind-Value="_model.Year"
+                           Value="_model.Year"
+                           ValueChanged="@(async (int y) => await OnYearChanged(y))"
+                           ValueExpression="@(() => _model.Year)"
                            Required="true"
                            FullWidth="true">
                     @foreach (var y in _years)
@@ -83,6 +83,13 @@
                         <MudSelectItem Value="@y">@y</MudSelectItem>
                     }
                 </MudSelect>
+
+                @if (_yearPlanPrefilled)
+                {
+                    <MudAlert Severity="Severity.Info" Dense="true">
+                        Für dieses Jahr existiert bereits ein Dienstplan. Die Felder wurden automatisch geladen (wie „Bearbeiten“).
+                    </MudAlert>
+                }
 
                 <MudStack Direction="Row" Justify="Justify.SpaceBetween">
                     <MudButton Variant="Variant.Text" OnClick="@(() => GoToStep(0))">Zurück</MudButton>
@@ -518,7 +525,7 @@
 
     <MudDivider Class="my-6" />
 
-    <!-- Overview (dein bestehender Überblick bleibt, damit du weiterhin "Bearbeiten/Löschen" wie bisher nutzen kannst) -->
+    <!-- Overview -->
     <MudStack Spacing="2">
         <MudText Typo="Typo.h6">Aktuelle Dienstplan-Übersicht</MudText>
 
@@ -612,7 +619,7 @@
                                         <MudButton Variant="Variant.Text"
                                                    Color="Color.Error"
                                                    StartIcon="@Icons.Material.Filled.Delete"
-                                                   OnClick="@(() => OnDeleteYear(context))">
+                                                   OnClick="@(() => ConfirmDeleteYearAsync(context))">
                                             Löschen
                                         </MudButton>
                                     </MudTd>
@@ -630,7 +637,6 @@
 @code {
 
     private List<Service> _services = new();
-
     private WorkingScheduleRequestDto _model = new();
 
     private int _activeStep = 0;
@@ -650,10 +656,13 @@
     private List<WorkingScheduleOverviewItem> _overview = new();
     private bool _overviewLoading = true;
 
+    private int _currentEmployeeId = 0;
+    private bool _yearPlanPrefilled = false;
+
     // -------------------------------------------------
-    // LOGIN-GUARD (Admin Services)
+    // LOGIN-GUARD
     // -------------------------------------------------
-     protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender)
             return;
@@ -665,14 +674,27 @@
             return;
         }
 
+        _currentEmployeeId = auth.EmployeeId;
+
         var role = EmployeeSession.CurrentRole;
         if (role != EmployeeRole.ServiceChef && role != EmployeeRole.Admin)
         {
             Navigation.NavigateTo("/employee/home", true);
             return;
         }
-    }
 
+        // Nach Auth: Services/Overview korrekt (filtered) laden
+        await LoadServicesAsync();
+        await LoadOverviewAsync();
+
+        // Falls Service nicht mehr erlaubt, reset
+        if (_model.ServiceId > 0 && !_services.Any(s => s.Id == _model.ServiceId))
+        {
+            ResetForm();
+        }
+
+        StateHasChanged();
+    }
 
     private readonly Dictionary<int, string> _monthNames = new()
     {
@@ -693,6 +715,7 @@
 
         _years = Enumerable.Range(DateTime.Now.Year - 1, 5).ToList();
 
+        // Initial laden (kann bei Auth-Render nochmal gefiltert überschrieben werden)
         await LoadServicesAsync();
         await LoadOverviewAsync();
 
@@ -700,12 +723,43 @@
     }
 
     private async Task LoadServicesAsync()
-        => _services = await ServiceService.GetAllServicesAsync();
+    {
+        var role = EmployeeSession.CurrentRole;
+
+        if (role == EmployeeRole.Admin)
+        {
+            _services = await ServiceService.GetAllServicesAsync();
+            return;
+        }
+
+        if (_currentEmployeeId > 0)
+        {
+            // ✅ NEU: nur Services des Mitarbeiters
+            _services = await ServiceService.GetServicesForEmployeeAsync(_currentEmployeeId);
+            return;
+        }
+
+        _services = new();
+    }
 
     private async Task LoadOverviewAsync()
     {
         _overviewLoading = true;
-        _overview = await OverviewService.GetOverviewAsync();
+
+        var all = await OverviewService.GetOverviewAsync();
+
+        // ✅ NEU: Overview passend zu erlaubten Services filtern (für ServiceChef)
+        var role = EmployeeSession.CurrentRole;
+        if (role != EmployeeRole.Admin)
+        {
+            var allowedIds = _services.Select(s => s.Id).ToHashSet();
+            _overview = all.Where(o => allowedIds.Contains(o.ServiceId)).ToList();
+        }
+        else
+        {
+            _overview = all;
+        }
+
         _overviewLoading = false;
     }
 
@@ -742,9 +796,40 @@
         ResetForm();
         _model.ServiceId = keepServiceId;
 
+        _yearPlanPrefilled = false;
+        PrefillCapacityFields();
+    }
+
+    // ✅ NEU: Jahr geändert -> wenn Plan existiert, automatisch prefill (wie "Bearbeiten")
+    private async Task OnYearChanged(int year)
+    {
+        _model.Year = year;
+        _yearPlanPrefilled = false;
+
+        if (!IsStep1Valid || year <= 0)
+            return;
+
+        var existing = FindYearPlan(_model.ServiceId, year);
+        if (existing == null)
+            return;
+
+        _model = await CreateRequestFromYearPlan(existing);
+        _selectedMonths = _model.Months.ToHashSet();
+
         PrefillCapacityFields();
 
-      
+        CancelEditWeekly();
+        CancelEditDate();
+
+        _yearPlanPrefilled = true;
+
+        StateHasChanged();
+    }
+
+    private WorkingScheduleYearPlan? FindYearPlan(int serviceId, int year)
+    {
+        var serviceItem = _overview.FirstOrDefault(o => o.ServiceId == serviceId);
+        return serviceItem?.YearPlans?.FirstOrDefault(p => p.Year == year);
     }
 
     private void PrefillCapacityFields()
@@ -998,7 +1083,7 @@
 
         try
         {
-            _model.Months = _selectedMonths.ToHashSet(); 
+            _model.Months = _selectedMonths.ToHashSet();
 
             var ok = await WorkingScheduleService.GenerateScheduleAsync(_model);
 
@@ -1039,21 +1124,54 @@
         _newWeekly = new WeeklyOverrideDto();
         _newDate = new DateOverrideDto();
 
+        _yearPlanPrefilled = false;
+
         PrefillCapacityFields();
         StateHasChanged();
     }
 
     // -----------------------------
-    // OVERVIEW: Edit/Delete (dein bestehender Flow)
+    // OVERVIEW: Edit/Delete
     // -----------------------------
+    private async Task ConfirmDeleteYearAsync(WorkingScheduleYearPlan year)
+    {
+        var parameters = new DialogParameters
+        {
+            ["Title"] = "Jahresplan löschen",
+            ["Message"] = $"Bist du sicher, dass du den Jahresplan **{year.Year}** für den Service **{year.ServiceName}** löschen möchtest?"
+        };
+
+        // ✅ MudBlazor v8: ShowAsync statt Show
+        var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>(
+            title: "Bestätigung",
+            parameters);
+
+        var result = await dialog.Result;
+
+        if (result.Canceled)
+            return;
+
+        await OnDeleteYear(year);
+    }
+
     private async Task OnDeleteYear(WorkingScheduleYearPlan year)
     {
-        bool ok = await OverviewService.DeleteYearAsync(year.ServiceId, year.Year);
-
-        if (ok)
+        try
         {
-            Snackbar.Add("Jahresplan gelöscht.", Severity.Success);
-            await LoadOverviewAsync();
+            bool ok = await OverviewService.DeleteYearAsync(year.ServiceId, year.Year);
+
+            if (ok)
+            {
+                Snackbar.Add("Jahresplan gelöscht.", Severity.Success);
+                await LoadOverviewAsync();
+                return;
+            }
+
+            Snackbar.Add("Fehler beim Löschen des Jahresplans.", Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Fehler: {ex.Message}", Severity.Error);
         }
     }
 
@@ -1068,6 +1186,8 @@
 
         CancelEditWeekly();
         CancelEditDate();
+
+        _yearPlanPrefilled = true;
 
         StateHasChanged();
     }
@@ -1162,7 +1282,6 @@
 
     private string FormatPlanRange(WorkingSchedulePlanDto p)
     {
-        // erwartet DateOnly in DTO; falls DateTime: einfach ToString("dd.MM.yyyy") anpassen
         return $"{p.ValidFromDate:dd.MM.yyyy} – {p.ValidToDate:dd.MM.yyyy}";
     }
 }

@@ -10,11 +10,20 @@
 @inject IEmployeeService EmployeeService
 
 
-<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
-    <MudCard>
+<MudContainer MaxWidth="MaxWidth.False"
+              Class="d-flex justify-center align-center"
+              Style="min-height: calc(50vh - 120px);">
+
+    <MudCard Class="login-card" Style="width:420px; margin-top:60px;">
+
+
         <MudCardContent>
 
-            <MudText Typo="Typo.h5" Align="Align.Center" Class="mb-4">
+           <MudText Typo="Typo.h4"
+         Align="Align.Center"
+         Class="mb-6"
+         Color="Color.Primary">
+
                 Mitarbeiter Login
             </MudText>
 
@@ -47,7 +56,7 @@
 
                 <MudButton Variant="Variant.Filled"
                            Color="Color.Primary"
-                           Disabled="!_isValid"
+                           Disabled="_form is null "
                            OnClick="PerformLogin"
                            Class="mt-6"
                            FullWidth="true">

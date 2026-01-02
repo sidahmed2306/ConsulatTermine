@@ -12,26 +12,27 @@
 
 <MudLayout>
 
-    <!-- TOP BAR (für Bürger + Mitarbeiter identisch) -->
-    <MudAppBar Elevation="4"
+    <!-- APP BAR -->
+    <MudAppBar Elevation="0"
                Color="Color.Primary"
-               Style="height: 120px; padding-top: 16px; margin-bottom: 50px;">
-        <div class="d-flex justify-center align-center" style="width:100%; padding: 40px 0;">
-            <MudImage Src="images/Alg_Logo.png"
-                      Alt="Consulat Algerien Logo"
-                      Style="height:90px; margin:12px;" />
-            <MudText Typo="Typo.h3" Class="mud-text-white">
+               Class="consulate-appbar">
+
+        <div class="consulate-appbar-inner">
+            <img src="images/Alg_Logo.png"
+                 alt="Consulat Algérien"
+                 class="consulate-logo" />
+
+            <div class="consulate-title">
                 Consulat Général Algérien à Francfort
-            </MudText>
+            </div>
         </div>
+
     </MudAppBar>
 
-    <!-- LEFT NAV (NUR für eingeloggte Mitarbeiter) -->
+    <!-- EMPLOYEE NAV -->
     @if (_showEmployeeNav)
     {
         <MudDrawer Open="true"
-                   Elevation="1"
-                   ClipMode="DrawerClipMode.Never"
                    Variant="DrawerVariant.Persistent"
                    Anchor="Anchor.Left"
                    Width="260px">
@@ -41,35 +42,30 @@
         </MudDrawer>
     }
 
-    <!-- MAIN CONTENT -->
-   <MudMainContent Class="pa-0" Style="@MainContentStyle">
-    @Body
-</MudMainContent>
-
+    <!-- CONTENT -->
+    <MudMainContent Style="@MainContentStyle">
+        @Body
+    </MudMainContent>
 
 </MudLayout>
-
 
 @code {
     private bool _showEmployeeNav;
 
     private string MainContentStyle =>
         _showEmployeeNav
-            ? "margin-top:120px; margin-left:260px;"
-            : "margin-top:120px;";
+            ? "margin-top:88px; margin-left:260px;"
+            : "margin-top:88px;";
 
     protected override void OnInitialized()
     {
-        // ❗ KEIN async / KEIN JS
         EmployeeSession.OnChange += HandleSessionChanged;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender)
-            return;
+        if (!firstRender) return;
 
-        // ✅ JS ist JETZT erlaubt
         var result = await EmployeeSession.EnsureAuthenticatedAsync();
         _showEmployeeNav = result.IsAuthenticated;
 
@@ -87,6 +83,3 @@
         EmployeeSession.OnChange -= HandleSessionChanged;
     }
 }
-
-
-

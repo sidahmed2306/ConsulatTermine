@@ -29,99 +29,158 @@
             Persönliche Angaben
         </MudText>
 
-        <EditForm Model="_formModel" OnValidSubmit="OnValidSubmit"   OnInvalidSubmit="OnInvalidSubmit">
+        <EditForm Model="_formModel" OnValidSubmit="OnValidSubmit" OnInvalidSubmit="OnInvalidSubmit">
             <DataAnnotationsValidator />
 
             <MudExpansionPanels MultiExpansion="true">
 
                 @for (int i = 0; i < _formModel.Persons.Count; i++)
-{
-    var person = _formModel.Persons[i];
-    var personNumber = i + 1;   
+                {
+                    var person = _formModel.Persons[i];
+                    var personNumber = i + 1;
 
-    <MudExpansionPanel @key="personNumber" Expanded="@(personNumber == 1)">
-        <TitleContent>
-            <MudText Typo="Typo.h6">Person @personNumber</MudText>
-        </TitleContent>
+                    <MudExpansionPanel @key="personNumber" Expanded="@(personNumber == 1)">
+                        <TitleContent>
+                            <MudText Typo="Typo.h6">Person @personNumber</MudText>
+                        </TitleContent>
 
-        <ChildContent>
+                        <ChildContent>
 
-            <MudTextField @bind-Value="person.FirstName"
-                          Label="Vorname *"
-                          Required="true" />
+                            <MudTextField @bind-Value="person.FirstName"
+                                          Label="Vorname *"
+                                          Required="true" />
 
-            <MudTextField @bind-Value="person.LastName"
-                          Label="Nachname *"
-                          Required="true" />
+                            <MudTextField @bind-Value="person.LastName"
+                                          Label="Nachname *"
+                                          Required="true" />
 
-            <MudDatePicker @bind-Date="person.DateOfBirth"
-                           Label="Geburtsdatum *"
-                           Required="true" />
+                            <MudDatePicker @bind-Date="person.DateOfBirth"
+                                           Label="Geburtsdatum *"
+                                           Required="true" />
 
-            <MudTextField @bind-Value="person.Email"
-                          Label="E-Mail *"
-                          Required="true" />
+                            <MudTextField @bind-Value="person.Email"
+                                          Label="E-Mail *"
+                                          Required="true" />
 
-            <MudTextField @bind-Value="person.Phone"
-                          Label="Telefon *"
-                          Required="true" />
+                            <MudTextField @bind-Value="person.Phone"
+                                          Label="Telefon *"
+                                          Required="true" />
 
-            <MudDivider Class="my-3" />
+                            <MudDivider Class="my-3" />
 
-            @foreach (var svc in _services)
-            {
-               @if (_slotsByService[svc.Id].Any())
-{
-    <MudText Typo="Typo.subtitle1" Class="mt-2 mb-1">
-        Slot für Service: @svc.Name
-    </MudText>
+                            @foreach (var svc in _services)
+                            {
+                                if (_slotsByService.TryGetValue(svc.Id, out var svcSlots) && svcSlots.Any())
+                                {
+                                    <MudText Typo="Typo.subtitle1" Class="mt-2 mb-1">
+                                        Slot für Service: @svc.Name
+                                    </MudText>
 
-    <MudGrid Spacing="2">
-        @foreach (var slot in _slotsByService[svc.Id]
-            .Where(s =>
-                !_formModel.Persons
-                    .Where(p => p != person)
-                    .Select(p => p.SelectedSlots[svc.Id])
-                    .Contains(s.DateTime)))
-        {
-            var isSelected = person.SelectedSlots[svc.Id] == slot.DateTime;
+                                    // ----------------------------
+                                    // ✅ KAPAZITÄTSLOGIK:
+                                    // Duplikate = Kapazität (z.B. 2x 09:00)
+                                    // ----------------------------
 
-            <MudItem xs="12" sm="6" md="4">
-               <MudButton
-    Variant="@(isSelected ? Variant.Filled : Variant.Outlined)"
-    Color="@(isSelected ? Color.Success : Color.Default)"
-    FullWidth="true"
-    Style="
-        border-radius: 999px;
-        height: 64px;
-        padding: 0;
-        text-transform: none;
-        font-weight: 500;"
-    OnClick="@(() => SelectSlot(person, svc.Id, slot.DateTime))">
+                                    person.SelectedSlots.TryGetValue(svc.Id, out var selectedForThisPerson);
 
-    <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Spacing="0">
-        <MudText Typo="Typo.h6" Style="line-height:1;">
-            @slot.DateTime.ToString("HH:mm")
-        </MudText>
+                                    var groupedByTime = svcSlots
+                                        .GroupBy(s => s.DateTime)
+                                        .OrderBy(g => g.Key);
 
-        <MudText Typo="Typo.caption" Style="opacity:.75;">
-            @slot.DateTime.ToString("dd.MM.yyyy")
-        </MudText>
-    </MudStack>
+                                    <MudGrid Spacing="2">
 
-</MudButton>
+                                        @foreach (var group in groupedByTime)
+                                        {
+                                            var time = group.Key;
+                                            var totalCapacity = group.Count();
 
-            </MudItem>
-        }
-    </MudGrid>
-}
+                                            // wie viele ANDERE Personen haben diese Uhrzeit bereits gewählt?
+                                            var takenByOthers = _formModel.Persons
+                                                .Where(p => p != person)
+                                                .Count(p =>
+                                                {
+                                                    p.SelectedSlots.TryGetValue(svc.Id, out var otherSlot);
+                                                    return otherSlot == time;
+                                                });
 
-            }
+                                            // verbleibende Kapazität für diese Person
+                                            var remaining = Math.Max(0, totalCapacity - takenByOthers);
 
-        </ChildContent>
-    </MudExpansionPanel>
-}
+                                            // ✅ Wenn diese Person schon gewählt hat:
+                                            // Dann nur den ausgewählten Slot anzeigen (genau 1x)
+                                            if (selectedForThisPerson != default)
+                                            {
+                                                if (selectedForThisPerson == time)
+                                                {
+                                                    <MudItem xs="12" sm="6" md="4">
+                                                        <MudButton
+                                                            Variant="Variant.Filled"
+                                                            Color="Color.Success"
+                                                            FullWidth="true"
+                                                            Style="
+                                                                border-radius: 999px;
+                                                                height: 64px;
+                                                                padding: 0;
+                                                                text-transform: none;
+                                                                font-weight: 500;"
+                                                            OnClick="@(() => SelectSlot(person, svc.Id, time))">
 
+                                                            <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Spacing="0">
+                                                                <MudText Typo="Typo.h6" Style="line-height:1;">
+                                                                    @time.ToString("HH:mm")
+                                                                </MudText>
+
+                                                                <MudText Typo="Typo.caption" Style="opacity:.75;">
+                                                                    @time.ToString("dd.MM.yyyy")
+                                                                </MudText>
+                                                            </MudStack>
+
+                                                        </MudButton>
+                                                    </MudItem>
+                                                }
+
+                                                continue;
+                                            }
+
+                                            // ✅ Wenn diese Person noch NICHT gewählt hat:
+                                            // Zeit so oft anzeigen wie verbleibende Kapazität
+                                            for (int k = 0; k < remaining; k++)
+                                            {
+                                                <MudItem xs="12" sm="6" md="4" @key="@(time.ToString("O") + "-" + k + "-" + personNumber)">
+                                                    <MudButton
+                                                        Variant="Variant.Outlined"
+                                                        Color="Color.Default"
+                                                        FullWidth="true"
+                                                        Style="
+                                                            border-radius: 999px;
+                                                            height: 64px;
+                                                            padding: 0;
+                                                            text-transform: none;
+                                                            font-weight: 500;"
+                                                        OnClick="@(() => SelectSlot(person, svc.Id, time))">
+
+                                                        <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Spacing="0">
+                                                            <MudText Typo="Typo.h6" Style="line-height:1;">
+                                                                @time.ToString("HH:mm")
+                                                            </MudText>
+
+                                                            <MudText Typo="Typo.caption" Style="opacity:.75;">
+                                                                @time.ToString("dd.MM.yyyy")
+                                                            </MudText>
+                                                        </MudStack>
+
+                                                    </MudButton>
+                                                </MudItem>
+                                            }
+                                        }
+
+                                    </MudGrid>
+                                }
+                            }
+
+                        </ChildContent>
+                    </MudExpansionPanel>
+                }
 
             </MudExpansionPanels>
 
@@ -146,211 +205,196 @@
     private Dictionary<int, List<SlotViewModel>> _slotsByService = new();
     private bool _initialized;
 
-protected override async Task OnAfterRenderAsync(bool firstRender)
-{
-    if (!firstRender || _initialized)
-        return;
-
-    _initialized = true;
-
-    var selectedServiceSlots =
-        await Session.GetItemAsync<Dictionary<int, List<DateTime>>>("selectedServiceSlots");
-
-    if (selectedServiceSlots == null || selectedServiceSlots.Count == 0)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        Navigation.NavigateTo("/services");
-        return;
+        if (!firstRender || _initialized)
+            return;
+
+        _initialized = true;
+
+        var selectedServiceSlots =
+            await Session.GetItemAsync<Dictionary<int, List<DateTime>>>("selectedServiceSlots");
+
+        if (selectedServiceSlots == null || selectedServiceSlots.Count == 0)
+        {
+            Navigation.NavigateTo("/services");
+            return;
+        }
+
+        var personCount = await Session.GetItemAsync<int>("personCount");
+        if (personCount <= 0)
+        {
+            Navigation.NavigateTo("/services");
+            return;
+        }
+
+        _formModel.Persons = new();
+        for (int i = 0; i < personCount; i++)
+            _formModel.Persons.Add(new PersonFormModel());
+
+        _services = new();
+        _slotsByService = new();
+
+        foreach (var kvp in selectedServiceSlots)
+        {
+            var svc = await ServiceService.GetByIdAsync(kvp.Key);
+            _services.Add(svc);
+
+            // ❗ Wichtig: KEIN Distinct(), weil Duplikate Kapazität bedeuten
+            _slotsByService[kvp.Key] = kvp.Value
+                .OrderBy(d => d)
+                .Select(d => new SlotViewModel { DateTime = d })
+                .ToList();
+        }
+
+        foreach (var p in _formModel.Persons)
+        {
+            p.SelectedSlots = new();
+            foreach (var svc in _services)
+                p.SelectedSlots[svc.Id] = default;
+        }
+
+        StateHasChanged();
     }
 
-    var personCount = await Session.GetItemAsync<int>("personCount");
-    if (personCount <= 0)
+    protected override Task OnInitializedAsync()
     {
-        Navigation.NavigateTo("/services");
-        return;
-    }
-
-    // 👉 ab hier DEIN bestehender Code:
-    _formModel.Persons = new();
-    for (int i = 0; i < personCount; i++)
-        _formModel.Persons.Add(new PersonFormModel());
-
-    _services = new();
-    _slotsByService = new();
-
-    foreach (var kvp in selectedServiceSlots)
-    {
-        var svc = await ServiceService.GetByIdAsync(kvp.Key);
-        _services.Add(svc);
-
-        _slotsByService[kvp.Key] = kvp.Value
-            .OrderBy(d => d)
-            .Select(d => new SlotViewModel { DateTime = d })
-            .ToList();
-    }
-
-    foreach (var p in _formModel.Persons)
-    {
-        p.SelectedSlots = new();
-        foreach (var svc in _services)
-            p.SelectedSlots[svc.Id] = default;
-    }
-
-    StateHasChanged();
-}
-
-    protected override  Task OnInitializedAsync()
-    {
-       return Task.CompletedTask;
+        return Task.CompletedTask;
     }
 
     private void OnInvalidSubmit()
-{
-    Snackbar.Add(
-        "Bitte füllen Sie alle erforderlichen Felder korrekt aus.",
-        Severity.Error);
-}
-
-
-  private async Task OnValidSubmit()
-{
-    // Zusätzliche Slot-Validierung
-    if (!AreAllSlotsSelected(out var error))
     {
-        Snackbar.Add(error, Severity.Error);
-        return;
+        Snackbar.Add(
+            "Bitte füllen Sie alle erforderlichen Felder korrekt aus.",
+            Severity.Error);
     }
 
-    try
+    private async Task OnValidSubmit()
     {
-        var request = new CreateBookingRequestDto();
-
-        // =========================
-        // Hauptperson (PersonIndex = 1)
-        // => immer Person[0]
-        // =========================
-        var mainPersonForm = _formModel.Persons[0];
-
-        request.MainPerson = new BookingPersonDto
+        // Zusätzliche Slot-Validierung
+        if (!AreAllSlotsSelected(out var error))
         {
-            FullName = $"{mainPersonForm.FirstName} {mainPersonForm.LastName}",
-            Email = mainPersonForm.Email,
-            PhoneNumber = mainPersonForm.Phone,
-            DateOfBirth = mainPersonForm.DateOfBirth
-        };
+            Snackbar.Add(error, Severity.Error);
+            return;
+        }
 
-        foreach (var service in _services)
-{
-    var slot = mainPersonForm.SelectedSlots[service.Id];
-
-    if (slot != default)
-    {
-        request.MainPerson.ServiceSlots.Add(new BookingServiceSlotDto
+        try
         {
-            ServiceId = service.Id,
-            SlotTime = slot
-        });
-    }
-}
+            var request = new CreateBookingRequestDto();
 
+            // =========================
+            // Hauptperson (PersonIndex = 1)
+            // => immer Person[0]
+            // =========================
+            var mainPersonForm = _formModel.Persons[0];
 
-        // =========================
-        // Begleitpersonen (PersonIndex = 2..n)
-        // =========================
-        for (int i = 1; i < _formModel.Persons.Count; i++)
-        {
-            var p = _formModel.Persons[i];
-
-            var personDto = new BookingPersonDto
+            request.MainPerson = new BookingPersonDto
             {
-                FullName = $"{p.FirstName} {p.LastName}",
-                PhoneNumber = p.Phone,
-                DateOfBirth = p.DateOfBirth
+                FullName = $"{mainPersonForm.FirstName} {mainPersonForm.LastName}",
+                Email = mainPersonForm.Email,
+                PhoneNumber = mainPersonForm.Phone,
+                DateOfBirth = mainPersonForm.DateOfBirth
             };
 
             foreach (var service in _services)
-{
-    var slot = p.SelectedSlots[service.Id];
+            {
+                var slot = mainPersonForm.SelectedSlots[service.Id];
 
-    if (slot != default)
-    {
-        personDto.ServiceSlots.Add(new BookingServiceSlotDto
-        {
-            ServiceId = service.Id,
-            SlotTime = slot
-        });
-    }
-}
+                if (slot != default)
+                {
+                    request.MainPerson.ServiceSlots.Add(new BookingServiceSlotDto
+                    {
+                        ServiceId = service.Id,
+                        SlotTime = slot
+                    });
+                }
+            }
 
+            // =========================
+            // Begleitpersonen (PersonIndex = 2..n)
+            // =========================
+            for (int i = 1; i < _formModel.Persons.Count; i++)
+            {
+                var p = _formModel.Persons[i];
 
-            request.AccompanyingPersons.Add(personDto);
+                var personDto = new BookingPersonDto
+                {
+                    FullName = $"{p.FirstName} {p.LastName}",
+                    PhoneNumber = p.Phone,
+                    DateOfBirth = p.DateOfBirth
+                };
+
+                foreach (var service in _services)
+                {
+                    var slot = p.SelectedSlots[service.Id];
+
+                    if (slot != default)
+                    {
+                        personDto.ServiceSlots.Add(new BookingServiceSlotDto
+                        {
+                            ServiceId = service.Id,
+                            SlotTime = slot
+                        });
+                    }
+                }
+
+                request.AccompanyingPersons.Add(personDto);
+            }
+
+            // =========================
+            // BACKEND CALL
+            // =========================
+            var bookingReference = await BookingService.CreateBookingAsync(request);
+
+            await Session.SetItemAsync("bookingReference", bookingReference);
+
+            Navigation.NavigateTo("/appointment-confirmation");
         }
-
-        // =========================
-        // BACKEND CALL
-        // =========================
-        var bookingReference = await BookingService.CreateBookingAsync(request);
-
-        // optional: Buchungsreferenz speichern
-        await Session.SetItemAsync("bookingReference", bookingReference);
-
-        Navigation.NavigateTo("/appointment-confirmation");
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
     }
-    catch (Exception ex)
-    {
-        Snackbar.Add(ex.Message, Severity.Error);
-    }
-}
-
-
-
-    // Models
 
     public class AppointmentFormModel
     {
         public List<PersonFormModel> Persons { get; set; } = new();
     }
 
-private bool AreAllSlotsSelected(out string errorMessage)
-{
-    foreach (var svc in _services)
+    private bool AreAllSlotsSelected(out string errorMessage)
     {
-        var hasAtLeastOneSlot = _formModel.Persons
-            .Any(p =>
-                p.SelectedSlots.TryGetValue(svc.Id, out var slot)
-                && slot != default);
-
-        if (!hasAtLeastOneSlot)
+        foreach (var svc in _services)
         {
-            errorMessage = $"Bitte wählen Sie einen Termin für den Service '{svc.Name}'.";
-            return false;
+            var hasAtLeastOneSlot = _formModel.Persons
+                .Any(p =>
+                    p.SelectedSlots.TryGetValue(svc.Id, out var slot)
+                    && slot != default);
+
+            if (!hasAtLeastOneSlot)
+            {
+                errorMessage = $"Bitte wählen Sie einen Termin für den Service '{svc.Name}'.";
+                return false;
+            }
         }
+
+        errorMessage = string.Empty;
+        return true;
     }
 
-    errorMessage = string.Empty;
-    return true;
-}
-
-
-  private void SelectSlot(PersonFormModel person, int serviceId, DateTime dateTime)
-{
-    // Wenn Key nicht existiert -> anlegen
-    if (!person.SelectedSlots.ContainsKey(serviceId))
-        person.SelectedSlots[serviceId] = default;
-
-    // Toggle: wenn derselbe Slot nochmal geklickt wird => abwählen
-    if (person.SelectedSlots[serviceId] == dateTime)
+    private void SelectSlot(PersonFormModel person, int serviceId, DateTime dateTime)
     {
-        person.SelectedSlots[serviceId] = default; // oder DateTime.MinValue
-        Console.WriteLine($"[Slot] UNSELECT Person -> Service {serviceId} Slot {dateTime:dd.MM.yyyy HH:mm}");
-        return;
+        if (!person.SelectedSlots.ContainsKey(serviceId))
+            person.SelectedSlots[serviceId] = default;
+
+        // Toggle: nochmal klicken = abwählen
+        if (person.SelectedSlots[serviceId] == dateTime)
+        {
+            person.SelectedSlots[serviceId] = default;
+            return;
+        }
+
+        person.SelectedSlots[serviceId] = dateTime;
     }
-
-    // sonst normal auswählen
-    person.SelectedSlots[serviceId] = dateTime;
-    Console.WriteLine($"[Slot] SELECT Person -> Service {serviceId} Slot {dateTime:dd.MM.yyyy HH:mm}");
-}
-
-
 
     public class PersonFormModel
     {
