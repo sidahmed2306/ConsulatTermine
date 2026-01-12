@@ -1,4 +1,3 @@
-
 using Microsoft.EntityFrameworkCore;
 using ConsulatTermine.Infrastructure.Persistence;
 using Infrastructure.SignalR;
@@ -10,25 +9,36 @@ using ConsulatTermine.Application.Interfaces.Booking;
 using ConsulatTermine.Infrastructure.Services.Booking;
 using ConsulatTermine.UI.Authentication;
 using ConsulatTermine.Infrastructure.SignalR;
-
-
-
-
-
-
-
+using System.Globalization;
+using Microsoft.AspNetCore.Localization;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// =====================
+// DATABASE
+// =====================
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Add services to the container.
+// =====================
+// BASIC SERVICES
+// =====================
 builder.Services.AddBlazoredSessionStorage();
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddSignalR();
 
+// =====================
+// LOCALIZATION (WICHTIG)
+// =====================
+builder.Services.AddLocalization(options =>
+{
+    options.ResourcesPath = "Resources";
+});
+
+// =====================
+// APPLICATION SERVICES
+// =====================
 builder.Services.AddScoped<IServiceDayOverrideService, ServiceDayOverrideService>();
 builder.Services.AddScoped<IServiceService, ServiceService>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
@@ -48,46 +58,42 @@ builder.Services.AddScoped<IEmployeeAuthService, EmployeeAuthService>();
 builder.Services.AddScoped<EmployeeSessionService>();
 builder.Services.AddSingleton<IWaitingRoomNotifier, WaitingRoomNotifier>();
 
-
-
-
-
-
-
-
-
-
-
+// =====================
+// UI
+// =====================
 builder.Services.AddMudServices();
-
-builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
-
-var supportedCultures = new[] { "de", "en", "ar" };
-
-builder.Services.Configure<RequestLocalizationOptions>(options =>
-{
-    options.SetDefaultCulture("ar");
-    options.AddSupportedCultures(supportedCultures);
-    options.AddSupportedUICultures(supportedCultures);
-});
-
-
 
 var app = builder.Build();
 
+// =====================
+// REQUEST LOCALIZATION
+// =====================
+var supportedCultures = new[]
+{
+    new CultureInfo("de-DE"),
+    new CultureInfo("en-US"),
+    new CultureInfo("ar-DZ")
+};
 
-app.UseRequestLocalization();
+var localizationOptions = new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture("de-DE"),
+    SupportedCultures = supportedCultures,
+    SupportedUICultures = supportedCultures
+};
 
-// Configure the HTTP request pipeline.
+app.UseRequestLocalization(localizationOptions);
+
+// =====================
+// MIDDLEWARE PIPELINE
+// =====================
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
-
 app.UseStaticFiles();
 
 app.MapBlazorHub();
@@ -95,10 +101,6 @@ app.MapBlazorHub();
 app.MapHub<DisplayHub>("/hubs/display");
 app.MapHub<EmployeeHub>("/hubs/employee");
 
-
-
 app.MapFallbackToPage("/_Host");
-
-
 
 app.Run();

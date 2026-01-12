@@ -99,10 +99,12 @@
                                     var isSelected = selectedOnThisSlot > 0;
 
                               <MudItem xs="12" sm="6">
-    <MudPaper Class="@($"slot-pill {(isSelected ? "selected" : "")}")" Elevation="0">
+    <div
+        class="@($"slot-pill {(isSelected ? "selected" : "")} {(_requiredCountForCurrentService == 1 ? "clickable" : "")}")"
+        style="@(_requiredCountForCurrentService == 1 && remaining > 0 ? "cursor:pointer;" : "")"
+        @onclick="@(() => OnSlotClicked(slot))">
 
         <div class="slot-row">
-            <!-- LEFT -->
             <div class="slot-left">
                 <span class="slot-time">@slotStart.ToString("HH:mm")</span>
                 <span class="slot-availability">
@@ -110,19 +112,7 @@
                 </span>
             </div>
 
-            <!-- RIGHT -->
-            @if (_requiredCountForCurrentService == 1)
-            {
-                <MudButton
-                    Disabled="@(remaining <= 0)"
-                    Variant="Variant.Outlined"
-                    Color="Color.Success"
-                    Class="slot-single-btn"
-                    OnClick="@(() => SelectSingleSlot(slot))">
-                    @(IsSelected(slotStart) ? "Ausgewählt" : "Wählen")
-                </MudButton>
-            }
-            else
+            @if (_requiredCountForCurrentService > 1)
             {
                 <div class="slot-counter-inline">
                     <MudIconButton
@@ -141,9 +131,9 @@
                 </div>
             }
         </div>
-
-    </MudPaper>
+    </div>
 </MudItem>
+
 
                                 }
                             </MudGrid>
@@ -303,6 +293,24 @@
         _slots.Clear();
         StateHasChanged();
     }
+    private void OnSlotClicked(AvailableSlotDto slot)
+{
+    // Nur bei 1 Person
+    if (_requiredCountForCurrentService != 1)
+        return;
+
+    // Nicht klickbar, wenn kein Platz frei
+    var remaining = DisplayFreeCapacity(slot);
+    if (remaining <= 0)
+        return;
+
+    // Deine bestehende Logik weiter nutzen
+    SelectSingleSlot(slot);
+
+    // 🔥 wichtig: UI neu rendern
+    StateHasChanged();
+}
+
 
     private async Task HandleDateChanged(DateTime? date)
     {
@@ -434,12 +442,14 @@
         return Math.Max(0, slot.FreeCapacity - selectedOnThisSlot);
     }
 
-    private void SelectSingleSlot(AvailableSlotDto slot)
-    {
-        var map = _allocations[_currentServiceId];
-        map.Clear();
-        map[slot.SlotStart] = 1;
-    }
+ private void SelectSingleSlot(AvailableSlotDto slot)
+{
+    var map = _allocations[_currentServiceId];
+    map.Clear();
+    map[slot.SlotStart] = 1;
+
+    StateHasChanged();
+}
 
     private void Increase(AvailableSlotDto slot)
     {

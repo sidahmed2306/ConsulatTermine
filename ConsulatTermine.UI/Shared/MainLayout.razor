@@ -2,8 +2,15 @@
 @using MudBlazor
 @using ConsulatTermine.UI.Theme
 @using ConsulatTermine.UI.Authentication
+@using Microsoft.AspNetCore.Localization
+@using Microsoft.Extensions.Localization
+@using System.Globalization
+
 
 @inject EmployeeSessionService EmployeeSession
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
 
 <MudThemeProvider Theme="AlgeriaTheme.DefaultTheme" />
 <MudPopoverProvider />
@@ -13,11 +20,14 @@
 <MudLayout>
 
     <!-- APP BAR -->
-    <MudAppBar Elevation="0"
-               Color="Color.Primary"
-               Class="consulate-appbar">
+  <MudAppBar Elevation="0"
+           Color="Color.Primary"
+           Class="consulate-appbar">
 
-        <div class="consulate-appbar-inner">
+    <div class="consulate-appbar-inner">
+
+        <!-- LEFT: LOGO + TITLE -->
+        <div class="d-flex align-center">
             <img src="images/Alg_Logo.png"
                  alt="Consulat Algérien"
                  class="consulate-logo" />
@@ -27,7 +37,38 @@
             </div>
         </div>
 
-    </MudAppBar>
+       <!-- RIGHT: LANGUAGE SWITCHER -->
+<div class="d-flex align-center gap-2">
+
+    <MudIconButton Icon="@Icons.Material.Filled.Language"
+                   Color="Color.Inherit"
+                   Size="Size.Medium" />
+
+    <MudButton Variant="Variant.Text"
+               Color="Color.Inherit"
+               OnClick='@(() => ChangeLanguage("de-DE"))'>
+        🇩🇪
+    </MudButton>
+
+    <MudButton Variant="Variant.Text"
+               Color="Color.Inherit"
+               OnClick='@(() => ChangeLanguage("en-US"))'>
+        🇬🇧
+    </MudButton>
+
+    <MudButton Variant="Variant.Text"
+               Color="Color.Inherit"
+               OnClick='@(() => ChangeLanguage("ar-DZ"))'>
+        🇩🇿
+    </MudButton>
+
+</div>
+
+
+    </div>
+
+</MudAppBar>
+
 
     <!-- EMPLOYEE NAV -->
     @if (_showEmployeeNav)
@@ -77,6 +118,10 @@
         _showEmployeeNav = EmployeeSession.IsAuthenticated;
         InvokeAsync(StateHasChanged);
     }
+private async Task ChangeLanguage(string culture)
+{
+    await JS.InvokeVoidAsync("culture.set", culture);
+}
 
     public void Dispose()
     {

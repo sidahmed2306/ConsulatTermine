@@ -2,6 +2,14 @@
 
 @using MudBlazor
 @using Blazored.SessionStorage
+@using Microsoft.Extensions.Localization
+@using Microsoft.AspNetCore.Components
+
+
+
+@inject IStringLocalizer<AppResources> L
+
+
 
 @inject ISessionStorageService Session
 @inject NavigationManager Navigation
@@ -87,14 +95,28 @@
 
     private string? _bookingReference;
     private string? _email;
+    private bool _loaded;
 
-    protected override async Task OnInitializedAsync()
+ protected override async Task OnAfterRenderAsync(bool firstRender)
+{
+    if (!firstRender)
+        return;
+
+    _bookingReference = await Session.GetItemAsync<string>("bookingReference");
+    _email = await Session.GetItemAsync<string>("mainPersonEmail");
+
+    // ❌ Direktzugriff / Reload ohne gültige Buchung
+    if (string.IsNullOrWhiteSpace(_bookingReference))
     {
-        _bookingReference = await Session.GetItemAsync<string>("bookingReference");
-
-        // Optional: E-Mail der Hauptperson anzeigen (falls gespeichert)
-        _email = await Session.GetItemAsync<string>("mainPersonEmail");
+        Navigation.NavigateTo("/services", replace: true);
+        return;
     }
+
+    _loaded = true;
+    StateHasChanged();
+}
+
+
 
     private void GoToHome()
     {

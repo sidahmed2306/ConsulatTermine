@@ -6,9 +6,6 @@
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/bin/Debug/net8.0/ConsulatTermine.UI.runtimeconfig.json
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/bin/Debug/net8.0/ConsulatTermine.UI.dll
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/bin/Debug/net8.0/ConsulatTermine.UI.pdb
-/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/bin/Debug/net8.0/ar/ConsulatTermine.UI.resources.dll
-/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/bin/Debug/net8.0/de/ConsulatTermine.UI.resources.dll
-/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/bin/Debug/net8.0/en/ConsulatTermine.UI.resources.dll
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/bin/Debug/net8.0/Azure.Core.dll
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/bin/Debug/net8.0/Azure.Identity.dll
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/bin/Debug/net8.0/Blazored.SessionStorage.dll
@@ -141,9 +138,6 @@
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/bin/Debug/net8.0/ConsulatTermine.Infrastructure.pdb
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/bin/Debug/net8.0/ConsulatTermine.Domain.pdb
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/obj/Debug/net8.0/ConsulatTermine.UI.csproj.AssemblyReference.cache
-/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/obj/Debug/net8.0/ConsulatTermine.UI.Resources.LandingPage.ar.resources
-/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/obj/Debug/net8.0/ConsulatTermine.UI.Resources.LandingPage.de.resources
-/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/obj/Debug/net8.0/ConsulatTermine.UI.Resources.LandingPage.en.resources
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/obj/Debug/net8.0/ConsulatTermine.UI.csproj.GenerateResource.cache
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/obj/Debug/net8.0/ConsulatTermine.UI.GeneratedMSBuildEditorConfig.editorconfig
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/obj/Debug/net8.0/ConsulatTermine.UI.AssemblyInfoInputs.cache
@@ -153,12 +147,6 @@
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/obj/Debug/net8.0/ConsulatTermine.UI.RazorAssemblyInfo.cache
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/obj/Debug/net8.0/ConsulatTermine.UI.RazorAssemblyInfo.cs
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/obj/Debug/net8.0/ConsulatTermine.UI.sourcelink.json
-/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/obj/Debug/net8.0/ar/ConsulatTermine.UI.resources.cs
-/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/obj/Debug/net8.0/ar/ConsulatTermine.UI.resources.dll
-/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/obj/Debug/net8.0/de/ConsulatTermine.UI.resources.cs
-/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/obj/Debug/net8.0/de/ConsulatTermine.UI.resources.dll
-/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/obj/Debug/net8.0/en/ConsulatTermine.UI.resources.cs
-/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/obj/Debug/net8.0/en/ConsulatTermine.UI.resources.dll
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/obj/Debug/net8.0/staticwebassets.build.json
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/obj/Debug/net8.0/staticwebassets.development.json
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/obj/Debug/net8.0/staticwebassets/msbuild.ConsulatTermine.UI.Microsoft.AspNetCore.StaticWebAssets.props
@@ -176,3 +164,5 @@
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/obj/Debug/net8.0/ConsulatTermine.UI.pdb
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/obj/Debug/net8.0/ConsulatTermine.UI.genruntimeconfig.cache
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/obj/Debug/net8.0/ref/ConsulatTermine.UI.dll
+/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/obj/Debug/net8.0/ConsulatTermine.UI.AppResources.resources
+/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/obj/Debug/net8.0/ConsulatTermine.UI.Resources.AppResources-en-US.resources

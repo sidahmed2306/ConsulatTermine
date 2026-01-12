@@ -750,15 +750,26 @@
 
         // ✅ NEU: Overview passend zu erlaubten Services filtern (für ServiceChef)
         var role = EmployeeSession.CurrentRole;
-        if (role != EmployeeRole.Admin)
-        {
-            var allowedIds = _services.Select(s => s.Id).ToHashSet();
-            _overview = all.Where(o => allowedIds.Contains(o.ServiceId)).ToList();
-        }
-        else
-        {
-            _overview = all;
-        }
+       if (role != EmployeeRole.Admin)
+{
+    var allowedIds = _services.Select(s => s.Id).ToHashSet();
+
+    _overview = all
+        .Where(o =>
+            allowedIds.Contains(o.ServiceId) &&
+            o.YearPlans != null &&
+            o.YearPlans.Any())
+        .ToList();
+}
+else
+{
+    _overview = all
+        .Where(o =>
+            o.YearPlans != null &&
+            o.YearPlans.Any())
+        .ToList();
+}
+
 
         _overviewLoading = false;
     }
@@ -814,6 +825,7 @@
             return;
 
         _model = await CreateRequestFromYearPlan(existing);
+        _model.WorkingSchedulePlanId = existing.WorkingSchedulePlanId;
         _selectedMonths = _model.Months.ToHashSet();
 
         PrefillCapacityFields();
@@ -1178,7 +1190,12 @@
     private async Task OnEditYear(WorkingScheduleYearPlan year)
     {
         _model = await CreateRequestFromYearPlan(year);
-        _selectedMonths = _model.Months.ToHashSet();
+
+// ✅ NEU: bestehender Plan wird bearbeitet
+_model.WorkingSchedulePlanId = year.WorkingSchedulePlanId;
+
+_selectedMonths = _model.Months.ToHashSet();
+
 
         PrefillCapacityFields();
 
