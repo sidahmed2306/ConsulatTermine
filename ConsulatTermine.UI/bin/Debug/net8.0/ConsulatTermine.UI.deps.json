@@ -18,17 +18,6 @@
         },
         "runtime": {
           "ConsulatTermine.UI.dll": {}
-        },
-        "resources": {
-          "ar/ConsulatTermine.UI.resources.dll": {
-            "locale": "ar"
-          },
-          "de/ConsulatTermine.UI.resources.dll": {
-            "locale": "de"
-          },
-          "en/ConsulatTermine.UI.resources.dll": {
-            "locale": "en"
-          }
         }
       },
       "Azure.Core/1.35.0": {
@@ -1242,7 +1231,8 @@
           "ConsulatTermine.Domain": "1.0.0",
           "Microsoft.AspNetCore.SignalR": "1.2.0",
           "Microsoft.EntityFrameworkCore": "8.0.10",
-          "Microsoft.EntityFrameworkCore.SqlServer": "8.0.10"
+          "Microsoft.EntityFrameworkCore.SqlServer": "8.0.10",
+          "Microsoft.Extensions.Configuration.Abstractions": "8.0.0"
         },
         "runtime": {
           "ConsulatTermine.Infrastructure.dll": {

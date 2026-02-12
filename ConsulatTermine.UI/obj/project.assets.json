@@ -2175,7 +2175,8 @@
           "ConsulatTermine.Domain": "1.0.0",
           "Microsoft.AspNetCore.SignalR": "1.2.0",
           "Microsoft.EntityFrameworkCore": "8.0.10",
-          "Microsoft.EntityFrameworkCore.SqlServer": "8.0.10"
+          "Microsoft.EntityFrameworkCore.SqlServer": "8.0.10",
+          "Microsoft.Extensions.Configuration.Abstractions": "8.0.0"
         },
         "compile": {
           "bin/placeholder/ConsulatTermine.Infrastructure.dll": {}
