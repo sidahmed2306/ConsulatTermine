@@ -67,4 +67,16 @@ public string? TemporaryPassword { get; set; }
 /// </summary>
 public EmployeeRole Role { get; set; } = EmployeeRole.Employee;
 
+/// <summary>
+/// Token für die Passwort-Zurücksetzung über E-Mail-Link.
+/// Wird bei "Passwort vergessen" gesetzt.
+/// </summary>
+public string? PasswordResetToken { get; set; }
+
+/// <summary>
+/// Ablaufdatum des Passwort-Reset-Links.
+/// Nach diesem Zeitpunkt ist eine Zurücksetzung nicht mehr möglich.
+/// </summary>
+public DateTime? PasswordResetTokenExpiresAt { get; set; }
+
 }

@@ -4,7 +4,7 @@ using ConsulatTermine.Domain.Entities;
 using ConsulatTermine.Domain.Enums;
 using ConsulatTermine.Infrastructure.Persistence;
 using Infrastructure.SignalR;
-using ConsulatTermine.Infrastructure.SignalR;
+
 using Microsoft.AspNetCore.SignalR;
 
 using Microsoft.EntityFrameworkCore;
@@ -16,24 +16,26 @@ namespace ConsulatTermine.Infrastructure.Services
         private readonly ApplicationDbContext _context;
         private readonly IHubContext<DisplayHub, IDisplayClient> _displayHub;
         private readonly IHubContext<EmployeeHub, IEmployeeClient> _employeeHub;
+private readonly IWaitingRoomNotifier _waitingRoomNotifier;
 
         private readonly IEmailService _emailService;
-        private readonly IHubContext<WaitingRoomHub, IWaitingRoomClient> _waitingRoomHub;
 
 
-       public AppointmentService(
+
+      public AppointmentService(
     ApplicationDbContext context,
     IHubContext<DisplayHub, IDisplayClient> displayHub,
     IHubContext<EmployeeHub, IEmployeeClient> employeeHub,
-    IHubContext<WaitingRoomHub, IWaitingRoomClient> waitingRoomHub,
-    IEmailService emailService)
+    IEmailService emailService,
+    IWaitingRoomNotifier waitingRoomNotifier)
 {
     _context = context;
     _displayHub = displayHub;
     _employeeHub = employeeHub;
-    _waitingRoomHub = waitingRoomHub;
     _emailService = emailService;
+    _waitingRoomNotifier = waitingRoomNotifier;
 }
+
 
 
         // -------------------------------------------------------------
@@ -266,38 +268,30 @@ public async Task<bool> CancelAsync(int appointmentId)
         // -------------------------------------------------------------
 public async Task<bool> StartProcessingAsync(int appointmentId, int employeeId)
 {
-    var appointment = await _context.Appointments
-        .Include(a => a.Service)
-        .FirstOrDefaultAsync(a => a.Id == appointmentId);
+    // 🔒 ATOMARES UPDATE
+   var affected = await _context.Database.ExecuteSqlInterpolatedAsync($@"
+    UPDATE Appointments
+    SET 
+        Status = {(int)AppointmentStatus.InProgress},
+        CurrentEmployeeId = {employeeId},
+        IsVisibleInWaitingRoom = 1
+    WHERE 
+        Id = {appointmentId}
+        AND Status = {(int)AppointmentStatus.Booked}
+");
 
-    if (appointment == null)
-        return false;
+if (affected == 0)
+    return false;
 
-    // Version 1: Alle Booked-Termine gelten als wartend
-    if (appointment.Status != AppointmentStatus.Booked)
-        return false;
+// 🔴 DAS HAT GEFEHLT
+_context.ChangeTracker.Clear();
 
-    appointment.Status = AppointmentStatus.InProgress;
-    appointment.CurrentEmployeeId = employeeId;
-    appointment.IsVisibleInWaitingRoom = true;
+return true;
 
-    await _context.SaveChangesAsync();
-await _waitingRoomHub.Clients.All.CallStarted();
-
-    // Bestehende Echtzeit-Updates (falls vorhanden)
-    await _employeeHub.Clients.All.StatusUpdated(
-        appointment.Id,
-        appointment.Status
-    );
-
-    return true;
 }
 
-public async Task RecallAsync(int appointmentId, int employeeId)
-{
-    // Kein Statuswechsel, kein DB-Zugriff nötig
-    await _waitingRoomHub.Clients.All.Recall();
-}
+
+
 
 
 
@@ -315,26 +309,24 @@ public async Task<bool> CompleteAsync(int appointmentId, int employeeId)
     if (appointment == null)
         return false;
 
-    // Nur der eigene InProgress-Termin darf beendet werden
-    if (appointment.Status != AppointmentStatus.InProgress)
-        return false;
+    // 🔐 Sicherheitscheck: nur der Mitarbeiter, der ihn gestartet hat
+    if ((appointment.Status != AppointmentStatus.InProgress &&
+     appointment.Status != AppointmentStatus.AtDesk) ||
+    appointment.CurrentEmployeeId != employeeId)
+    return false;
 
-    if (appointment.CurrentEmployeeId != employeeId)
-        return false;
 
+    // ✅ FINALER STATUSWECHSEL
     appointment.Status = AppointmentStatus.Completed;
     appointment.CompletedAt = DateTime.UtcNow;
+
+    // 🧹 Arbeitsplatz / Mitarbeiter freigeben
     appointment.CurrentEmployeeId = null;
 
     await _context.SaveChangesAsync();
-
-    await _employeeHub.Clients.All.StatusUpdated(
-        appointment.Id,
-        appointment.Status
-    );
-
     return true;
 }
+
 
 public async Task<bool> HideFromWaitingRoomAsync(int appointmentId, int employeeId)
 {
@@ -344,23 +336,26 @@ public async Task<bool> HideFromWaitingRoomAsync(int appointmentId, int employee
     if (appointment == null)
         return false;
 
-    // Nur der Mitarbeiter, der den Termin hat, darf ihn ausblenden
-    if (appointment.Status != AppointmentStatus.InProgress)
-        return false;
-
+    // Sicherheitscheck: nur eigener Termin
     if (appointment.CurrentEmployeeId != employeeId)
         return false;
 
-   appointment.IsVisibleInWaitingRoom = false;
+    // Nur sinnvoll bei aktiver Bearbeitung
+    if (appointment.Status != AppointmentStatus.InProgress)
+        return false;
 
-await _context.SaveChangesAsync();
+    // ✅ Fachlicher Zustand: Bürger ist am Schalter
+    appointment.Status = AppointmentStatus.AtDesk;
 
-// ❌ aus TV entfernen
-await _waitingRoomHub.Clients.All.Hide();
+    // ✅ Nicht mehr im Wartezimmer anzeigen
+    appointment.IsVisibleInWaitingRoom = false;
 
-return true;
+    await _context.SaveChangesAsync();
 
+    _waitingRoomNotifier.Notify();
+    return true;
 }
+
 
 
         // -------------------------------------------------------------
@@ -478,13 +473,14 @@ return true;
     DateTime date)
 {
     var targetDate = date.Date;
+return await _context.Appointments
+    .AsNoTracking() // 🔴 WICHTIG
+    .Where(a =>
+        a.ServiceId == serviceId &&
+        a.Date.Date == targetDate)
+    .OrderBy(a => a.Date)
+    .ToListAsync();
 
-    return await _context.Appointments
-        .Where(a =>
-            a.ServiceId == serviceId &&
-            a.Date.Date == targetDate)
-        .OrderBy(a => a.Date) // Uhrzeit
-        .ToListAsync();
 }
 
 public async Task<Appointment?> GetNextAppointmentForServiceOnDateAsync(
@@ -518,5 +514,21 @@ public async Task<Appointment?> GetNextAppointmentForServiceOnDateAsync(
             var to = plan.ValidToDate.ToDateTime(TimeOnly.MaxValue);
             return date >= from && date <= to;
         }
+
+       public async Task<List<Appointment>> GetActiveWaitingRoomAppointmentsAsync()
+{
+    var today = DateTime.Today;
+
+    return await _context.Appointments
+        .Include(a => a.Service)
+        .Where(a =>
+            a.Status == AppointmentStatus.InProgress &&
+            a.IsVisibleInWaitingRoom &&
+            a.Date.Date == today)
+        .OrderBy(a => a.Date)
+        .ToListAsync();
+}
+
+
     }
 }

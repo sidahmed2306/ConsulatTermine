@@ -38,6 +38,9 @@ namespace ConsulatTermine.Infrastructure.Services.Booking
             string bookingRef = _referenceGenerator.GenerateReference();
             request.BookingReference = bookingRef;
 
+            // ✅ NEU: Wir sammeln alle Termine für die Bestätigungs-E-Mail
+            var emailAppointments = new List<BookingEmailAppointmentDto>();
+
             // 🔐 EIN Cancel-Token für die gesamte Buchung
             string cancelToken = Guid.NewGuid().ToString("N");
 
@@ -60,8 +63,8 @@ namespace ConsulatTermine.Infrastructure.Services.Booking
                     bookingRef,
                     cancelToken,
                     personIndex,
-                    isMainPerson: true
-                );
+                    true,
+                    emailAppointments);
 
                 // ---- Begleitpersonen ----
                 foreach (var acc in request.AccompanyingPersons)
@@ -72,8 +75,8 @@ namespace ConsulatTermine.Infrastructure.Services.Booking
                         bookingRef,
                         cancelToken,
                         personIndex,
-                        isMainPerson: false
-                    );
+                        false,
+                        emailAppointments);
                 }
 
                 // Alles speichern
@@ -87,10 +90,14 @@ namespace ConsulatTermine.Infrastructure.Services.Booking
                     {
                         if (!string.IsNullOrWhiteSpace(request.MainPerson.Email))
                         {
+                            // ✅ FIX: Hier NICHT nochmal Appointments erzeugen!
+                            // ✅ Stattdessen: Bestätigungsmail inkl. Terminübersicht senden
                             await _emailService.SendBookingConfirmationAsync(
                                 request.MainPerson.Email,
                                 request.MainPerson.FullName,
-                                bookingRef, cancelToken);
+                                bookingRef,
+                                cancelToken,
+                                emailAppointments);
                         }
                     }
                     catch (Exception ex)
@@ -117,7 +124,8 @@ namespace ConsulatTermine.Infrastructure.Services.Booking
             string bookingRef,
             string cancelToken,
             int personIndex,
-            bool isMainPerson)
+            bool isMainPerson,
+            List<BookingEmailAppointmentDto> emailAppointments)
         {
             foreach (var serviceSlot in person.ServiceSlots)
             {
@@ -151,6 +159,17 @@ namespace ConsulatTermine.Infrastructure.Services.Booking
                     CancelToken = cancelToken,
                     CancelTokenExpiresAt = cancelDeadlineUtc
                 };
+
+                // ✅ NEU: Daten für die E-Mail sammeln
+                emailAppointments.Add(new BookingEmailAppointmentDto
+                {
+                    PersonFullName = person.FullName,
+                    ServiceName = _db.Services
+                        .Where(s => s.Id == serviceSlot.ServiceId)
+                        .Select(s => s.Name)
+                        .First(),
+                    DateTime = serviceSlot.SlotTime
+                });
 
                 _db.Appointments.Add(appointment);
             }

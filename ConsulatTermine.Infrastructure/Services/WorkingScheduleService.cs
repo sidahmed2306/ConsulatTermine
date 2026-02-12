@@ -50,17 +50,18 @@ namespace ConsulatTermine.Infrastructure.Services
             // -------------------------------------------------
             var fromMonth = request.Months.Min();
             var toMonth = request.Months.Max();
+var planDto = new WorkingSchedulePlanDto
+{
+    Id = request.WorkingSchedulePlanId ?? 0, // ✅ ENTSCHEIDEND
+    ServiceId = request.ServiceId,
+    ValidFromDate = new DateOnly(request.Year, fromMonth, 1),
+    ValidToDate = new DateOnly(
+        request.Year,
+        toMonth,
+        DateTime.DaysInMonth(request.Year, toMonth)),
+    IsActive = true
+};
 
-            var planDto = new WorkingSchedulePlanDto
-            {
-                ServiceId = request.ServiceId,
-                ValidFromDate = new DateOnly(request.Year, fromMonth, 1),
-                ValidToDate = new DateOnly(
-                    request.Year,
-                    toMonth,
-                    DateTime.DaysInMonth(request.Year, toMonth)),
-                IsActive = true
-            };
 
             var savedPlan = await _planService.SaveAsync(planDto);
 

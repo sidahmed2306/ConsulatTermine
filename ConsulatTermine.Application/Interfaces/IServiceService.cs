@@ -11,6 +11,8 @@ public interface IServiceService
     Task<bool> DeleteServiceAsync(int id);
     Task<Service?> GetServiceByIdAsync(int id);
     Task<List<Service>> GetAllServicesAsync();
+    Task<List<Service>> GetServicesForEmployeeAsync(int employeeId);
+
      Task<ServiceDto> GetByIdAsync(int id);
     Task<List<SlotViewModel>> GetAvailableSlotsForServiceAsync(int serviceId, DateOnly date);
     Task<List<AvailableSlotDto>> GetAvailableSlotDtosAsync(

@@ -133,6 +133,12 @@ namespace ConsulatTermine.Infrastructure.Migrations
                     b.Property<bool>("MustChangePassword")
                         .HasColumnType("bit");
 
+                    b.Property<string>("PasswordResetToken")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("PasswordResetTokenExpiresAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("Role")
                         .HasColumnType("int");
 

@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Mail;
 using Microsoft.Extensions.Configuration;
 using ConsulatTermine.Application.Interfaces;
+using ConsulatTermine.Application.DTOs.Booking;
 
 namespace ConsulatTermine.Infrastructure.Services
 {
@@ -14,19 +15,22 @@ namespace ConsulatTermine.Infrastructure.Services
             _configuration = configuration;
         }
 
-        // -------------------------------------------------------------
-        // TERMINBESTÄTIGUNG
-        // -------------------------------------------------------------
+        // =============================================================
+        // TERMINBESTÄTIGUNG (ERWEITERT – MIT SERVICE / DATUM / UHRZEIT)
+        // =============================================================
         public async Task SendBookingConfirmationAsync(
             string toEmail,
             string fullName,
             string bookingReference,
-            string cancelToken)
+            string cancelToken,
+            IReadOnlyList<BookingEmailAppointmentDto> appointments)
         {
             var email = GetEmailConfig();
 
             var cancelUrl =
                 $"http://localhost:5262/appointment-cancel?ref={bookingReference}&token={cancelToken}";
+
+            var servicesHtml = BuildServicesOverviewHtml(appointments);
 
             using var smtpClient = CreateSmtpClient(email);
 
@@ -38,7 +42,7 @@ namespace ConsulatTermine.Infrastructure.Services
                     fullName,
                     bookingReference,
                     cancelUrl,
-                    "<p>Die Details Ihrer gebuchten Services entnehmen Sie bitte dem Terminportal.</p>"),
+                    servicesHtml),
                 IsBodyHtml = true
             };
 
@@ -46,9 +50,9 @@ namespace ConsulatTermine.Infrastructure.Services
             await smtpClient.SendMailAsync(mailMessage);
         }
 
-        // -------------------------------------------------------------
+        // =============================================================
         // TEIL-ABSAGE
-        // -------------------------------------------------------------
+        // =============================================================
         public async Task SendPartialCancellationAsync(
             string toEmail,
             string fullName,
@@ -73,9 +77,9 @@ namespace ConsulatTermine.Infrastructure.Services
             await smtpClient.SendMailAsync(mailMessage);
         }
 
-        // -------------------------------------------------------------
+        // =============================================================
         // VOLLSTÄNDIGE ABSAGE
-        // -------------------------------------------------------------
+        // =============================================================
         public async Task SendCancellationConfirmationAsync(
             string toEmail,
             string fullName,
@@ -88,7 +92,9 @@ namespace ConsulatTermine.Infrastructure.Services
             {
                 From = new MailAddress(email.FromEmail, email.FromName),
                 Subject = "Alle Termine abgesagt – Konsulat",
-                Body = BuildCancellationHtmlMailBody(fullName, bookingReference),
+                Body = BuildCancellationHtmlMailBody(
+                    fullName,
+                    bookingReference),
                 IsBodyHtml = true
             };
 
@@ -96,65 +102,63 @@ namespace ConsulatTermine.Infrastructure.Services
             await smtpClient.SendMailAsync(mailMessage);
         }
 
-        // -------------------------------------------------------------
-// MITARBEITER – PASSWORT GEÄNDERT (E-Mail 2)
-// -------------------------------------------------------------
-public async Task SendEmployeePasswordChangedConfirmationEmailAsync(
-    string toEmail,
-    string fullName,
-    string loginLink)
-{
-    var email = GetEmailConfig();
-    using var smtpClient = CreateSmtpClient(email);
+        // =============================================================
+        // MITARBEITER – WILLKOMMEN
+        // =============================================================
+        public async Task SendEmployeeWelcomeEmailAsync(
+            string toEmail,
+            string fullName,
+            string employeeCode,
+            string temporaryPassword,
+            string changePasswordLink)
+        {
+            var email = GetEmailConfig();
+            using var smtpClient = CreateSmtpClient(email);
 
-    using var mailMessage = new MailMessage
-    {
-        From = new MailAddress(email.FromEmail, email.FromName),
-        Subject = "Passwort erfolgreich geändert – Konsulat",
-        Body = BuildEmployeePasswordChangedHtmlMailBody(
-            fullName,
-            loginLink),
-        IsBodyHtml = true
-    };
+            using var mailMessage = new MailMessage
+            {
+                From = new MailAddress(email.FromEmail, email.FromName),
+                Subject = "Willkommen – Mitarbeiterzugang Konsulat",
+                Body = BuildEmployeeWelcomeHtmlMailBody(
+                    fullName,
+                    employeeCode,
+                    temporaryPassword,
+                    changePasswordLink),
+                IsBodyHtml = true
+            };
 
-    mailMessage.To.Add(toEmail);
-    await smtpClient.SendMailAsync(mailMessage);
-}
-
-
-// -------------------------------------------------------------
-// MITARBEITER – WILLKOMMEN (E-Mail 1)
-// -------------------------------------------------------------
-public async Task SendEmployeeWelcomeEmailAsync(
-    string toEmail,
-    string fullName,
-    string employeeCode,
-    string temporaryPassword,
-    string changePasswordLink)
-{
-    var email = GetEmailConfig();
-    using var smtpClient = CreateSmtpClient(email);
-
-    using var mailMessage = new MailMessage
-    {
-        From = new MailAddress(email.FromEmail, email.FromName),
-        Subject = "Willkommen – Mitarbeiterzugang Konsulat",
-        Body = BuildEmployeeWelcomeHtmlMailBody(
-            fullName,
-            employeeCode,
-            temporaryPassword,
-            changePasswordLink),
-        IsBodyHtml = true
-    };
-
-    mailMessage.To.Add(toEmail);
-    await smtpClient.SendMailAsync(mailMessage);
-}
+            mailMessage.To.Add(toEmail);
+            await smtpClient.SendMailAsync(mailMessage);
+        }
 
         // =============================================================
-        // HTML BUILDER
+        // MITARBEITER – PASSWORT GEÄNDERT
         // =============================================================
+        public async Task SendEmployeePasswordChangedConfirmationEmailAsync(
+            string toEmail,
+            string fullName,
+            string loginLink)
+        {
+            var email = GetEmailConfig();
+            using var smtpClient = CreateSmtpClient(email);
 
+            using var mailMessage = new MailMessage
+            {
+                From = new MailAddress(email.FromEmail, email.FromName),
+                Subject = "Passwort erfolgreich geändert – Konsulat",
+                Body = BuildEmployeePasswordChangedHtmlMailBody(
+                    fullName,
+                    loginLink),
+                IsBodyHtml = true
+            };
+
+            mailMessage.To.Add(toEmail);
+            await smtpClient.SendMailAsync(mailMessage);
+        }
+
+        // =============================================================
+        // HTML – TERMINBESTÄTIGUNG (HAUPT-TEMPLATE)
+        // =============================================================
         private static string BuildHtmlMailBody(
             string fullName,
             string bookingReference,
@@ -212,6 +216,45 @@ Dies ist eine automatisch generierte E-Mail.
 </html>";
         }
 
+        // =============================================================
+        // HTML – SERVICES-ÜBERSICHT (NEU)
+        // =============================================================
+        private static string BuildServicesOverviewHtml(
+            IReadOnlyList<BookingEmailAppointmentDto> appointments)
+        {
+            if (appointments == null || appointments.Count == 0)
+            {
+                return "<p><em>Keine Termindetails verfügbar.</em></p>";
+            }
+
+            var grouped = appointments
+                .OrderBy(a => a.DateTime)
+                .GroupBy(a => a.PersonFullName);
+
+            var html = "<h3>Gebuchte Termine</h3>";
+
+            foreach (var personGroup in grouped)
+            {
+                html += $"<p><strong>{personGroup.Key}</strong></p><ul>";
+
+                foreach (var a in personGroup)
+                {
+                    html += $@"
+<li>
+<strong>{a.ServiceName}</strong><br/>
+{a.DateTime:dd.MM.yyyy} – {a.DateTime:HH:mm} Uhr
+</li>";
+                }
+
+                html += "</ul>";
+            }
+
+            return html;
+        }
+
+        // =============================================================
+        // HTML – TEILABSAGE
+        // =============================================================
         private static string BuildPartialCancellationHtmlMailBody(
             string fullName,
             string serviceName,
@@ -226,8 +269,6 @@ Dies ist eine automatisch generierte E-Mail.
 <h2 style=""color:#f9a825"">Termin teilweise abgesagt</h2>
 
 <p>Sehr geehrte Damen und Herren,</p>
-
-<p>Der folgende Termin wurde abgesagt:</p>
 
 <ul>
 <li><strong>Name:</strong> {fullName}</li>
@@ -248,6 +289,9 @@ Mit freundlichen Grüßen<br/>
 </html>";
         }
 
+        // =============================================================
+        // HTML – VOLLSTÄNDIGE ABSAGE
+        // =============================================================
         private static string BuildCancellationHtmlMailBody(
             string fullName,
             string bookingReference)
@@ -259,12 +303,6 @@ Mit freundlichen Grüßen<br/>
 <div style=""max-width:600px; margin:auto; background:#fff; padding:24px; border-radius:8px"">
 
 <h2 style=""color:#c62828"">Alle Termine abgesagt</h2>
-
-<p>Sehr geehrte Damen und Herren,</p>
-
-<p>
-Alle Termine zu Ihrer Buchung wurden erfolgreich abgesagt.
-</p>
 
 <p>
 <strong>Name:</strong> {fullName}<br/>
@@ -285,13 +323,16 @@ Mit freundlichen Grüßen<br/>
 </html>";
         }
 
+        // =============================================================
+        // HTML – MITARBEITER
+        // =============================================================
         private static string BuildEmployeeWelcomeHtmlMailBody(
-    string fullName,
-    string employeeCode,
-    string temporaryPassword,
-    string changePasswordLink)
-{
-    return $@"
+            string fullName,
+            string employeeCode,
+            string temporaryPassword,
+            string changePasswordLink)
+        {
+            return $@"
 <!DOCTYPE html>
 <html lang=""de"">
 <body style=""font-family: Arial; background:#f5f5f5; padding:20px"">
@@ -299,20 +340,10 @@ Mit freundlichen Grüßen<br/>
 
 <h2 style=""color:#1565c0"">Willkommen im Konsulat</h2>
 
-<p>Sehr geehrte Damen und Herren,</p>
-
-<p>
-Ihr Mitarbeiterzugang wurde erfolgreich erstellt.
-</p>
-
 <p>
 <strong>Name:</strong> {fullName}<br/>
 <strong>Mitarbeiter-Kennung:</strong> {employeeCode}<br/>
 <strong>Temporäres Passwort:</strong> {temporaryPassword}
-</p>
-
-<p style=""margin-top:20px"">
-Bitte ändern Sie Ihr Passwort über den folgenden Button:
 </p>
 
 <p style=""text-align:center; margin:30px 0"">
@@ -323,27 +354,74 @@ Passwort ändern
 </a>
 </p>
 
+</div>
+</body>
+</html>";
+        }
+
+        public async Task SendEmployeePasswordResetEmailAsync(
+            string toEmail,
+            string fullName,
+            string resetLink)
+        {
+            var email = GetEmailConfig();
+            using var smtpClient = CreateSmtpClient(email);
+
+            using var mailMessage = new MailMessage
+            {
+                From = new MailAddress(email.FromEmail, email.FromName),
+                Subject = "Passwort zurücksetzen – Konsulat",
+                Body = BuildEmployeePasswordResetHtmlMailBody(fullName, resetLink),
+                IsBodyHtml = true
+            };
+
+            mailMessage.To.Add(toEmail);
+            await smtpClient.SendMailAsync(mailMessage);
+        }
+
+        private static string BuildEmployeePasswordResetHtmlMailBody(
+            string fullName,
+            string resetLink)
+        {
+            return $@"
+<!DOCTYPE html>
+<html lang=""de"">
+<body style=""font-family: Arial; background:#f5f5f5; padding:20px"">
+<div style=""max-width:600px; margin:auto; background:#fff; padding:24px; border-radius:8px"">
+
+<h2 style=""color:#1565c0"">Passwort zurücksetzen</h2>
+
+<p>Guten Tag {fullName},</p>
+
+<p>Sie haben eine Zurücksetzung Ihres Passworts angefordert.</p>
+
+<p style=""text-align:center; margin:30px 0"">
+<a href=""{resetLink}""
+style=""background:#1565c0;color:#fff;padding:12px 20px;
+text-decoration:none;border-radius:6px;font-weight:bold"">
+Passwort zurücksetzen
+</a>
+</p>
+
+<p style=""font-size:12px;color:#888"">
+Dieser Link ist 1 Stunde gültig. Wenn Sie die Zurücksetzung nicht angefordert haben, ignorieren Sie diese E-Mail.
+</p>
+
 <p style=""margin-top:30px"">
 Mit freundlichen Grüßen<br/>
 <strong>Konsulat – Terminservice</strong>
 </p>
 
-<p style=""font-size:12px;color:#888"">
-Dies ist eine automatisch generierte E-Mail.
-</p>
-
 </div>
 </body>
 </html>";
-}
-
-
+        }
 
         private static string BuildEmployeePasswordChangedHtmlMailBody(
-    string fullName,
-    string loginLink)
-{
-    return $@"
+            string fullName,
+            string loginLink)
+        {
+            return $@"
 <!DOCTYPE html>
 <html lang=""de"">
 <body style=""font-family: Arial; background:#f5f5f5; padding:20px"">
@@ -351,15 +429,7 @@ Dies ist eine automatisch generierte E-Mail.
 
 <h2 style=""color:#2e7d32"">Passwort geändert</h2>
 
-<p>Sehr geehrte Damen und Herren,</p>
-
-<p>
-Ihr Passwort wurde erfolgreich geändert.
-</p>
-
-<p style=""margin-top:20px"">
-Sie können sich nun über den folgenden Button anmelden:
-</p>
+<p>Ihr Passwort wurde erfolgreich geändert.</p>
 
 <p style=""text-align:center; margin:30px 0"">
 <a href=""{loginLink}""
@@ -369,23 +439,17 @@ Zum Login
 </a>
 </p>
 
-<p style=""margin-top:30px"">
-Mit freundlichen Grüßen<br/>
-<strong>Konsulat – Terminservice</strong>
-</p>
-
 </div>
 </body>
 </html>";
-}
-
+        }
 
         // =============================================================
         // HELPER
         // =============================================================
-
-        private (string SmtpServer, int Port, bool UseSsl, string Username,
-                 string Password, string FromEmail, string FromName)
+        private (string SmtpServer, int Port, bool UseSsl,
+                 string Username, string Password,
+                 string FromEmail, string FromName)
             GetEmailConfig()
         {
             var c = _configuration.GetSection("Email");
@@ -402,8 +466,9 @@ Mit freundlichen Grüßen<br/>
         }
 
         private static SmtpClient CreateSmtpClient(
-            (string SmtpServer, int Port, bool UseSsl, string Username,
-             string Password, string FromEmail, string FromName) e)
+            (string SmtpServer, int Port, bool UseSsl,
+             string Username, string Password,
+             string FromEmail, string FromName) e)
         {
             return new SmtpClient
             {

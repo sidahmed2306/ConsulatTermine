@@ -1,4 +1,3 @@
-
 using ConsulatTermine.Application.Interfaces;
 using ConsulatTermine.Application.ViewModels;
 using ConsulatTermine.Domain.Entities;
@@ -10,16 +9,12 @@ namespace ConsulatTermine.Infrastructure.Services
     public class WorkingScheduleOverviewService : IWorkingScheduleOverviewService
     {
         private readonly ApplicationDbContext _db;
-        private readonly IServiceService _serviceService;
-
-    
 
         public WorkingScheduleOverviewService(
             ApplicationDbContext db,
-            IServiceService serviceService)
+            IServiceService serviceService) // bleibt im ctor, auch wenn wir es hier nicht nutzen
         {
             _db = db;
-            _serviceService = serviceService;
         }
 
         // --------------------------------------------------------------------
@@ -27,15 +22,42 @@ namespace ConsulatTermine.Infrastructure.Services
         // --------------------------------------------------------------------
         public async Task<List<WorkingScheduleOverviewItem>> GetOverviewAsync()
         {
+            // Services (Basisdaten + Mitarbeiter)
             var services = await _db.Services
-                .Include(s => s.WorkingHours)
-                .Include(s => s.DayOverrides)
+                .AsNoTracking()
                 .Include(s => s.AssignedEmployees)
                     .ThenInclude(a => a.Employee)
                 .OrderBy(s => s.Name)
                 .ToListAsync();
 
-            return services.Select(BuildOverviewForService).ToList();
+            if (services.Count == 0)
+                return new List<WorkingScheduleOverviewItem>();
+
+            var serviceIds = services.Select(s => s.Id).ToList();
+
+            // Pläne (Quelle der Wahrheit)
+            var plans = await _db.WorkingSchedulePlans
+                .AsNoTracking()
+                .Where(p => serviceIds.Contains(p.ServiceId))
+                .OrderByDescending(p => p.ValidFromDate)
+                .ToListAsync();
+
+            // WorkingHours (plan-gebunden)
+            var workingHours = await _db.WorkingHours
+                .AsNoTracking()
+                .Where(w => serviceIds.Contains(w.ServiceId))
+                .ToListAsync();
+
+            // Overrides (plan-gebunden, optional)
+            var overrides = await _db.ServiceDayOverrides
+                .AsNoTracking()
+                .Where(o => serviceIds.Contains(o.ServiceId))
+                .ToListAsync();
+
+            // Build
+            return services
+                .Select(s => BuildOverviewForService(s, plans, workingHours, overrides))
+                .ToList();
         }
 
         // --------------------------------------------------------------------
@@ -44,8 +66,7 @@ namespace ConsulatTermine.Infrastructure.Services
         public async Task<WorkingScheduleOverviewItem?> GetByServiceIdAsync(int serviceId)
         {
             var service = await _db.Services
-                .Include(s => s.WorkingHours)
-                .Include(s => s.DayOverrides)
+                .AsNoTracking()
                 .Include(s => s.AssignedEmployees)
                     .ThenInclude(a => a.Employee)
                 .FirstOrDefaultAsync(s => s.Id == serviceId);
@@ -53,121 +74,141 @@ namespace ConsulatTermine.Infrastructure.Services
             if (service == null)
                 return null;
 
-            return BuildOverviewForService(service);
+            var plans = await _db.WorkingSchedulePlans
+                .AsNoTracking()
+                .Where(p => p.ServiceId == serviceId)
+                .OrderByDescending(p => p.ValidFromDate)
+                .ToListAsync();
+
+            var workingHours = await _db.WorkingHours
+                .AsNoTracking()
+                .Where(w => w.ServiceId == serviceId)
+                .ToListAsync();
+
+            var overrides = await _db.ServiceDayOverrides
+                .AsNoTracking()
+                .Where(o => o.ServiceId == serviceId)
+                .ToListAsync();
+
+            return BuildOverviewForService(service, plans, workingHours, overrides);
         }
 
         // --------------------------------------------------------------------
-        // 3) Jahresplan löschen
+        // 3) Jahresplan löschen (PROFESSIONELL: Plan-Header löschen)
         // --------------------------------------------------------------------
         public async Task<bool> DeleteYearAsync(int serviceId, int year)
         {
-            var toDelete = await _db.ServiceDayOverrides
-                .Where(o => o.ServiceId == serviceId && o.Date.Year == year)
+            // Wir löschen den/die Plan/Pläne des Jahres.
+            // (Wenn du fachlich garantiert nur 1 Plan pro Jahr hast, ist das perfekt.)
+            var plans = await _db.WorkingSchedulePlans
+                .Where(p =>
+                    p.ServiceId == serviceId &&
+                    p.ValidFromDate.Year == year)
                 .ToListAsync();
 
-            if (toDelete.Any())
-                _db.ServiceDayOverrides.RemoveRange(toDelete);
+            if (!plans.Any())
+                return true;
 
+            _db.WorkingSchedulePlans.RemoveRange(plans);
+
+            // Cascade (laut deinem DbContext):
+            // Plan -> WorkingHours (CASCADE)
+            // Plan -> ServiceDayOverrides (CASCADE)
             await _db.SaveChangesAsync();
             return true;
         }
 
         // --------------------------------------------------------------------
-        // 🧠 Kern: vollständige Übersicht für einen Service erzeugen
+        // Kern: vollständige Übersicht für einen Service erzeugen
         // --------------------------------------------------------------------
-        private WorkingScheduleOverviewItem BuildOverviewForService(Service service)
+        private WorkingScheduleOverviewItem BuildOverviewForService(
+            Service service,
+            List<WorkingSchedulePlan> allPlans,
+            List<WorkingHours> allWorkingHours,
+            List<ServiceDayOverride> allOverrides)
         {
             var item = new WorkingScheduleOverviewItem
             {
                 ServiceId = service.Id,
                 ServiceName = service.Name,
                 SlotDurationMinutes = service.SlotDurationMinutes,
-                EmployeeCount = service.AssignedEmployees?.Count ?? 0
+                EmployeeCount = service.AssignedEmployees?.Count ?? 0,
+                DefaultCapacityPerSlot = service.CapacityPerSlot ?? 0
             };
 
-            // Jahresgruppen erkennen
-            var yearPlans = BuildYearPlans(service);
-            item.YearPlans.AddRange(yearPlans);
+            var plans = allPlans
+                .Where(p => p.ServiceId == service.Id)
+                .OrderByDescending(p => p.ValidFromDate)
+                .ToList();
 
+            var yearPlans = BuildYearPlansFromPlans(
+                service,
+                plans,
+                allWorkingHours,
+                allOverrides);
+
+            item.YearPlans.AddRange(yearPlans);
             return item;
         }
 
         // --------------------------------------------------------------------
-        // 4) Jahrespläne auf Basis der Overrides erstellen
-        //    -> hier verknüpfen wir WeeklyPatterns und DateOverrides richtig
+        // NEU: YearPlans basierend auf WorkingSchedulePlan (nicht Overrides!)
         // --------------------------------------------------------------------
-        private List<WorkingScheduleYearPlan> BuildYearPlans(Service service)
+        private List<WorkingScheduleYearPlan> BuildYearPlansFromPlans(
+            Service service,
+            List<WorkingSchedulePlan> plans,
+            List<WorkingHours> allWorkingHours,
+            List<ServiceDayOverride> allOverrides)
         {
             var result = new List<WorkingScheduleYearPlan>();
 
-            // Welche Jahre kommen in Overrides vor?
-            var years = service.DayOverrides
-                .Select(x => x.Date.Year)
-                .Distinct()
-                .OrderBy(y => y)
-                .ToList();
-
-            foreach (var year in years)
+            foreach (var plan in plans)
             {
                 var yearPlan = new WorkingScheduleYearPlan
                 {
                     ServiceId = service.Id,
+                    WorkingSchedulePlanId = plan.Id,
                     ServiceName = service.Name,
-                    Year = year,
+
+                    // Wir nehmen das Jahr vom Start (dein UI arbeitet mit Jahr-Auswahl)
+                    Year = plan.ValidFromDate.Year,
+
                     SlotDurationMinutes = service.SlotDurationMinutes,
-                    EmployeeCount = service.AssignedEmployees?.Count ?? 0
+                    EmployeeCount = service.AssignedEmployees?.Count ?? 0,
+                    DefaultCapacityPerSlot = service.CapacityPerSlot ?? 0
                 };
 
-                // Monate berechnen (basierend auf DayOverrides)
-               // Monate aus REGULAEREN Arbeitszeiten ermitteln
-var months = new List<int>();
+                // Monate aus Plan-Zeitraum ableiten
+                yearPlan.Months = GetMonthsFromRange(plan.ValidFromDate, plan.ValidToDate);
 
-if (service.WorkingHours.Any())
-{
-    // Wir verwenden Monate, die im Request abgelegt wurden.
-    // RegularHours existieren pro Wochentag – daher holen wir die Monate
-    // anhand aller Overrides (DateOverrides & WeeklyPatterns)
-    months = service.DayOverrides
-        .Where(o => o.Date.Year == year)
-        .Select(o => o.Date.Month)
-        .Distinct()
-        .OrderBy(m => m)
-        .ToList();
-}
-else
-{
-    // Falls keine WorkingHours vorhanden (unwahrscheinlich),
-    // extrahieren wir die Monate aus DateOverrides nur
-    months = service.DayOverrides
-        .Where(o => o.Date.Year == year)
-        .Select(o => o.Date.Month)
-        .Distinct()
-        .OrderBy(m => m)
-        .ToList();
-}
+                // Reguläre Öffnungszeiten NUR für diesen Plan
+                yearPlan.RegularHours = allWorkingHours
+                    .Where(w =>
+                        w.ServiceId == service.Id &&
+                        w.WorkingSchedulePlanId == plan.Id)
+                    .GroupBy(w => w.Day)
+                    .Select(g => g.First())
+                    .OrderBy(w => w.Day)
+                    .Select(w => new RegularOpeningInfo
+                    {
+                        Day = w.Day,
+                        StartTime = w.StartTime,
+                        EndTime = w.EndTime
+                    })
+                    .ToList();
 
-yearPlan.Months = months;
+                // Overrides NUR für diesen Plan
+                var planOverrides = allOverrides
+                    .Where(o =>
+                        o.ServiceId == service.Id &&
+                        o.WorkingSchedulePlanId == plan.Id)
+                    .ToList();
 
+                // Weekly Pattern Aggregation (optional)
+                yearPlan.WeeklyOverrides = ExtractWeeklyPatterns(planOverrides);
 
-                // Reguläre Öffnungszeiten aus WorkingHours
-                yearPlan.RegularHours = ExtractRegularHours(service);
-
-                // 1) Wöchentliche Muster-Aggregation
-                var weeklyPatterns = ExtractWeeklyPatterns(service, year);
-                yearPlan.WeeklyOverrides = weeklyPatterns;
-
-                // 2) Alle Daten, die zu solchen WeeklyPatterns gehören, sammeln
-                var weeklyPatternDates = weeklyPatterns
-                    .SelectMany(p => p.AffectedDates ?? new List<DateTime>())
-                    .Select(d => d.Date)
-                    .Distinct()
-                    .ToHashSet();
-
-                // 3) Datumsausnahmen: nur Tage, die NICHT zu einem WeeklyPattern gehören
-                yearPlan.DateOverrides = ExtractDateOverrides(
-                    service,
-                    year,
-                    yearPlan.Months);
+                // Date Overrides (optional)
+                yearPlan.DateOverrides = ExtractDateOverrides(planOverrides);
 
                 result.Add(yearPlan);
             }
@@ -176,104 +217,77 @@ yearPlan.Months = months;
         }
 
         // --------------------------------------------------------------------
-        // 5) Reguläre Öffnungszeiten aus WorkingHours extrahieren (je Wochentag nur einmal)
+        // Months aus DateOnly Range ableiten
         // --------------------------------------------------------------------
-        private List<RegularOpeningInfo> ExtractRegularHours(Service service)
+        private static List<int> GetMonthsFromRange(DateOnly from, DateOnly to)
         {
-            return service.WorkingHours
-                .GroupBy(w => w.Day)
-                .Select(g => g.First())
-                .OrderBy(w => w.Day)
-                .Select(w => new RegularOpeningInfo
+            var months = new HashSet<int>();
+
+            var cursor = new DateOnly(from.Year, from.Month, 1);
+            var end = new DateOnly(to.Year, to.Month, 1);
+
+            while (cursor <= end)
+            {
+                months.Add(cursor.Month);
+                cursor = cursor.AddMonths(1);
+            }
+
+            return months.OrderBy(m => m).ToList();
+        }
+
+        // --------------------------------------------------------------------
+        // Weekly Patterns: gruppiert nach WeeklyDay (optional)
+        // --------------------------------------------------------------------
+        private static List<WeeklyOverridePatternInfo> ExtractWeeklyPatterns(List<ServiceDayOverride> overrides)
+        {
+            return overrides
+                .Where(o => o.IsWeeklyOverride && o.WeeklyDay.HasValue)
+                .GroupBy(o => o.WeeklyDay!.Value)
+                .Select(g =>
                 {
-                    Day = w.Day,
-                    StartTime = w.StartTime,
-                    EndTime = w.EndTime
+                    var first = g.First();
+
+                    return new WeeklyOverridePatternInfo
+                    {
+                        Day = first.WeeklyDay!.Value,
+                        IsClosed = first.IsClosed,
+                        StartTime = first.StartTime,
+                        EndTime = first.EndTime,
+                        CapacityPerSlotOverride = first.CapacityPerSlotOverride,
+                        AffectedDates = g
+                            .Select(x => x.Date.Date)
+                            .Distinct()
+                            .OrderBy(d => d)
+                            .ToList()
+                    };
                 })
+                .OrderBy(x => x.Day)
                 .ToList();
         }
 
         // --------------------------------------------------------------------
-        // 6) Weekly Pattern erkennen
+        // Date Overrides: nur IsWeeklyOverride == false (optional)
         // --------------------------------------------------------------------
- private List<WeeklyOverridePatternInfo> ExtractWeeklyPatterns(Service service, int year)
-{
-    // 1) Alle weekly-overrides laden (egal wie viele Daten es gibt)
-    var weeklyOverrides = service.DayOverrides
-        .Where(o => o.IsWeeklyOverride && o.Date.Year == year)
-        .ToList();
-
-    // 2) Gruppieren nach WeeklyDay
-    var groups = weeklyOverrides
-        .GroupBy(o => o.WeeklyDay)
-        .ToList();
-
-    var result = new List<WeeklyOverridePatternInfo>();
-
-    foreach (var group in groups)
-    {
-        var first = group.First();   // alle Overrides im Group haben gleiche Werte
-
-        var item = new WeeklyOverridePatternInfo
+        private static List<DateOverrideInfo> ExtractDateOverrides(List<ServiceDayOverride> overrides)
         {
-            Day = first.WeeklyDay!.Value,
-            IsClosed = first.IsClosed,
-            StartTime = first.StartTime,
-            EndTime = first.EndTime,
-            CapacityPerSlotOverride = first.CapacityPerSlotOverride,
+            return overrides
+                .Where(o => !o.IsWeeklyOverride)
+                .GroupBy(o => o.Date.Date)
+                .Select(g =>
+                {
+                    var first = g.First();
 
-            // Optional: diese Liste kann leer bleiben
-            AffectedDates = new List<DateTime>()
-        };
-
-        result.Add(item);
-    }
-
-    return result;
-}
-
-
-
-
-        // --------------------------------------------------------------------
-        // 7) Einzelne Datumsausnahmen (NICHT weekly)
-        //    -> Jahr + ausgewählte Monate + konsolidiert pro Datum
-        //    -> excl. aller Dates, die schon in WeeklyPatterns verwendet werden
-        // --------------------------------------------------------------------
-       private List<DateOverrideInfo> ExtractDateOverrides(
-    Service service,
-    int year,
-    IEnumerable<int> planMonths)
-{
-    // 1) Nur Datums-Ausnahmen -> IsWeeklyOverride = false
-    var dateOverrides = service.DayOverrides
-        .Where(o =>
-            !o.IsWeeklyOverride &&              // <-- nur DateOverrides
-            o.Date.Year == year &&
-            planMonths.Contains(o.Date.Month))  // nur gewählte Monate
-        .ToList();
-
-    // 2) Gruppieren pro Tag (falls mehrere Overrides am selben Datum)
-    var grouped = dateOverrides
-        .GroupBy(o => o.Date.Date)
-        .Select(g =>
-        {
-            var first = g.First();
-
-            return new DateOverrideInfo
-            {
-                Date = first.Date,
-                IsClosed = first.IsClosed,
-                StartTime = first.IsClosed ? null : first.StartTime,
-                EndTime = first.IsClosed ? null : first.EndTime,
-                CapacityPerSlotOverride = first.CapacityPerSlotOverride
-            };
-        })
-        .OrderBy(d => d.Date)
-        .ToList();
-
-    return grouped;
-}
-
+                    return new DateOverrideInfo
+                    {
+                        Date = first.Date,
+                        IsClosed = first.IsClosed,
+                        StartTime = first.IsClosed ? null : first.StartTime,
+                        EndTime = first.IsClosed ? null : first.EndTime,
+                        CapacityPerSlotOverride = first.CapacityPerSlotOverride
+                    };
+                })
+                .OrderBy(d => d.Date)
+                .ToList();
+        }
     }
 }

@@ -40,6 +40,9 @@ namespace ConsulatTermine.Application.ViewModels
     /// </summary>
     public class WorkingScheduleYearPlan
     {
+
+        public int WorkingSchedulePlanId { get; set; }
+
         public int ServiceId { get; set; }
         public string ServiceName { get; set; } = string.Empty;
 

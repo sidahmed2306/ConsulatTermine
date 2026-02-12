@@ -6,5 +6,6 @@ public enum AppointmentStatus
     CheckedIn = 1,
     InProgress = 2,   // neu: Termin wird gerade bearbeitet / aufgerufen
     Completed = 3,
-    Cancelled = 4
+    Cancelled = 4,
+    AtDesk = 5
 }

@@ -30,6 +30,17 @@ namespace ConsulatTermine.Infrastructure.Services
 }
 
 
+public async Task<List<Service>> GetServicesForEmployeeAsync(int employeeId)
+{
+    return await _context.EmployeeServiceAssignments
+        .Where(a => a.EmployeeId == employeeId)
+        .Select(a => a.Service!) // <-- WICHTIG
+        .AsNoTracking()
+        .OrderBy(s => s.Name)
+        .ToListAsync();
+}
+
+
         // -------------------------------------------------------------
         // GET SERVICE BY ID (inkl. WorkingHours, Overrides, Employees)
         // -------------------------------------------------------------
@@ -52,7 +63,6 @@ namespace ConsulatTermine.Infrastructure.Services
             {
                 Name = dto.Name,
                 Description = dto.Description,
-                CapacityPerSlot = dto.CapacityPerSlot,
                 Floor = dto.Floor,
                 SlotDurationMinutes = dto.SlotDurationMinutes
             };

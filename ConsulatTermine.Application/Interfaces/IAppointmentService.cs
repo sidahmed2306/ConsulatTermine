@@ -34,10 +34,8 @@ Task<Appointment?> GetNextAppointmentForServiceOnDateAsync(
 
     Task<bool> HideFromWaitingRoomAsync(int appointmentId, int employeeId);
 
-    Task RecallAsync(int appointmentId, int employeeId);
 
-
-
+    Task<List<Appointment>> GetActiveWaitingRoomAppointmentsAsync();
 
 
 }

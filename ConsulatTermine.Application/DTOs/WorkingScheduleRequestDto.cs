@@ -7,6 +7,9 @@ namespace ConsulatTermine.Application.DTOs
     {
         public int ServiceId { get; set; }
 
+        public int? WorkingSchedulePlanId { get; set; }
+
+
         public int Year { get; set; }
 
         // Beispiel: {1,2,3,4} für Januar–April

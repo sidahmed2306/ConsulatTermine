@@ -53,16 +53,26 @@ public EmployeeService(
        public async Task<Employee> CreateEmployeeAsync(EmployeeDto dto)
 {
     // -------------------------------------------------
-    // 0) Basis-Validierung (fachlich, minimal)
-    // -------------------------------------------------
-    if (string.IsNullOrWhiteSpace(dto.FirstName))
-        throw new Exception("FirstName is required.");
+// 0) Basis-Validierung (fachlich, minimal)
+// -------------------------------------------------
+if (string.IsNullOrWhiteSpace(dto.FirstName))
+    throw new Exception("FirstName is required.");
 
-    if (string.IsNullOrWhiteSpace(dto.LastName))
-        throw new Exception("LastName is required.");
+if (string.IsNullOrWhiteSpace(dto.LastName))
+    throw new Exception("LastName is required.");
 
-    if (string.IsNullOrWhiteSpace(dto.Email))
-        throw new Exception("Email is required.");
+if (string.IsNullOrWhiteSpace(dto.Email))
+    throw new Exception("Email is required.");
+
+// -------------------------------------------------
+// 0a) Business-Validierung: E-Mail darf nur einmal existieren
+// -------------------------------------------------
+var emailExists = await _context.Employees
+    .AnyAsync(e => e.Email.ToLower() == dto.Email.Trim().ToLower());
+
+if (emailExists)
+    throw new Exception("Ein Mitarbeiter mit dieser E-Mail-Adresse existiert bereits.");
+
 
     // -------------------------------------------------
     // 1) Nächste Mitarbeiter-Kennung generieren
@@ -159,6 +169,7 @@ return employee;
             employee.LastName = dto.LastName;
             employee.Email = dto.Email;
             employee.DateOfBirth = dto.DateOfBirth;
+            employee.Role = dto.Role;
 
             // EmployeeCode wird NICHT geändert (systemseitige Kennung)
             await _context.SaveChangesAsync();

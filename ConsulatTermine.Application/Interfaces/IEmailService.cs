@@ -1,3 +1,5 @@
+using ConsulatTermine.Application.DTOs.Booking;
+
 namespace ConsulatTermine.Application.Interfaces
 {
     /// <summary>
@@ -12,11 +14,13 @@ namespace ConsulatTermine.Application.Interfaces
         /// <param name="toEmail">Empfänger (Hauptperson)</param>
         /// <param name="fullName">Vollständiger Name</param>
         /// <param name="bookingReference">Buchungsnummer</param>
-        Task SendBookingConfirmationAsync(
-            string toEmail,
-            string fullName,
-            string bookingReference,
-            string cancelToken);
+      Task SendBookingConfirmationAsync(
+    string toEmail,
+    string fullName,
+    string bookingReference,
+    string cancelToken,
+    IReadOnlyList<BookingEmailAppointmentDto> appointments);
+
 
             Task SendCancellationConfirmationAsync(
     string toEmail,
@@ -41,6 +45,10 @@ Task SendEmployeePasswordChangedConfirmationEmailAsync(
     string fullName,
     string loginLink);
 
+    Task SendEmployeePasswordResetEmailAsync(
+        string toEmail,
+        string fullName,
+        string resetLink);
 
     }
 
