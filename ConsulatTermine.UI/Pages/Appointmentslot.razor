@@ -17,12 +17,7 @@
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
 
     <!-- STEPPER -->
-    <MudStepper Elevation="0" ActiveStep="1" Class="mb-6">
-        <MudStep Label="Services" Completed="true" />
-        <MudStep Label="Termine" />
-        <MudStep Label="Formular" />
-        <MudStep Label="Bestätigung" />
-    </MudStepper>
+    <BookingStepper ActiveStep="1" />
 
     <MudPaper Class="pa-4 slots-paper">
 
@@ -98,20 +93,15 @@
                                     var remaining = DisplayFreeCapacity(slot); // remaining capacity for this slot
                                     var isSelected = selectedOnThisSlot > 0;
 
-                              <MudItem xs="12" sm="6">
+                              <MudItem xs="6" sm="6" md="6">
     <div
         class="@($"slot-pill {(isSelected ? "selected" : "")} {(_requiredCountForCurrentService == 1 ? "clickable" : "")}")"
         style="@(_requiredCountForCurrentService == 1 && remaining > 0 ? "cursor:pointer;" : "")"
         @onclick="@(() => OnSlotClicked(slot))">
 
-        <div class="slot-row">
-            <div class="slot-left">
-                <span class="slot-time">@slotStart.ToString("HH:mm")</span>
-                <span class="slot-availability">
-                    @($"{remaining} {(remaining == 1 ? "Platz" : "Plätze")} frei")
-                </span>
-            </div>
-
+        <div class="slot-time-top">@slotStart.ToString("HH:mm")</div>
+        <div class="slot-bottom-row">
+            <span class="slot-availability">@($"{remaining} {(remaining == 1 ? "Platz" : "Plätze")} frei")</span>
             @if (_requiredCountForCurrentService > 1)
             {
                 <div class="slot-counter-inline">
@@ -120,9 +110,7 @@
                         Color="Color.Error"
                         Disabled="@(selectedOnThisSlot <= 0)"
                         OnClick="@(() => Decrease(slot))" />
-
                     <span class="slot-count">@selectedOnThisSlot</span>
-
                     <MudIconButton
                         Icon="@Icons.Material.Filled.Add"
                         Color="Color.Success"
@@ -340,6 +328,8 @@
 
     private bool IsDateDisabled(DateTime date)
     {
+        if (date.Date < DateTime.Today)
+            return true;
         var d = DateOnly.FromDateTime(date);
         return !_bookableCache.TryGetValue(d, out var ok) || !ok;
     }
@@ -350,11 +340,17 @@
     private async Task LoadMonthAvailabilityAsync(DateOnly monthFirstDay)
     {
         _bookableCache.Clear();
+        var today = DateOnly.FromDateTime(DateTime.Today);
 
         int days = DateTime.DaysInMonth(monthFirstDay.Year, monthFirstDay.Month);
         for (int d = 1; d <= days; d++)
         {
             var date = new DateOnly(monthFirstDay.Year, monthFirstDay.Month, d);
+            if (date < today)
+            {
+                _bookableCache[date] = false;
+                continue;
+            }
 
             var raw = await AppointmentService.GetAvailableSlotDtosAsync(
                 _currentServiceId,
@@ -382,15 +378,36 @@
 
         var otherSelected = BuildOtherSelectedSlotsForCompatibility();
 
-        _slots = raw
+        var filtered = raw
             .Where(x => x.FreeCapacity > 0)
             .Where(x => AppointmentCalculator.IsSlotTimeCompatible(
                 x.SlotStart,
                 _currentSlotDuration,
                 otherSelected,
                 BufferTime))
+            .ToList();
+
+        var slotIntervalMinutes = 30;
+        var now = DateTime.Now;
+
+        _slots = filtered
+            .Where(x => day != DateOnly.FromDateTime(now) || x.SlotStart > now.AddMinutes(slotIntervalMinutes))
+            .GroupBy(x => RoundToSlotInterval(x.SlotStart, slotIntervalMinutes))
+            .Select(g => new AvailableSlotDto
+            {
+                SlotStart = g.Key,
+                FreeCapacity = g.Min(s => s.FreeCapacity)
+            })
+            .Where(x => x.FreeCapacity > 0)
             .OrderBy(x => x.SlotStart)
             .ToList();
+    }
+
+    private static DateTime RoundToSlotInterval(DateTime dt, int intervalMinutes)
+    {
+        var totalMinutes = (int)(dt - dt.Date).TotalMinutes;
+        var rounded = (totalMinutes / intervalMinutes) * intervalMinutes;
+        return dt.Date.AddMinutes(rounded);
     }
 
     // Builds list of other selected slots as (Start, DurationMinutes)

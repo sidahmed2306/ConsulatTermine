@@ -166,3 +166,4 @@
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/obj/Debug/net8.0/ref/ConsulatTermine.UI.dll
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/obj/Debug/net8.0/ConsulatTermine.UI.AppResources.resources
 /Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/obj/Debug/net8.0/ConsulatTermine.UI.Resources.AppResources-en-US.resources
+/Users/boussadiasidahmed/Desktop/consulat-termine/ConsulatTermine.UI/bin/Debug/net8.0/appsettings.Example.json

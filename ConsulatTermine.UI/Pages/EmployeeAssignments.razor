@@ -50,19 +50,23 @@
 
             <MudStack Spacing="2">
 
-                <MudSelect T="int" Label="Mitarbeiter" @bind-Value="_selectedEmployee">
+                <MudSelect T="int?" Label="Mitarbeiter"
+                           Placeholder="Mitarbeiter auswählen"
+                           @bind-Value="_selectedEmployee">
                     @foreach (var e in _employees)
                     {
-                        <MudSelectItem Value="@e.Id">
+                        <MudSelectItem T="int?" Value="@e.Id">
                             @($"{e.FirstName} {e.LastName}")
                         </MudSelectItem>
                     }
                 </MudSelect>
 
-                <MudSelect T="int" Label="Service" @bind-Value="_selectedService">
+                <MudSelect T="int?" Label="Service"
+                           Placeholder="Service auswählen"
+                           @bind-Value="_selectedService">
                     @foreach (var s in _services)
                     {
-                        <MudSelectItem Value="@s.Id">@s.Name</MudSelectItem>
+                        <MudSelectItem T="int?" Value="@s.Id">@s.Name</MudSelectItem>
                     }
                 </MudSelect>
 
@@ -84,8 +88,8 @@
     private List<Employee> _employees = new();
     private List<Service> _services = new();
 
-    private int _selectedEmployee;
-    private int _selectedService;
+    private int? _selectedEmployee;
+    private int? _selectedService;
 
     private int _currentEmployeeId;
 
@@ -167,7 +171,7 @@
     // -------------------------------------------------
     private async Task AddAssignment()
     {
-        if (_selectedEmployee == 0 || _selectedService == 0)
+        if (!_selectedEmployee.HasValue || !_selectedService.HasValue)
         {
             Snackbar.Add("Bitte Mitarbeiter und Service wählen.", Severity.Warning);
             return;
@@ -175,11 +179,13 @@
 
         try
         {
-            var ok = await AssignmentService.AddAssignmentAsync(_selectedEmployee, _selectedService);
+            var ok = await AssignmentService.AddAssignmentAsync(_selectedEmployee.Value, _selectedService.Value);
 
             if (ok)
             {
                 Snackbar.Add("✅ Zuordnung erfolgreich hinzugefügt.", Severity.Success);
+                _selectedEmployee = null;
+                _selectedService = null;
                 await LoadDataAsync();
             }
             else

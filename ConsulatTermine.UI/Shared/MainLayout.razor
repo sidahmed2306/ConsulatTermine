@@ -1,4 +1,4 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 @using MudBlazor
 @using ConsulatTermine.UI.Theme
 @using ConsulatTermine.UI.Authentication
@@ -37,32 +37,31 @@
             </div>
         </div>
 
-       <!-- RIGHT: LANGUAGE SWITCHER -->
-<div class="d-flex align-center gap-2">
-
-    <MudIconButton Icon="@Icons.Material.Filled.Language"
-                   Color="Color.Inherit"
-                   Size="Size.Medium" />
-
-    <MudButton Variant="Variant.Text"
-               Color="Color.Inherit"
-               OnClick='@(() => ChangeLanguage("de-DE"))'>
-        🇩🇪
-    </MudButton>
-
-    <MudButton Variant="Variant.Text"
-               Color="Color.Inherit"
-               OnClick='@(() => ChangeLanguage("en-US"))'>
-        🇬🇧
-    </MudButton>
-
-    <MudButton Variant="Variant.Text"
-               Color="Color.Inherit"
-               OnClick='@(() => ChangeLanguage("ar-DZ"))'>
-        🇩🇿
-    </MudButton>
-
-</div>
+       <!-- RIGHT: LANGUAGE DROPDOWN (überall gleich) -->
+        <MudMenu AnchorOrigin="Origin.BottomRight"
+                 TransformOrigin="Origin.TopRight"
+                 Class="language-dropdown">
+            <ActivatorContent>
+                <MudButton Variant="Variant.Text"
+                           Color="Color.Inherit"
+                           EndIcon="@Icons.Material.Filled.ArrowDropDown"
+                           Class="language-trigger">
+                    <MudIcon Icon="@Icons.Material.Filled.Language" Class="mr-1" />
+                    <span class="d-none d-sm-inline">@_currentLanguageLabel</span>
+                </MudButton>
+            </ActivatorContent>
+            <ChildContent>
+                <MudMenuItem OnClick='@(() => ChangeLanguage("de-DE"))'>
+                    🇩🇪 Deutsch
+                </MudMenuItem>
+                <MudMenuItem OnClick='@(() => ChangeLanguage("en-US"))'>
+                    🇬🇧 English
+                </MudMenuItem>
+                <MudMenuItem OnClick='@(() => ChangeLanguage("ar-DZ"))'>
+                    🇩🇿 العربية
+                </MudMenuItem>
+            </ChildContent>
+        </MudMenu>
 
 
     </div>
@@ -92,6 +91,7 @@
 
 @code {
     private bool _showEmployeeNav;
+    private string _currentLanguageLabel = "Deutsch";
 
     private string MainContentStyle =>
         _showEmployeeNav
@@ -101,6 +101,13 @@
     protected override void OnInitialized()
     {
         EmployeeSession.OnChange += HandleSessionChanged;
+        _currentLanguageLabel = CultureInfo.CurrentUICulture.Name switch
+        {
+            "de-DE" => "Deutsch",
+            "en-US" => "English",
+            "ar-DZ" => "العربية",
+            _ => "Deutsch"
+        };
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

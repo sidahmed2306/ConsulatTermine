@@ -20,6 +20,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>consulat-termine-ui-2025</UserSecretsId>
   </PropertyGroup>
 
 </Project>

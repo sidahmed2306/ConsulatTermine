@@ -16,7 +16,6 @@
 @inject IServiceService ServiceService
 @inject IWorkingScheduleService WorkingScheduleService
 @inject IWorkingScheduleOverviewService OverviewService
-@inject IWorkingSchedulePlanService WorkingSchedulePlanService
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 
@@ -34,16 +33,17 @@
         <MudExpansionPanel Text="1. Service auswählen" Expanded="@(_activeStep == 0)">
             <MudStack Class="pa-4" Spacing="2">
 
-                <MudSelect T="int"
+                <MudSelect T="int?"
                            Label="Service"
-                           Value="_model.ServiceId"
-                           ValueChanged="@(async (int value) => await OnServiceChanged(value))"
-                           ValueExpression="@(() => _model.ServiceId)"
+                           Placeholder="Service auswählen"
+                           Value="_selectedServiceId"
+                           ValueChanged="@(async (int? value) => { _selectedServiceId = value; await OnServiceChanged(value ?? 0); })"
+                           ValueExpression="@(() => _selectedServiceId)"
                            Required="true"
                            FullWidth="true">
                     @foreach (var s in _services)
                     {
-                        <MudSelectItem Value="@s.Id">@s.Name</MudSelectItem>
+                        <MudSelectItem T="int?" Value="@s.Id">@s.Name</MudSelectItem>
                     }
                 </MudSelect>
 
@@ -71,16 +71,17 @@
         <MudExpansionPanel Text="2. Jahr auswählen" Expanded="@(_activeStep == 1)" Disabled="@(!IsStep1Valid)">
             <MudStack Class="pa-4" Spacing="2">
 
-                <MudSelect T="int"
+                <MudSelect T="int?"
                            Label="Jahr"
-                           Value="_model.Year"
-                           ValueChanged="@(async (int y) => await OnYearChanged(y))"
-                           ValueExpression="@(() => _model.Year)"
+                           Placeholder="Jahr auswählen"
+                           Value="_selectedYear"
+                           ValueChanged="@(async (int? y) => { _selectedYear = y; await OnYearChanged(y ?? 0); })"
+                           ValueExpression="@(() => _selectedYear)"
                            Required="true"
                            FullWidth="true">
                     @foreach (var y in _years)
                     {
-                        <MudSelectItem Value="@y">@y</MudSelectItem>
+                        <MudSelectItem T="int?" Value="@y">@y</MudSelectItem>
                     }
                 </MudSelect>
 
@@ -112,6 +113,7 @@
                 <MudSelect T="int"
                            MultiSelection="true"
                            Label="Monate"
+                           Placeholder="Monate auswählen"
                            Required="true"
                            FullWidth="true"
                            SelectedValues="_selectedMonths"
@@ -639,6 +641,9 @@
     private List<Service> _services = new();
     private WorkingScheduleRequestDto _model = new();
 
+    private int? _selectedServiceId = null;
+    private int? _selectedYear = null;
+
     private int _activeStep = 0;
     private bool _saving = false;
 
@@ -798,7 +803,7 @@ else
     private int GetSlotDuration()
         => GetSelectedService()?.SlotDurationMinutes ?? 0;
 
-    private async Task OnServiceChanged(int serviceId)
+    private Task OnServiceChanged(int serviceId)
     {
         _model.ServiceId = serviceId;
 
@@ -809,6 +814,7 @@ else
 
         _yearPlanPrefilled = false;
         PrefillCapacityFields();
+        return Task.CompletedTask;
     }
 
     // ✅ NEU: Jahr geändert -> wenn Plan existiert, automatisch prefill (wie "Bearbeiten")
@@ -826,6 +832,8 @@ else
 
         _model = await CreateRequestFromYearPlan(existing);
         _model.WorkingSchedulePlanId = existing.WorkingSchedulePlanId;
+        _selectedServiceId = _model.ServiceId;
+        _selectedYear = _model.Year;
         _selectedMonths = _model.Months.ToHashSet();
 
         PrefillCapacityFields();
@@ -1128,6 +1136,8 @@ else
         _model = new WorkingScheduleRequestDto();
         _model.ServiceId = keepServiceId;
 
+        _selectedServiceId = keepServiceId > 0 ? keepServiceId : null;
+        _selectedYear = null;
         _selectedMonths.Clear();
 
         CancelEditWeekly();
@@ -1160,7 +1170,7 @@ else
 
         var result = await dialog.Result;
 
-        if (result.Canceled)
+        if (result?.Canceled != false)
             return;
 
         await OnDeleteYear(year);
@@ -1191,10 +1201,10 @@ else
     {
         _model = await CreateRequestFromYearPlan(year);
 
-// ✅ NEU: bestehender Plan wird bearbeitet
-_model.WorkingSchedulePlanId = year.WorkingSchedulePlanId;
-
-_selectedMonths = _model.Months.ToHashSet();
+        _model.WorkingSchedulePlanId = year.WorkingSchedulePlanId;
+        _selectedServiceId = _model.ServiceId;
+        _selectedYear = _model.Year;
+        _selectedMonths = _model.Months.ToHashSet();
 
 
         PrefillCapacityFields();

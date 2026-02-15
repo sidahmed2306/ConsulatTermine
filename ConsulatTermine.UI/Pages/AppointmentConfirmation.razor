@@ -2,19 +2,14 @@
 
 @using MudBlazor
 @using Blazored.SessionStorage
-@using Microsoft.Extensions.Localization
 @using Microsoft.AspNetCore.Components
-
-
-
-@inject IStringLocalizer<AppResources> L
-
-
 
 @inject ISessionStorageService Session
 @inject NavigationManager Navigation
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mx-auto mt-10">
+
+    <BookingStepper ActiveStep="3" />
 
     <MudCard Class="pa-8" Style="border-radius:14px">
 
@@ -95,7 +90,6 @@
 
     private string? _bookingReference;
     private string? _email;
-    private bool _loaded;
 
  protected override async Task OnAfterRenderAsync(bool firstRender)
 {
@@ -112,7 +106,6 @@
         return;
     }
 
-    _loaded = true;
     StateHasChanged();
 }
 

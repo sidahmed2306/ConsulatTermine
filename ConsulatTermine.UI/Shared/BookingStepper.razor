@@ -1,0 +1,52 @@
+@using MudBlazor
+@inject NavigationManager Navigation
+
+<div class="booking-stepper mb-6">
+    <div class="booking-stepper-inner">
+        @foreach (var step in _steps)
+        {
+            var index = step.Index;
+            var isCompleted = ActiveStep > index;
+            var isActive = ActiveStep == index;
+            var isClickable = index <= ActiveStep;
+            var url = step.Url;
+
+            <div class="booking-step @(isActive ? "active" : "") @(isCompleted ? "completed" : "") @(isClickable ? "clickable" : "")"
+                 @onclick="@(() => GoToStep(index))">
+                <div class="booking-step-label">@step.Label</div>
+                <div class="booking-step-circle">
+                    @if (isCompleted && !isActive)
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Class="step-check" />
+                    }
+                    else
+                    {
+                        <span>@(index + 1)</span>
+                    }
+                </div>
+            </div>
+            @if (index < 3)
+            {
+                <div class="booking-step-connector"></div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public int ActiveStep { get; set; }
+
+    private readonly List<(int Index, string Label, string Url)> _steps = new()
+    {
+        (0, "Service auswählen", "/services"),
+        (1, "Termin auswählen", "/appointment"),
+        (2, "Formular", "/appointment-form"),
+        (3, "Bestätigung", "/appointment-confirmation")
+    };
+
+    private void GoToStep(int stepIndex)
+    {
+        if (stepIndex > ActiveStep) return;
+        Navigation.NavigateTo(_steps[stepIndex].Url);
+    }
+}

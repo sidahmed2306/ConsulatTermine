@@ -155,7 +155,7 @@
     private ServiceDto _model = new();
 
     private bool _saving;
-    private string? _errorMessage;
+    private string? _errorMessage = null;
     private string? _formError;
 
     // -------------------- AUTH GUARD --------------------
@@ -200,6 +200,7 @@
         };
 
         _editId = 0;
+        _errorMessage = null;
         _editOpen = true;
     }
 
@@ -215,6 +216,7 @@
         };
 
         _editId = s.Id;
+        _errorMessage = null;
         _editOpen = true;
     }
 
@@ -224,9 +226,10 @@
         _formError = null;
     }
 
-    private async Task OnInvalidSubmit()
+    private Task OnInvalidSubmit()
     {
         _formError = "Bitte alle Pflichtfelder ausfüllen.";
+        return Task.CompletedTask;
     }
 
 private async Task SaveAsync()
@@ -243,6 +246,7 @@ private async Task SaveAsync()
             await ServiceService.UpdateServiceAsync(_editId, _model);
 
         _editOpen = false;
+        _errorMessage = null;
         await LoadServices();
 
         Snackbar.Add(
@@ -253,6 +257,7 @@ private async Task SaveAsync()
     }
     catch (Exception ex)
     {
+        _errorMessage = ex.Message;
         Snackbar.Add(
             ex.Message,
             Severity.Error);

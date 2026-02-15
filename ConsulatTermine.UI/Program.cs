@@ -17,8 +17,12 @@ var builder = WebApplication.CreateBuilder(args);
 // =====================
 // DATABASE
 // =====================
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString))
+    throw new InvalidOperationException("ConnectionStrings:DefaultConnection ist in appsettings.json nicht gesetzt.");
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(connectionString));
 
 // =====================
 // BASIC SERVICES
