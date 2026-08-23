@@ -1,13 +1,25 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Mail;
+using System.Text;
 using ConsulatTermine.Application.Configuration;
 using ConsulatTermine.Application.DTOs.Booking;
 using ConsulatTermine.Application.Interfaces;
+using ConsulatTermine.Application.Localization;
+using ConsulatTermine.Infrastructure.Resources;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace ConsulatTermine.Infrastructure.Services;
 
+/// <summary>
+/// Versand ueber den konfigurierten SMTP-Postausgang.
+/// </summary>
+/// <remarks>
+/// Jedes Schreiben wird in der Sprache des Empfaengers erzeugt. Neben den Texten
+/// betrifft das die Schreibrichtung des HTML-Dokuments sowie die Formatierung von
+/// Datum und Uhrzeit.
+/// </remarks>
 public class SmtpEmailService : IEmailService
 {
     private readonly EmailOptions _emailOptions;
@@ -25,103 +37,123 @@ public class SmtpEmailService : IEmailService
     }
 
     // =============================================================
-    // TERMINBESTÄTIGUNG (ERWEITERT – MIT SERVICE / DATUM / UHRZEIT)
+    // TERMINBESTAETIGUNG
     // =============================================================
     public async Task SendBookingConfirmationAsync(
         string toEmail,
         string fullName,
         string bookingReference,
         string cancelToken,
-        IReadOnlyList<BookingEmailAppointmentDto> appointments)
+        IReadOnlyList<BookingEmailAppointmentDto> appointments,
+        string language)
     {
-        if (!TryGetEmailConfig(out var email))
-        {
-            return;
-        }
+        var recipientLanguage = SupportedLanguages.Resolve(language);
+        var culture = new CultureInfo(recipientLanguage.CultureCode);
 
         var cancelUrl =
             $"{_applicationOptions.BaseUrl.TrimEnd('/')}/appointment-cancel"
             + $"?ref={Uri.EscapeDataString(bookingReference)}"
             + $"&token={Uri.EscapeDataString(cancelToken)}";
 
-        var servicesHtml = BuildServicesOverviewHtml(appointments);
+        var content = new StringBuilder();
 
-        using var smtpClient = CreateSmtpClient(email);
+        content.Append(Paragraph(EmailTexts.Get("Salutation", culture)));
+        content.Append(Paragraph(EmailTexts.Get("Confirmation.Intro", culture)));
 
-        using var mailMessage = new MailMessage
-        {
-            From = new MailAddress(email.FromEmail, email.FromName),
-            Subject = "Terminbestätigung – Konsulat",
-            Body = BuildHtmlMailBody(
-                fullName,
-                bookingReference,
-                cancelUrl,
-                servicesHtml),
-            IsBodyHtml = true
-        };
+        content.Append(DefinitionList(culture,
+        [
+            ("Label.Name", fullName),
+            ("Label.BookingNumber", bookingReference)
+        ]));
 
-        mailMessage.To.Add(toEmail);
-        await smtpClient.SendMailAsync(mailMessage);
+        content.Append(BuildAppointmentOverview(appointments, recipientLanguage, culture));
+
+        content.Append(Paragraph(EmailTexts.Get("Confirmation.ManageIntro", culture)));
+        content.Append(Button(cancelUrl, EmailTexts.Get("Confirmation.ManageButton", culture), "#1565c0"));
+        content.Append(Paragraph(EmailTexts.Get("Confirmation.BringDocuments", culture)));
+
+        await SendAsync(
+            toEmail,
+            EmailTexts.Get("Confirmation.Subject", culture),
+            BuildDocument(
+                recipientLanguage,
+                culture,
+                EmailTexts.Get("Confirmation.Heading", culture),
+                "#2e7d32",
+                content.ToString()));
     }
 
     // =============================================================
-    // TEIL-ABSAGE
+    // TEILABSAGE
     // =============================================================
     public async Task SendPartialCancellationAsync(
         string toEmail,
         string fullName,
         string serviceName,
-        DateTime appointmentDate)
+        DateTime appointmentDate,
+        string language)
     {
-        if (!TryGetEmailConfig(out var email))
-        {
-            return;
-        }
+        var recipientLanguage = SupportedLanguages.Resolve(language);
+        var culture = new CultureInfo(recipientLanguage.CultureCode);
 
-        using var smtpClient = CreateSmtpClient(email);
+        var content = new StringBuilder();
 
-        using var mailMessage = new MailMessage
-        {
-            From = new MailAddress(email.FromEmail, email.FromName),
-            Subject = "Termin teilweise abgesagt – Konsulat",
-            Body = BuildPartialCancellationHtmlMailBody(
-                fullName,
-                serviceName,
-                appointmentDate),
-            IsBodyHtml = true
-        };
+        content.Append(Paragraph(EmailTexts.Get("Salutation", culture)));
 
-        mailMessage.To.Add(toEmail);
-        await smtpClient.SendMailAsync(mailMessage);
+        content.Append(DefinitionList(culture,
+        [
+            ("Label.Name", fullName),
+            ("Label.Service", serviceName),
+            ("Label.Date", appointmentDate.ToString("d", culture)),
+            ("Label.Time", appointmentDate.ToString("HH:mm", culture))
+        ]));
+
+        content.Append(Paragraph(EmailTexts.Get("PartialCancellation.Others", culture)));
+
+        await SendAsync(
+            toEmail,
+            EmailTexts.Get("PartialCancellation.Subject", culture),
+            BuildDocument(
+                recipientLanguage,
+                culture,
+                EmailTexts.Get("PartialCancellation.Heading", culture),
+                "#f9a825",
+                content.ToString()));
     }
 
     // =============================================================
-    // VOLLSTÄNDIGE ABSAGE
+    // VOLLSTAENDIGE ABSAGE
     // =============================================================
     public async Task SendCancellationConfirmationAsync(
         string toEmail,
         string fullName,
-        string bookingReference)
+        string bookingReference,
+        string language)
     {
-        if (!TryGetEmailConfig(out var email))
-        {
-            return;
-        }
+        var recipientLanguage = SupportedLanguages.Resolve(language);
+        var culture = new CultureInfo(recipientLanguage.CultureCode);
 
-        using var smtpClient = CreateSmtpClient(email);
+        var content = new StringBuilder();
 
-        using var mailMessage = new MailMessage
-        {
-            From = new MailAddress(email.FromEmail, email.FromName),
-            Subject = "Alle Termine abgesagt – Konsulat",
-            Body = BuildCancellationHtmlMailBody(
-                fullName,
-                bookingReference),
-            IsBodyHtml = true
-        };
+        content.Append(Paragraph(EmailTexts.Get("Salutation", culture)));
 
-        mailMessage.To.Add(toEmail);
-        await smtpClient.SendMailAsync(mailMessage);
+        content.Append(DefinitionList(culture,
+        [
+            ("Label.Name", fullName),
+            ("Label.BookingNumber", bookingReference)
+        ]));
+
+        content.Append(Paragraph(EmailTexts.Get("Cancellation.Rebook", culture)));
+
+        await SendAsync(
+            toEmail,
+            EmailTexts.Get("Cancellation.Subject", culture),
+            BuildDocument(
+                recipientLanguage,
+                culture,
+                EmailTexts.Get("Cancellation.Heading", culture),
+                "#c62828",
+                content.ToString()));
     }
 
     // =============================================================
@@ -132,38 +164,100 @@ public class SmtpEmailService : IEmailService
         string fullName,
         string employeeCode,
         string temporaryPassword,
-        string changePasswordLink)
+        string changePasswordLink,
+        string language)
     {
-        if (!TryGetEmailConfig(out var email))
-        {
-            return;
-        }
+        var recipientLanguage = SupportedLanguages.Resolve(language);
+        var culture = new CultureInfo(recipientLanguage.CultureCode);
 
-        using var smtpClient = CreateSmtpClient(email);
+        var content = new StringBuilder();
 
-        using var mailMessage = new MailMessage
-        {
-            From = new MailAddress(email.FromEmail, email.FromName),
-            Subject = "Willkommen – Mitarbeiterzugang Konsulat",
-            Body = BuildEmployeeWelcomeHtmlMailBody(
-                fullName,
-                employeeCode,
-                temporaryPassword,
-                changePasswordLink),
-            IsBodyHtml = true
-        };
+        content.Append(Paragraph(EmailTexts.Format("PersonalSalutation", culture, fullName)));
+        content.Append(Paragraph(EmailTexts.Get("EmployeeWelcome.Intro", culture)));
 
-        mailMessage.To.Add(toEmail);
-        await smtpClient.SendMailAsync(mailMessage);
+        content.Append(DefinitionList(culture,
+        [
+            ("Label.EmployeeCode", employeeCode),
+            ("Label.TemporaryPassword", temporaryPassword)
+        ]));
+
+        content.Append(Button(changePasswordLink, EmailTexts.Get("EmployeeWelcome.Button", culture), "#1565c0"));
+        content.Append(Paragraph(EmailTexts.Get("EmployeeWelcome.Notice", culture)));
+
+        await SendAsync(
+            toEmail,
+            EmailTexts.Get("EmployeeWelcome.Subject", culture),
+            BuildDocument(
+                recipientLanguage,
+                culture,
+                EmailTexts.Get("EmployeeWelcome.Heading", culture),
+                "#1565c0",
+                content.ToString()));
     }
 
     // =============================================================
-    // MITARBEITER – PASSWORT GEÄNDERT
+    // MITARBEITER – PASSWORT ZURUECKSETZEN
+    // =============================================================
+    public async Task SendEmployeePasswordResetEmailAsync(
+        string toEmail,
+        string fullName,
+        string resetLink,
+        string language)
+    {
+        var recipientLanguage = SupportedLanguages.Resolve(language);
+        var culture = new CultureInfo(recipientLanguage.CultureCode);
+
+        var content = new StringBuilder();
+
+        content.Append(Paragraph(EmailTexts.Format("PersonalSalutation", culture, fullName)));
+        content.Append(Paragraph(EmailTexts.Get("PasswordReset.Intro", culture)));
+        content.Append(Button(resetLink, EmailTexts.Get("PasswordReset.Button", culture), "#1565c0"));
+        content.Append(SmallPrint(EmailTexts.Get("PasswordReset.Validity", culture)));
+
+        await SendAsync(
+            toEmail,
+            EmailTexts.Get("PasswordReset.Subject", culture),
+            BuildDocument(
+                recipientLanguage,
+                culture,
+                EmailTexts.Get("PasswordReset.Heading", culture),
+                "#1565c0",
+                content.ToString()));
+    }
+
+    // =============================================================
+    // MITARBEITER – PASSWORT GEAENDERT
     // =============================================================
     public async Task SendEmployeePasswordChangedConfirmationEmailAsync(
         string toEmail,
         string fullName,
-        string loginLink)
+        string loginLink,
+        string language)
+    {
+        var recipientLanguage = SupportedLanguages.Resolve(language);
+        var culture = new CultureInfo(recipientLanguage.CultureCode);
+
+        var content = new StringBuilder();
+
+        content.Append(Paragraph(EmailTexts.Format("PersonalSalutation", culture, fullName)));
+        content.Append(Paragraph(EmailTexts.Get("PasswordChanged.Intro", culture)));
+        content.Append(Button(loginLink, EmailTexts.Get("PasswordChanged.Button", culture), "#2e7d32"));
+
+        await SendAsync(
+            toEmail,
+            EmailTexts.Get("PasswordChanged.Subject", culture),
+            BuildDocument(
+                recipientLanguage,
+                culture,
+                EmailTexts.Get("PasswordChanged.Heading", culture),
+                "#2e7d32",
+                content.ToString()));
+    }
+
+    // =============================================================
+    // VERSAND
+    // =============================================================
+    private async Task SendAsync(string toEmail, string subject, string htmlBody)
     {
         if (!TryGetEmailConfig(out var email))
         {
@@ -175,11 +269,14 @@ public class SmtpEmailService : IEmailService
         using var mailMessage = new MailMessage
         {
             From = new MailAddress(email.FromEmail, email.FromName),
-            Subject = "Passwort erfolgreich geändert – Konsulat",
-            Body = BuildEmployeePasswordChangedHtmlMailBody(
-                fullName,
-                loginLink),
-            IsBodyHtml = true
+            Subject = subject,
+            Body = htmlBody,
+            IsBodyHtml = true,
+
+            // Arabische und deutsche Umlaute brauchen eine ausdrueckliche Kodierung,
+            // sonst kommen Betreff und Text je nach Postausgang zerlegt an.
+            SubjectEncoding = Encoding.UTF8,
+            BodyEncoding = Encoding.UTF8
         };
 
         mailMessage.To.Add(toEmail);
@@ -187,299 +284,133 @@ public class SmtpEmailService : IEmailService
     }
 
     // =============================================================
-    // HTML – TERMINBESTÄTIGUNG (HAUPT-TEMPLATE)
+    // HTML-BAUSTEINE
+    //
+    // Jeder eingesetzte Wert wird kodiert: Namen und Bezeichnungen stammen aus
+    // Benutzereingaben beziehungsweise aus Stammdaten und duerfen das Schreiben
+    // nicht veraendern koennen. Siehe harness/security.md Abschnitt 4.
     // =============================================================
-    private static string BuildHtmlMailBody(
-        string fullName,
-        string bookingReference,
-        string manageUrl,
-        string servicesOverviewHtml)
+    private static string BuildDocument(
+        SupportedLanguage language,
+        CultureInfo culture,
+        string heading,
+        string headingColor,
+        string content)
     {
-        return $@"
-<!DOCTYPE html>
-<html lang=""de"">
-<body style=""font-family: Arial; background:#f5f5f5; padding:20px"">
-<div style=""max-width:600px; margin:auto; background:#fff; padding:24px; border-radius:8px"">
+        var fontFamily = language.IsRightToLeft
+            ? "'Segoe UI', 'Noto Naskh Arabic', 'Geeza Pro', Tahoma, Arial, sans-serif"
+            : "Arial, Helvetica, sans-serif";
 
-<h2 style=""color:#2e7d32"">Terminbestätigung</h2>
+        return $"""
+            <!DOCTYPE html>
+            <html lang="{Encode(language.CultureCode)}" dir="{language.TextDirection}">
+            <body style="font-family:{fontFamily}; background:#f5f5f5; padding:20px; margin:0">
+            <div style="max-width:600px; margin:auto; background:#fff; padding:24px; border-radius:8px; text-align:{(language.IsRightToLeft ? "right" : "left")}">
 
-<p>Sehr geehrte Damen und Herren,</p>
+            <h2 style="color:{headingColor}; margin-top:0">{Encode(heading)}</h2>
 
-<p>
-Ihr Termin beim <strong>Konsulat</strong> wurde erfolgreich registriert.
-</p>
+            {content}
 
-<p>
-<strong>Name:</strong> {fullName}<br/>
-<strong>Buchungsnummer:</strong> {bookingReference}
-</p>
+            <p style="margin-top:30px">
+            {Encode(EmailTexts.Get("Closing", culture))}<br/>
+            <strong>{Encode(EmailTexts.Get("Signature", culture))}</strong>
+            </p>
 
-{servicesOverviewHtml}
+            <p style="font-size:12px; color:#888">
+            {Encode(EmailTexts.Get("AutomatedNotice", culture))}
+            </p>
 
-<p style=""margin-top:20px"">
-Über den folgenden Button können Sie Ihre Termine einsehen, verwalten oder absagen:
-</p>
-
-<p style=""text-align:center; margin:30px 0"">
-<a href=""{manageUrl}""
-style=""background:#1565c0;color:#fff;padding:12px 20px;
-text-decoration:none;border-radius:6px;font-weight:bold"">
-Termin verwalten
-</a>
-</p>
-
-<p>
-Bitte erscheinen Sie pünktlich und bringen Sie alle erforderlichen Unterlagen mit.
-</p>
-
-<p style=""margin-top:30px"">
-Mit freundlichen Grüßen<br/>
-<strong>Konsulat – Terminservice</strong>
-</p>
-
-<p style=""font-size:12px;color:#888"">
-Dies ist eine automatisch generierte E-Mail.
-</p>
-
-</div>
-</body>
-</html>";
+            </div>
+            </body>
+            </html>
+            """;
     }
 
-    // =============================================================
-    // HTML – SERVICES-ÜBERSICHT (NEU)
-    // =============================================================
-    private static string BuildServicesOverviewHtml(
-        IReadOnlyList<BookingEmailAppointmentDto> appointments)
+    private static string BuildAppointmentOverview(
+        IReadOnlyList<BookingEmailAppointmentDto> appointments,
+        SupportedLanguage language,
+        CultureInfo culture)
     {
-        if (appointments == null || appointments.Count == 0)
+        if (appointments is null || appointments.Count == 0)
         {
-            return "<p><em>Keine Termindetails verfügbar.</em></p>";
+            return Paragraph(EmailTexts.Get("Confirmation.NoDetails", culture));
         }
 
-        var grouped = appointments
-            .OrderBy(a => a.DateTime)
-            .GroupBy(a => a.PersonFullName);
+        var html = new StringBuilder();
 
-        var html = "<h3>Gebuchte Termine</h3>";
+        html.Append(CultureInfo.InvariantCulture, $"<h3>{Encode(EmailTexts.Get("Confirmation.ListHeading", culture))}</h3>");
 
-        foreach (var personGroup in grouped)
+        var groupedByPerson = appointments
+            .OrderBy(appointment => appointment.DateTime)
+            .GroupBy(appointment => appointment.PersonFullName);
+
+        foreach (var personGroup in groupedByPerson)
         {
-            html += $"<p><strong>{personGroup.Key}</strong></p><ul>";
+            html.Append(CultureInfo.InvariantCulture, $"<p><strong>{Encode(personGroup.Key)}</strong></p><ul>");
 
-            foreach (var a in personGroup)
+            foreach (var appointment in personGroup)
             {
-                html += $@"
-<li>
-<strong>{a.ServiceName}</strong><br/>
-{a.DateTime:dd.MM.yyyy} – {a.DateTime:HH:mm} Uhr
-</li>";
+                var serviceName = LocalizedText.ForCulture(
+                    appointment.ServiceName,
+                    appointment.ServiceNameEnglish,
+                    appointment.ServiceNameArabic,
+                    language.CultureCode);
+
+                var date = appointment.DateTime.ToString("d", culture);
+                var time = appointment.DateTime.ToString("HH:mm", culture);
+
+                html.Append(CultureInfo.InvariantCulture,
+                    $"<li><strong>{Encode(serviceName)}</strong><br/>{Encode(date)} – {Encode(time)}</li>");
             }
 
-            html += "</ul>";
+            html.Append("</ul>");
         }
 
-        return html;
+        return html.ToString();
     }
 
-    // =============================================================
-    // HTML – TEILABSAGE
-    // =============================================================
-    private static string BuildPartialCancellationHtmlMailBody(
-        string fullName,
-        string serviceName,
-        DateTime appointmentDate)
+    private static string DefinitionList(
+        CultureInfo culture,
+        IReadOnlyList<(string LabelKey, string Value)> entries)
     {
-        return $@"
-<!DOCTYPE html>
-<html lang=""de"">
-<body style=""font-family: Arial; background:#f5f5f5; padding:20px"">
-<div style=""max-width:600px; margin:auto; background:#fff; padding:24px; border-radius:8px"">
+        var html = new StringBuilder("<p>");
 
-<h2 style=""color:#f9a825"">Termin teilweise abgesagt</h2>
-
-<p>Sehr geehrte Damen und Herren,</p>
-
-<ul>
-<li><strong>Name:</strong> {fullName}</li>
-<li><strong>Service:</strong> {serviceName}</li>
-<li><strong>Datum:</strong> {appointmentDate:dd.MM.yyyy}</li>
-<li><strong>Uhrzeit:</strong> {appointmentDate:HH:mm} Uhr</li>
-</ul>
-
-<p>Andere gebuchte Termine bleiben bestehen.</p>
-
-<p style=""margin-top:30px"">
-Mit freundlichen Grüßen<br/>
-<strong>Konsulat – Terminservice</strong>
-</p>
-
-</div>
-</body>
-</html>";
-    }
-
-    // =============================================================
-    // HTML – VOLLSTÄNDIGE ABSAGE
-    // =============================================================
-    private static string BuildCancellationHtmlMailBody(
-        string fullName,
-        string bookingReference)
-    {
-        return $@"
-<!DOCTYPE html>
-<html lang=""de"">
-<body style=""font-family: Arial; background:#f5f5f5; padding:20px"">
-<div style=""max-width:600px; margin:auto; background:#fff; padding:24px; border-radius:8px"">
-
-<h2 style=""color:#c62828"">Alle Termine abgesagt</h2>
-
-<p>
-<strong>Name:</strong> {fullName}<br/>
-<strong>Buchungsnummer:</strong> {bookingReference}
-</p>
-
-<p>
-Sie können jederzeit einen neuen Termin über unser Online-Terminportal buchen.
-</p>
-
-<p style=""margin-top:30px"">
-Mit freundlichen Grüßen<br/>
-<strong>Konsulat – Terminservice</strong>
-</p>
-
-</div>
-</body>
-</html>";
-    }
-
-    // =============================================================
-    // HTML – MITARBEITER
-    // =============================================================
-    private static string BuildEmployeeWelcomeHtmlMailBody(
-        string fullName,
-        string employeeCode,
-        string temporaryPassword,
-        string changePasswordLink)
-    {
-        return $@"
-<!DOCTYPE html>
-<html lang=""de"">
-<body style=""font-family: Arial; background:#f5f5f5; padding:20px"">
-<div style=""max-width:600px; margin:auto; background:#fff; padding:24px; border-radius:8px"">
-
-<h2 style=""color:#1565c0"">Willkommen im Konsulat</h2>
-
-<p>
-<strong>Name:</strong> {fullName}<br/>
-<strong>Mitarbeiter-Kennung:</strong> {employeeCode}<br/>
-<strong>Temporäres Passwort:</strong> {temporaryPassword}
-</p>
-
-<p style=""text-align:center; margin:30px 0"">
-<a href=""{changePasswordLink}""
-style=""background:#1565c0;color:#fff;padding:12px 20px;
-text-decoration:none;border-radius:6px;font-weight:bold"">
-Passwort ändern
-</a>
-</p>
-
-</div>
-</body>
-</html>";
-    }
-
-    public async Task SendEmployeePasswordResetEmailAsync(
-        string toEmail,
-        string fullName,
-        string resetLink)
-    {
-        if (!TryGetEmailConfig(out var email))
+        for (var index = 0; index < entries.Count; index++)
         {
-            return;
+            var (labelKey, value) = entries[index];
+
+            html.Append(CultureInfo.InvariantCulture,
+                $"<strong>{Encode(EmailTexts.Get(labelKey, culture))}:</strong> {Encode(value)}");
+
+            if (index < entries.Count - 1)
+            {
+                html.Append("<br/>");
+            }
         }
 
-        using var smtpClient = CreateSmtpClient(email);
-
-        using var mailMessage = new MailMessage
-        {
-            From = new MailAddress(email.FromEmail, email.FromName),
-            Subject = "Passwort zurücksetzen – Konsulat",
-            Body = BuildEmployeePasswordResetHtmlMailBody(fullName, resetLink),
-            IsBodyHtml = true
-        };
-
-        mailMessage.To.Add(toEmail);
-        await smtpClient.SendMailAsync(mailMessage);
+        return html.Append("</p>").ToString();
     }
 
-    private static string BuildEmployeePasswordResetHtmlMailBody(
-        string fullName,
-        string resetLink)
-    {
-        return $@"
-<!DOCTYPE html>
-<html lang=""de"">
-<body style=""font-family: Arial; background:#f5f5f5; padding:20px"">
-<div style=""max-width:600px; margin:auto; background:#fff; padding:24px; border-radius:8px"">
+    private static string Paragraph(string text) =>
+        $"<p>{Encode(text)}</p>";
 
-<h2 style=""color:#1565c0"">Passwort zurücksetzen</h2>
+    private static string SmallPrint(string text) =>
+        $"""<p style="font-size:12px; color:#888">{Encode(text)}</p>""";
 
-<p>Guten Tag {fullName},</p>
+    private static string Button(string url, string label, string color) =>
+        $"""
+        <p style="text-align:center; margin:30px 0">
+        <a href="{Encode(url)}" style="background:{color}; color:#fff; padding:12px 20px; text-decoration:none; border-radius:6px; font-weight:bold; display:inline-block">
+        {Encode(label)}
+        </a>
+        </p>
+        """;
 
-<p>Sie haben eine Zurücksetzung Ihres Passworts angefordert.</p>
-
-<p style=""text-align:center; margin:30px 0"">
-<a href=""{resetLink}""
-style=""background:#1565c0;color:#fff;padding:12px 20px;
-text-decoration:none;border-radius:6px;font-weight:bold"">
-Passwort zurücksetzen
-</a>
-</p>
-
-<p style=""font-size:12px;color:#888"">
-Dieser Link ist 1 Stunde gültig. Wenn Sie die Zurücksetzung nicht angefordert haben, ignorieren Sie diese E-Mail.
-</p>
-
-<p style=""margin-top:30px"">
-Mit freundlichen Grüßen<br/>
-<strong>Konsulat – Terminservice</strong>
-</p>
-
-</div>
-</body>
-</html>";
-    }
-
-    private static string BuildEmployeePasswordChangedHtmlMailBody(
-        string fullName,
-        string loginLink)
-    {
-        return $@"
-<!DOCTYPE html>
-<html lang=""de"">
-<body style=""font-family: Arial; background:#f5f5f5; padding:20px"">
-<div style=""max-width:600px; margin:auto; background:#fff; padding:24px; border-radius:8px"">
-
-<h2 style=""color:#2e7d32"">Passwort geändert</h2>
-
-<p>Ihr Passwort wurde erfolgreich geändert.</p>
-
-<p style=""text-align:center; margin:30px 0"">
-<a href=""{loginLink}""
-style=""background:#2e7d32;color:#fff;padding:12px 20px;
-text-decoration:none;border-radius:6px;font-weight:bold"">
-Zum Login
-</a>
-</p>
-
-</div>
-</body>
-</html>";
-    }
+    private static string Encode(string? value) =>
+        WebUtility.HtmlEncode(value ?? string.Empty);
 
     // =============================================================
-    // HELPER
+    // KONFIGURATION
     // =============================================================
     /// <summary>
     /// Prueft, ob ein Postausgang konfiguriert ist. Ohne SMTP-Server wird kein Versand
@@ -498,14 +429,14 @@ Zum Login
         return false;
     }
 
-    private static SmtpClient CreateSmtpClient(EmailOptions e)
+    private static SmtpClient CreateSmtpClient(EmailOptions options)
     {
         return new SmtpClient
         {
-            Host = e.SmtpServer,
-            Port = e.Port,
-            EnableSsl = e.UseSsl,
-            Credentials = new NetworkCredential(e.Username, e.Password)
+            Host = options.SmtpServer,
+            Port = options.Port,
+            EnableSsl = options.UseSsl,
+            Credentials = new NetworkCredential(options.Username, options.Password)
         };
     }
 }

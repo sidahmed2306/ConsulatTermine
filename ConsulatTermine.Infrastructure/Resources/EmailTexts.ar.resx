@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Salutation" xml:space="preserve">
+    <value>تحية طيبة،</value>
+  </data>
+  <data name="PersonalSalutation" xml:space="preserve">
+    <value>مرحبًا {0}،</value>
+  </data>
+  <data name="Closing" xml:space="preserve">
+    <value>مع خالص التحية</value>
+  </data>
+  <data name="Signature" xml:space="preserve">
+    <value>قنصلية الجزائر بفرانكفورت – خدمة المواعيد</value>
+  </data>
+  <data name="AutomatedNotice" xml:space="preserve">
+    <value>هذه رسالة تم إنشاؤها آليًا. يرجى عدم الرد عليها.</value>
+  </data>
+  <data name="Label.Name" xml:space="preserve">
+    <value>الاسم</value>
+  </data>
+  <data name="Label.BookingNumber" xml:space="preserve">
+    <value>رقم الحجز</value>
+  </data>
+  <data name="Label.Service" xml:space="preserve">
+    <value>الخدمة</value>
+  </data>
+  <data name="Label.Date" xml:space="preserve">
+    <value>التاريخ</value>
+  </data>
+  <data name="Label.Time" xml:space="preserve">
+    <value>الوقت</value>
+  </data>
+  <data name="Label.EmployeeCode" xml:space="preserve">
+    <value>رقم الموظف</value>
+  </data>
+  <data name="Label.TemporaryPassword" xml:space="preserve">
+    <value>كلمة مرور مؤقتة</value>
+  </data>
+  <data name="Confirmation.Subject" xml:space="preserve">
+    <value>تأكيد الموعد – قنصلية الجزائر بفرانكفورت</value>
+  </data>
+  <data name="Confirmation.Heading" xml:space="preserve">
+    <value>تأكيد الموعد</value>
+  </data>
+  <data name="Confirmation.Intro" xml:space="preserve">
+    <value>تم تسجيل موعدك لدى قنصلية الجزائر بفرانكفورت.</value>
+  </data>
+  <data name="Confirmation.ListHeading" xml:space="preserve">
+    <value>المواعيد المحجوزة</value>
+  </data>
+  <data name="Confirmation.NoDetails" xml:space="preserve">
+    <value>لا تتوفر تفاصيل مواعيد لهذا الحجز.</value>
+  </data>
+  <data name="Confirmation.ManageIntro" xml:space="preserve">
+    <value>يمكنك عبر الرابط التالي الاطلاع على مواعيدك وإلغاؤها بشكل فردي:</value>
+  </data>
+  <data name="Confirmation.ManageButton" xml:space="preserve">
+    <value>إدارة المواعيد</value>
+  </data>
+  <data name="Confirmation.BringDocuments" xml:space="preserve">
+    <value>يرجى الحضور في الوقت المحدد وإحضار جميع الوثائق المطلوبة.</value>
+  </data>
+  <data name="PartialCancellation.Subject" xml:space="preserve">
+    <value>تم إلغاء موعد – قنصلية الجزائر بفرانكفورت</value>
+  </data>
+  <data name="PartialCancellation.Heading" xml:space="preserve">
+    <value>تم إلغاء أحد المواعيد</value>
+  </data>
+  <data name="PartialCancellation.Others" xml:space="preserve">
+    <value>تبقى جميع المواعيد الأخرى في هذا الحجز سارية.</value>
+  </data>
+  <data name="Cancellation.Subject" xml:space="preserve">
+    <value>تم إلغاء جميع المواعيد – قنصلية الجزائر بفرانكفورت</value>
+  </data>
+  <data name="Cancellation.Heading" xml:space="preserve">
+    <value>تم إلغاء جميع المواعيد</value>
+  </data>
+  <data name="Cancellation.Rebook" xml:space="preserve">
+    <value>يمكنك حجز موعد جديد في أي وقت عبر بوابة المواعيد الإلكترونية.</value>
+  </data>
+  <data name="EmployeeWelcome.Subject" xml:space="preserve">
+    <value>حساب الموظف الخاص بك – قنصلية الجزائر بفرانكفورت</value>
+  </data>
+  <data name="EmployeeWelcome.Heading" xml:space="preserve">
+    <value>مرحبًا</value>
+  </data>
+  <data name="EmployeeWelcome.Intro" xml:space="preserve">
+    <value>تم إنشاء حساب لك في قسم الموظفين.</value>
+  </data>
+  <data name="EmployeeWelcome.Button" xml:space="preserve">
+    <value>تغيير كلمة المرور الآن</value>
+  </data>
+  <data name="EmployeeWelcome.Notice" xml:space="preserve">
+    <value>يرجى تغيير كلمة المرور المؤقتة عند أول تسجيل دخول.</value>
+  </data>
+  <data name="PasswordReset.Subject" xml:space="preserve">
+    <value>إعادة تعيين كلمة المرور – قنصلية الجزائر بفرانكفورت</value>
+  </data>
+  <data name="PasswordReset.Heading" xml:space="preserve">
+    <value>إعادة تعيين كلمة المرور</value>
+  </data>
+  <data name="PasswordReset.Intro" xml:space="preserve">
+    <value>تم طلب إعادة تعيين كلمة المرور لحسابك.</value>
+  </data>
+  <data name="PasswordReset.Button" xml:space="preserve">
+    <value>إعادة تعيين كلمة المرور</value>
+  </data>
+  <data name="PasswordReset.Validity" xml:space="preserve">
+    <value>الرابط صالح لمدة ساعة واحدة. إذا لم تطلب إعادة التعيين، فتجاهل هذه الرسالة.</value>
+  </data>
+  <data name="PasswordChanged.Subject" xml:space="preserve">
+    <value>تم تغيير كلمة المرور – قنصلية الجزائر بفرانكفورت</value>
+  </data>
+  <data name="PasswordChanged.Heading" xml:space="preserve">
+    <value>تم تغيير كلمة المرور</value>
+  </data>
+  <data name="PasswordChanged.Intro" xml:space="preserve">
+    <value>تم تغيير كلمة مرور حسابك. إذا لم تقم بذلك بنفسك، يرجى الاتصال بالإدارة فورًا.</value>
+  </data>
+  <data name="PasswordChanged.Button" xml:space="preserve">
+    <value>إلى تسجيل الدخول</value>
+  </data>
+</root>

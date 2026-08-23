@@ -1,0 +1,168 @@
+/* =====================================================================
+   MEHRSPRACHIGKEIT
+
+   Alles, was von der gewaehlten Sprache abhaengt: Schrift, Schreibrichtung
+   und das Sprachmenue. Bewusst als eigene Datei und nicht in site.css, damit
+   sprachabhaengige Regeln an einer Stelle stehen und nachvollziehbar bleiben.
+
+   Die eigentliche Umkehr der Schreibrichtung leisten das Attribut dir am
+   html-Element und MudRTLProvider. Hier stehen nur die Ergaenzungen, die
+   daraus nicht von selbst folgen.
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   ARABISCHE TYPOGRAFIE
+
+   Die lateinische Standardschrift stellt Arabisch zwar dar, verbindet die
+   Buchstaben aber unruhig und setzt die Zeilen zu eng. Der Stapel nennt
+   zuerst die Schriften, die auf den jeweiligen Betriebssystemen wirklich
+   vorhanden sind, und endet auf einer generischen Familie. Es wird bewusst
+   keine Schrift aus dem Netz nachgeladen: das waere eine zusaetzliche
+   externe Abhaengigkeit und verzoegerte den ersten Seitenaufbau.
+   --------------------------------------------------------------------- */
+
+:root {
+  --font-arabic:
+    "Segoe UI", "Noto Naskh Arabic", "Noto Sans Arabic", "Geeza Pro",
+    "Al Bayan", "Damascus", Tahoma, Arial, sans-serif;
+}
+
+:lang(ar),
+[dir="rtl"] {
+  font-family: var(--font-arabic);
+
+  /* Arabisch traegt Ober- und Unterlaengen weit ueber die Grundlinie hinaus.
+     Ohne groesseren Zeilenabstand beruehren sich die Zeilen. */
+  line-height: 1.8;
+}
+
+/* Die Komponentenbibliothek setzt ihre Schrift ueber das Theme. Damit
+   arabischer Text auch dort ankommt, wird die Familie nachgezogen. */
+[dir="rtl"] .mud-typography,
+[dir="rtl"] .mud-input,
+[dir="rtl"] .mud-input-label,
+[dir="rtl"] .mud-button-label,
+[dir="rtl"] .mud-nav-link,
+[dir="rtl"] .mud-table,
+[dir="rtl"] .mud-alert {
+  font-family: var(--font-arabic);
+}
+
+/* Ziffern und Uhrzeiten bleiben auch im arabischen Satz von links nach
+   rechts lesbar. Ohne diese Angabe zerlegt der Zeilenumbruchalgorithmus
+   Angaben wie 09:00 – 15:00 an der falschen Stelle. */
+[dir="rtl"] time,
+[dir="rtl"] .slot-time-top,
+[dir="rtl"] .booking-step-circle {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+/* ---------------------------------------------------------------------
+   SPRACHMENUE
+   --------------------------------------------------------------------- */
+
+.language-switcher-trigger {
+  /* Mindestgroesse eines Beruehrungsziels nach harness/uiux.md Abschnitt 12. */
+  min-height: 44px;
+  min-width: 44px;
+  gap: 8px;
+}
+
+.language-switcher-name {
+  white-space: nowrap;
+}
+
+/* Auf schmalen Geraeten reicht der Platz nur fuer das Sprachkuerzel. Der
+   ausgeschriebene Name bleibt im Menue selbst sichtbar. */
+.language-switcher-code {
+  display: none;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 600px) {
+  .language-switcher-name {
+    display: none;
+  }
+
+  .language-switcher-code {
+    display: inline;
+  }
+}
+
+.language-switcher-list .language-switcher-item {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Die aktive Sprache wird zusaetzlich zum Haken hervorgehoben. Der Haken
+   allein traegt die Information, die Auszeichnung unterstuetzt nur. */
+.language-switcher-list .language-switcher-item.active {
+  font-weight: 600;
+}
+
+/* Feste Breite, damit die Namen aller Sprachen untereinander beginnen,
+   unabhaengig davon, ob ein Haken gesetzt ist. */
+.language-switcher-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  flex-shrink: 0;
+}
+
+/* ---------------------------------------------------------------------
+   SCHREIBRICHTUNG IM SEITENRAHMEN
+   --------------------------------------------------------------------- */
+
+/* Der Inhaltsbereich haelt links Platz fuer die Navigationsleiste frei.
+   Auf Arabisch steht die Leiste rechts; der Randabstand folgt der
+   Schreibrichtung ueber margin-inline-start im Layout. Die volle Breite
+   ohne Navigation bleibt davon unberuehrt. */
+[dir="rtl"] .mud-drawer-open-responsive-md-left,
+[dir="rtl"] .mud-drawer-open-persistent-md-left {
+  margin-inline-start: 0;
+}
+
+/* Bootstrap liefert ein Raster mit festen Seiten. Innerhalb eines
+   rtl-Bereichs wird daraus sonst ein nach links gekipptes Layout. */
+[dir="rtl"] .text-center {
+  text-align: center;
+}
+
+/* ---------------------------------------------------------------------
+   BEZEICHNUNG UND WERT
+
+   Kontaktdaten und Öffnungszeiten als Definitionsliste. Die Bezeichnung
+   steht am Zeilenanfang, der Wert daneben; beide folgen der
+   Schreibrichtung, ohne dass die Reihenfolge im Markup sich aendert.
+   --------------------------------------------------------------------- */
+
+.info-list {
+  margin: 0;
+}
+
+.info-list-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding: 4px 0;
+}
+
+.info-list-row dt {
+  font-weight: 600;
+  min-width: 16rem;
+}
+
+.info-list-row dd {
+  margin: 0;
+}
+
+@media (max-width: 600px) {
+  .info-list-row dt {
+    min-width: 100%;
+  }
+}

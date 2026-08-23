@@ -1,4 +1,4 @@
-@using MudBlazor
+@inject IStringLocalizer<CommonTexts> Texts
 
 <MudDialog>
     <DialogContent>
@@ -13,11 +13,11 @@
 
     <DialogActions>
         <MudButton Variant="Variant.Text" OnClick="Cancel">
-            Abbrechen
+            @Texts["Action.Cancel"]
         </MudButton>
 
         <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="Confirm">
-            Löschen
+            @Texts["Action.Delete"]
         </MudButton>
     </DialogActions>
 </MudDialog>
@@ -26,9 +26,18 @@
     [CascadingParameter]
     public IMudDialogInstance MudDialog { get; set; } = default!;
 
-    [Parameter] public string Title { get; set; } = "Bestätigung";
+    /// <summary>
+    /// Titel des Dialogs. Der Aufrufer uebergibt einen bereits uebersetzten Text.
+    /// </summary>
+    [Parameter] public string Title { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Beschreibung der Auswirkung. Der Aufrufer uebergibt einen bereits
+    /// uebersetzten Text, der den betroffenen Datensatz benennt.
+    /// </summary>
     [Parameter] public string Message { get; set; } = string.Empty;
 
-    void Cancel() => MudDialog.Cancel();
-    void Confirm() => MudDialog.Close(DialogResult.Ok(true));
+    private void Cancel() => MudDialog.Cancel();
+
+    private void Confirm() => MudDialog.Close(DialogResult.Ok(true));
 }

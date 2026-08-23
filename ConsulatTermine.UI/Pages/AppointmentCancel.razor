@@ -4,71 +4,80 @@
 @using ConsulatTermine.Domain.Entities
 @using ConsulatTermine.Domain.Enums
 @using Microsoft.AspNetCore.WebUtilities
-@using MudBlazor
 
 @inject ConsulatTermine.Application.Interfaces.IAppointmentService AppointmentService
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 @inject ILogger<AppointmentCancel> Logger
+@inject IStringLocalizer<BookingTexts> Texts
+@inject IStringLocalizer<CommonTexts> CommonTexts
+
+<PageTitle>@Texts["Cancel.Title"]</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mx-auto mt-8">
 
     <MudCard Class="pa-6" Style="border-radius:12px">
 
-        <MudText Typo="Typo.h5" Class="mb-3">
-            Termin absagen
+        <MudText Typo="Typo.h5" Class="mb-3" HtmlTag="h1">
+            @Texts["Cancel.Title"]
         </MudText>
 
         @if (IsLoading)
         {
-            <MudProgressCircular Indeterminate="true" />
+            <MudProgressCircular Indeterminate="true" aria-label="@CommonTexts["State.Loading"]" />
         }
         else if (ErrorMessage != null)
         {
-            <MudAlert Severity="Severity.Error">
+            <MudAlert Severity="Severity.Error" role="alert">
                 @ErrorMessage
             </MudAlert>
         }
         else
         {
             <MudAlert Severity="Severity.Warning" Class="mb-4">
-                Sie können einzelne Termine absagen. Andere Termine bleiben bestehen.
+                @Texts["Cancel.Hint"]
             </MudAlert>
 
-            <MudTable Items="Appointments" Dense="true">
+            <MudTable Items="Appointments" Dense="true" aria-label="@Texts["Cancel.TableAria"]">
                 <HeaderContent>
-                    <MudTh>Service</MudTh>
-                    <MudTh>Datum</MudTh>
-                    <MudTh>Name</MudTh>
-                    <MudTh>Status</MudTh>
-                    <MudTh>Aktion</MudTh>
+                    <MudTh>@Texts["Cancel.Column.Service"]</MudTh>
+                    <MudTh>@Texts["Cancel.Column.Date"]</MudTh>
+                    <MudTh>@Texts["Cancel.Column.Name"]</MudTh>
+                    <MudTh>@Texts["Cancel.Column.Status"]</MudTh>
+                    <MudTh>@Texts["Cancel.Column.Action"]</MudTh>
                 </HeaderContent>
 
                 <RowTemplate>
-                    <MudTd>@context.Service?.Name</MudTd>
+                    @{
+                        var serviceName = context.Service?.NameFor(CultureInfo.CurrentUICulture.Name) ?? string.Empty;
+                        var appointmentMoment = context.Date.ToString("g", CultureInfo.CurrentCulture);
+                    }
 
-                    <MudTd>
-                        @context.Date.ToString("dd.MM.yyyy HH:mm")
+                    <MudTd DataLabel="@Texts["Cancel.Column.Service"]">@serviceName</MudTd>
+
+                    <MudTd DataLabel="@Texts["Cancel.Column.Date"]">@appointmentMoment</MudTd>
+
+                    <MudTd DataLabel="@Texts["Cancel.Column.Name"]">@context.FullName</MudTd>
+
+                    <MudTd DataLabel="@Texts["Cancel.Column.Status"]">
+                        @context.Status.ToDisplayText(CommonTexts)
                     </MudTd>
 
-                    <MudTd>@context.FullName</MudTd>
-
-                    <MudTd>@context.Status</MudTd>
-
-                    <MudTd>
+                    <MudTd DataLabel="@Texts["Cancel.Column.Action"]">
                         @if (context.Status == AppointmentStatus.Booked)
                         {
                             <MudButton Color="Color.Error"
                                        Variant="Variant.Filled"
                                        Size="Size.Small"
                                        Disabled="@IsCancelling"
+                                       aria-label="@Texts["Cancel.ButtonAria", serviceName, appointmentMoment]"
                                        OnClick="@(() => CancelSingleAsync(context.Id))">
-                                Termin absagen
+                                @Texts["Cancel.Button"]
                             </MudButton>
                         }
                         else
                         {
-                            <MudText Color="Color.Secondary">—</MudText>
+                            <MudText Color="Color.Secondary">@Texts["Cancel.NotCancellable"]</MudText>
                         }
                     </MudTd>
                 </RowTemplate>
@@ -77,8 +86,8 @@
             <MudDivider Class="my-4" />
 
             <MudButton Variant="Variant.Outlined"
-                       OnClick="@(()=>Navigation.NavigateTo("/"))">
-                Abbrechen
+                       OnClick="@(() => Navigation.NavigateTo("/"))">
+                @CommonTexts["Action.Cancel"]
             </MudButton>
         }
 
@@ -109,7 +118,7 @@
             if (string.IsNullOrWhiteSpace(BookingReference) ||
                 string.IsNullOrWhiteSpace(CancelToken))
             {
-                ErrorMessage = "Ungültiger Link.";
+                ErrorMessage = Texts["Cancel.Error.InvalidLink"];
                 return;
             }
 
@@ -119,7 +128,7 @@
 
             if (!Appointments.Any())
             {
-                ErrorMessage = "Kein Termin gefunden.";
+                ErrorMessage = Texts["Cancel.Error.NotFound"];
                 return;
             }
 
@@ -128,14 +137,14 @@
 
             if (first.CancelToken != CancelToken)
             {
-                ErrorMessage = "Ungültiger oder manipulierter Link.";
+                ErrorMessage = Texts["Cancel.Error.InvalidLink"];
                 return;
             }
 
             if (!first.CancelTokenExpiresAt.HasValue ||
                 first.CancelTokenExpiresAt.Value < DateTime.UtcNow)
             {
-                ErrorMessage = "Dieser Absagelink ist abgelaufen.";
+                ErrorMessage = Texts["Cancel.Error.Expired"];
                 return;
             }
         }
@@ -143,7 +152,7 @@
         {
             // Die Anzeige bleibt allgemein: der Details gehören in das geschützte Log,
             // nicht auf eine öffentlich erreichbare Seite.
-            ErrorMessage = "Fehler beim Laden des Termins.";
+            ErrorMessage = Texts["Cancel.Error.LoadFailed"];
             Logger.LogError(ex, "Termin zur Buchung {BookingReference} konnte nicht geladen werden.", BookingReference);
         }
         finally
@@ -160,7 +169,7 @@
         {
             await AppointmentService.CancelAsync(appointmentId);
 
-            Snackbar.Add("Der Termin wurde erfolgreich abgesagt.", Severity.Success);
+            Snackbar.Add(Texts["Cancel.Success"], Severity.Success);
 
             // 🔄 Liste neu laden
             Appointments = await AppointmentService
@@ -175,7 +184,7 @@ if (Appointments.All(a => a.Status == AppointmentStatus.Cancelled))
         }
         catch (Exception ex)
         {
-            Snackbar.Add("Fehler beim Absagen des Termins.", Severity.Error);
+            Snackbar.Add(Texts["Cancel.Failed"], Severity.Error);
             Logger.LogError(ex, "Termin {AppointmentId} konnte nicht abgesagt werden.", appointmentId);
         }
         finally

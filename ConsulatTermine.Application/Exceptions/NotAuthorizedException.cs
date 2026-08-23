@@ -1,3 +1,5 @@
+using ConsulatTermine.Application.Resources;
+
 namespace ConsulatTermine.Application.Exceptions;
 
 /// <summary>
@@ -7,7 +9,7 @@ namespace ConsulatTermine.Application.Exceptions;
 public sealed class NotAuthorizedException : Exception
 {
     public NotAuthorizedException()
-        : base("Fuer diese Aktion fehlt die Berechtigung.")
+        : base(BusinessMessages.Get("NotAuthorized"))
     {
     }
 

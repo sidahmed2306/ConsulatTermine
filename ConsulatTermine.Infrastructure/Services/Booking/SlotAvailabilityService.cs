@@ -1,6 +1,8 @@
+using System.Globalization;
 using ConsulatTermine.Application.DTOs.Booking;
 using ConsulatTermine.Application.Exceptions;
 using ConsulatTermine.Application.Interfaces.Booking;
+using ConsulatTermine.Application.Resources;
 using ConsulatTermine.Application.Services;
 using ConsulatTermine.Domain.Enums;
 using ConsulatTermine.Infrastructure.Persistence;
@@ -43,7 +45,7 @@ public class SlotAvailabilityService : ISlotAvailabilityService
 
             if (service == null)
             {
-                throw new BusinessRuleViolationException("Der Service wurde nicht gefunden.");
+                throw new BusinessRuleViolationException(BusinessMessages.Get("ServiceNotFound"));
             }
 
             // 2) Aktiven Plan laden
@@ -54,7 +56,7 @@ public class SlotAvailabilityService : ISlotAvailabilityService
 
             if (plan == null)
             {
-                throw new BusinessRuleViolationException("Für diesen Service ist derzeit kein Arbeitszeitplan hinterlegt.");
+                throw new BusinessRuleViolationException(BusinessMessages.Get("NoSchedulePlan"));
             }
 
             // 3) Datum muss im Plan-Zeitraum liegen
@@ -63,7 +65,7 @@ public class SlotAvailabilityService : ISlotAvailabilityService
 
             if (date < planFrom || date > planTo)
             {
-                throw new BusinessRuleViolationException($"Für den {date:dd.MM.yyyy} können keine Termine vergeben werden.");
+                throw new BusinessRuleViolationException(BusinessMessages.Format("DateNotBookable", date.ToString("d", CultureInfo.CurrentCulture)));
             }
 
             // 4) Plan-bezogene WorkingHours / Overrides laden
@@ -166,7 +168,7 @@ public class SlotAvailabilityService : ISlotAvailabilityService
 
         if (service == null)
         {
-            throw new BusinessRuleViolationException("Der Service wurde nicht gefunden.");
+            throw new BusinessRuleViolationException(BusinessMessages.Get("ServiceNotFound"));
         }
 
         // 2) Aktiven Plan laden
@@ -177,7 +179,7 @@ public class SlotAvailabilityService : ISlotAvailabilityService
 
         if (plan == null)
         {
-            throw new BusinessRuleViolationException("Für diesen Service ist derzeit kein Arbeitszeitplan hinterlegt.");
+            throw new BusinessRuleViolationException(BusinessMessages.Get("NoSchedulePlan"));
         }
 
         // 3) Range Check

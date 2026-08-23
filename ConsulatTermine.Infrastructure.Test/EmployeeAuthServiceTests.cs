@@ -236,7 +236,7 @@ public sealed class EmployeeAuthServiceTests
 
         Assert.True(result);
         await email.DidNotReceiveWithAnyArgs()
-            .SendEmployeePasswordResetEmailAsync(default!, default!, default!);
+            .SendEmployeePasswordResetEmailAsync(default!, default!, default!, default!);
     }
 
     [Fact]
@@ -250,7 +250,8 @@ public sealed class EmployeeAuthServiceTests
         await email.SendEmployeePasswordResetEmailAsync(
             Arg.Any<string>(),
             Arg.Any<string>(),
-            Arg.Do<string>(link => sentLink = link));
+            Arg.Do<string>(link => sentLink = link),
+            Arg.Any<string>());
 
         await service.RequestPasswordResetAsync(seeded.Email, TestContext.Current.CancellationToken);
 

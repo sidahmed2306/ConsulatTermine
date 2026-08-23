@@ -1,5 +1,6 @@
 using ConsulatTermine.Application.Exceptions;
 using ConsulatTermine.Application.Interfaces;
+using ConsulatTermine.Application.Resources;
 using ConsulatTermine.Application.Security;
 using ConsulatTermine.Domain.Entities;
 using ConsulatTermine.Domain.Enums;
@@ -66,7 +67,7 @@ public class ServiceDayOverrideService : IServiceDayOverrideService
         var existing = await db.ServiceDayOverrides.FindAsync(id);
         if (existing == null)
         {
-            throw new BusinessRuleViolationException("Override nicht gefunden.");
+            throw new BusinessRuleViolationException(BusinessMessages.Get("OverrideNotFound"));
         }
 
         existing.Date = model.Date;

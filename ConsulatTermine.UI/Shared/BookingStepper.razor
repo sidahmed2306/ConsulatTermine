@@ -1,52 +1,76 @@
-@using MudBlazor
 @inject NavigationManager Navigation
+@inject IStringLocalizer<BookingTexts> Texts
 
-<div class="booking-stepper mb-6">
-    <div class="booking-stepper-inner">
-        @foreach (var step in _steps)
+<nav class="booking-stepper mb-6" aria-label="@Texts["Stepper.Aria"]">
+    <ol class="booking-stepper-inner">
+        @for (var index = 0; index < Steps.Length; index++)
         {
-            var index = step.Index;
+            var step = Steps[index];
             var isCompleted = ActiveStep > index;
             var isActive = ActiveStep == index;
-            var isClickable = index <= ActiveStep;
-            var url = step.Url;
+            var isReachable = index <= ActiveStep;
+            var stepNumber = index + 1;
+            var label = Texts[step.LabelKey];
+            var stepIndex = index;
 
-            <div class="booking-step @(isActive ? "active" : "") @(isCompleted ? "completed" : "") @(isClickable ? "clickable" : "")"
-                 @onclick="@(() => GoToStep(index))">
-                <div class="booking-step-label">@step.Label</div>
-                <div class="booking-step-circle">
-                    @if (isCompleted && !isActive)
-                    {
-                        <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Class="step-check" />
-                    }
-                    else
-                    {
-                        <span>@(index + 1)</span>
-                    }
-                </div>
-            </div>
-            @if (index < 3)
+            <li class="booking-step @(isActive ? "active" : "") @(isCompleted ? "completed" : "") @(isReachable ? "clickable" : "")"
+                aria-current="@(isActive ? "step" : null)">
+
+                @* Button statt div: ein Schritt ist eine Aktion und muss mit der
+                   Tastatur erreichbar und ausloesbar sein. Nicht erreichte Schritte
+                   sind deaktiviert statt nur optisch anders. *@
+                <button type="button"
+                        class="booking-step-button"
+                        disabled="@(!isReachable)"
+                        aria-label="@Texts["Stepper.Step", stepNumber, Steps.Length, label]"
+                        @onclick="@(() => GoToStep(stepIndex))">
+
+                    <span class="booking-step-label">@label</span>
+
+                    <span class="booking-step-circle" aria-hidden="true">
+                        @if (isCompleted && !isActive)
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Class="step-check" />
+                        }
+                        else
+                        {
+                            @stepNumber
+                        }
+                    </span>
+                </button>
+            </li>
+
+            @if (index < Steps.Length - 1)
             {
-                <div class="booking-step-connector"></div>
+                <li class="booking-step-connector" aria-hidden="true"></li>
             }
         }
-    </div>
-</div>
+    </ol>
+</nav>
 
 @code {
+    /// <summary>
+    /// Nullbasierter Index des Schritts, auf dem der Buchende gerade steht.
+    /// </summary>
     [Parameter] public int ActiveStep { get; set; }
 
-    private readonly List<(int Index, string Label, string Url)> _steps = new()
-    {
-        (0, "Service auswählen", "/services"),
-        (1, "Termin auswählen", "/appointment"),
-        (2, "Formular", "/appointment-form"),
-        (3, "Bestätigung", "/appointment-confirmation")
-    };
+    private static readonly (string LabelKey, string Url)[] Steps =
+    [
+        ("Stepper.Service", "/services"),
+        ("Stepper.Slot", "/appointment"),
+        ("Stepper.Form", "/appointment-form"),
+        ("Stepper.Confirmation", "/appointment-confirmation")
+    ];
 
     private void GoToStep(int stepIndex)
     {
-        if (stepIndex > ActiveStep) return;
-        Navigation.NavigateTo(_steps[stepIndex].Url);
+        // Vorwaerts wird nur ueber den Ablauf selbst gesprungen: ein spaeterer Schritt
+        // setzt Angaben voraus, die davor entstehen.
+        if (stepIndex > ActiveStep)
+        {
+            return;
+        }
+
+        Navigation.NavigateTo(Steps[stepIndex].Url);
     }
 }

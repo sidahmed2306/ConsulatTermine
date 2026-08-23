@@ -1,6 +1,7 @@
 using ConsulatTermine.Application.DTOs.Booking;
 using ConsulatTermine.Application.Exceptions;
 using ConsulatTermine.Application.Interfaces.Booking;
+using ConsulatTermine.Application.Resources;
 
 namespace ConsulatTermine.Infrastructure.Services.Booking;
 
@@ -29,17 +30,17 @@ public class BookingValidationService : IBookingValidationService
     {
         if (request.MainPerson == null)
         {
-            throw new BusinessRuleViolationException("Es muss eine Hauptperson angegeben werden.");
+            throw new BusinessRuleViolationException(BusinessMessages.Get("MainPersonRequired"));
         }
 
         if (string.IsNullOrWhiteSpace(request.MainPerson.FullName))
         {
-            throw new BusinessRuleViolationException("Der Name der Hauptperson ist erforderlich.");
+            throw new BusinessRuleViolationException(BusinessMessages.Get("MainPersonNameRequired"));
         }
 
         if (string.IsNullOrWhiteSpace(request.MainPerson.Email))
         {
-            throw new BusinessRuleViolationException("Die E-Mail-Adresse der Hauptperson ist erforderlich.");
+            throw new BusinessRuleViolationException(BusinessMessages.Get("MainPersonEmailRequired"));
         }
     }
 
@@ -52,19 +53,19 @@ public class BookingValidationService : IBookingValidationService
 
         if (persons.Count == 0)
         {
-            throw new BusinessRuleViolationException("Eine Buchung muss mindestens eine Person enthalten.");
+            throw new BusinessRuleViolationException(BusinessMessages.Get("BookingNeedsPerson"));
         }
 
         foreach (var p in persons)
         {
             if (string.IsNullOrWhiteSpace(p.FullName))
             {
-                throw new BusinessRuleViolationException("Für jede Person ist ein Name erforderlich.");
+                throw new BusinessRuleViolationException(BusinessMessages.Get("PersonNameRequired"));
             }
 
             if (p.ServiceSlots.Count == 0)
             {
-                throw new BusinessRuleViolationException($"Für {p.FullName} muss mindestens ein Termin gewählt werden.");
+                throw new BusinessRuleViolationException(BusinessMessages.Format("PersonNeedsAppointment", p.FullName));
             }
         }
     }

@@ -1,6 +1,7 @@
 using ConsulatTermine.Application.DTOs.Booking;
 using ConsulatTermine.Application.Interfaces;
 using ConsulatTermine.Application.Interfaces.Booking;
+using ConsulatTermine.Application.Localization;
 using ConsulatTermine.Domain.Entities;
 using ConsulatTermine.Domain.Enums;
 using ConsulatTermine.Infrastructure.Persistence;
@@ -63,6 +64,11 @@ public class BookingService : IBookingService
         {
             int personIndex = 1;
 
+            // Unbekannte oder fehlende Angaben ergeben die Standardsprache. Die Sprache
+            // wird je Termin gespeichert, damit auch eine spaetere Absage in der Sprache
+            // hinausgeht, in der gebucht wurde.
+            var bookingLanguage = SupportedLanguages.Normalize(request.Language);
+
             // ---- Hauptbucher zuerst ----
             await CreateAppointmentsForPersonAsync(
                 db,
@@ -71,6 +77,7 @@ public class BookingService : IBookingService
                 cancelToken,
                 personIndex,
                 true,
+                bookingLanguage,
                 emailAppointments);
 
             // ---- Begleitpersonen ----
@@ -84,6 +91,7 @@ public class BookingService : IBookingService
                     cancelToken,
                     personIndex,
                     false,
+                    bookingLanguage,
                     emailAppointments);
             }
 
@@ -105,7 +113,8 @@ public class BookingService : IBookingService
                             request.MainPerson.FullName,
                             bookingRef,
                             cancelToken,
-                            emailAppointments);
+                            emailAppointments,
+                            bookingLanguage);
                     }
                 }
                 catch (Exception ex)
@@ -139,6 +148,7 @@ public class BookingService : IBookingService
         string cancelToken,
         int personIndex,
         bool isMainPerson,
+        string bookingLanguage,
         List<BookingEmailAppointmentDto> emailAppointments)
     {
         foreach (var serviceSlot in person.ServiceSlots)
@@ -167,6 +177,7 @@ public class BookingService : IBookingService
                 BookingReference = bookingRef,
                 PersonIndex = personIndex,
                 IsMainPerson = isMainPerson,
+                Language = bookingLanguage,
                 CreatedAt = DateTime.UtcNow,
 
                 // 🔐 Cancel-Link-Sicherheit
@@ -175,13 +186,20 @@ public class BookingService : IBookingService
             };
 
             // ✅ NEU: Daten für die E-Mail sammeln
+            // Alle gepflegten Sprachfassungen werden mitgenommen: welche davon im
+            // Schreiben erscheint, entscheidet erst der Versand anhand der Sprache
+            // der Buchung.
+            var serviceNames = db.Services
+                .Where(s => s.Id == serviceSlot.ServiceId)
+                .Select(s => new { s.Name, s.NameEnglish, s.NameArabic })
+                .First();
+
             emailAppointments.Add(new BookingEmailAppointmentDto
             {
                 PersonFullName = person.FullName,
-                ServiceName = db.Services
-                    .Where(s => s.Id == serviceSlot.ServiceId)
-                    .Select(s => s.Name)
-                    .First(),
+                ServiceName = serviceNames.Name,
+                ServiceNameEnglish = serviceNames.NameEnglish,
+                ServiceNameArabic = serviceNames.NameArabic,
                 DateTime = serviceSlot.SlotTime
             });
 

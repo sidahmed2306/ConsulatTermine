@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="App.Name" xml:space="preserve">
+    <value>Konsulat Algerien Frankfurt</value>
+  </data>
+  <data name="App.LogoAlt" xml:space="preserve">
+    <value>Wappen der Demokratischen Volksrepublik Algerien</value>
+  </data>
+  <data name="Language.Menu" xml:space="preserve">
+    <value>Sprache</value>
+  </data>
+  <data name="Language.Choose" xml:space="preserve">
+    <value>Sprache wählen</value>
+  </data>
+  <data name="Language.Current" xml:space="preserve">
+    <value>Aktuelle Sprache: {0}</value>
+  </data>
+  <data name="Nav.Menu" xml:space="preserve">
+    <value>Mitarbeiternavigation</value>
+  </data>
+  <data name="Nav.Home" xml:space="preserve">
+    <value>Startseite</value>
+  </data>
+  <data name="Nav.Dashboard" xml:space="preserve">
+    <value>Dashboard</value>
+  </data>
+  <data name="Nav.SwitchService" xml:space="preserve">
+    <value>Service wechseln</value>
+  </data>
+  <data name="Nav.Employees" xml:space="preserve">
+    <value>Mitarbeiter</value>
+  </data>
+  <data name="Nav.Assignments" xml:space="preserve">
+    <value>Service-Zuweisungen</value>
+  </data>
+  <data name="Nav.WorkingHours" xml:space="preserve">
+    <value>Arbeitszeiten</value>
+  </data>
+  <data name="Nav.Services" xml:space="preserve">
+    <value>Services</value>
+  </data>
+  <data name="Nav.Logout" xml:space="preserve">
+    <value>Abmelden</value>
+  </data>
+  <data name="Auth.Forbidden" xml:space="preserve">
+    <value>Für diesen Bereich fehlt Ihnen die Berechtigung.</value>
+  </data>
+  <data name="Auth.Checking" xml:space="preserve">
+    <value>Berechtigung wird geprüft</value>
+  </data>
+  <data name="NotFound.Title" xml:space="preserve">
+    <value>Seite nicht gefunden</value>
+  </data>
+  <data name="NotFound.Message" xml:space="preserve">
+    <value>Unter dieser Adresse gibt es keine Seite.</value>
+  </data>
+  <data name="Action.Save" xml:space="preserve">
+    <value>Speichern</value>
+  </data>
+  <data name="Action.Cancel" xml:space="preserve">
+    <value>Abbrechen</value>
+  </data>
+  <data name="Action.Delete" xml:space="preserve">
+    <value>Löschen</value>
+  </data>
+  <data name="Action.Confirm" xml:space="preserve">
+    <value>Bestätigen</value>
+  </data>
+  <data name="Action.Reset" xml:space="preserve">
+    <value>Zurücksetzen</value>
+  </data>
+  <data name="Action.Back" xml:space="preserve">
+    <value>Zurück</value>
+  </data>
+  <data name="Action.Continue" xml:space="preserve">
+    <value>Weiter</value>
+  </data>
+  <data name="Action.Close" xml:space="preserve">
+    <value>Schließen</value>
+  </data>
+  <data name="Action.Edit" xml:space="preserve">
+    <value>Bearbeiten</value>
+  </data>
+  <data name="Action.Add" xml:space="preserve">
+    <value>Hinzufügen</value>
+  </data>
+  <data name="Action.New" xml:space="preserve">
+    <value>Neu</value>
+  </data>
+  <data name="Dialog.ConfirmTitle" xml:space="preserve">
+    <value>Bestätigung</value>
+  </data>
+  <data name="State.Loading" xml:space="preserve">
+    <value>Wird geladen …</value>
+  </data>
+  <data name="State.NoData" xml:space="preserve">
+    <value>Keine Daten vorhanden.</value>
+  </data>
+  <data name="State.Saving" xml:space="preserve">
+    <value>Wird gespeichert …</value>
+  </data>
+  <data name="Error.PageTitle" xml:space="preserve">
+    <value>Fehler</value>
+  </data>
+  <data name="Error.Heading" xml:space="preserve">
+    <value>Es ist ein Fehler aufgetreten</value>
+  </data>
+  <data name="Error.Message" xml:space="preserve">
+    <value>Ihre Anfrage konnte nicht verarbeitet werden. Bitte versuchen Sie es erneut.</value>
+  </data>
+  <data name="Error.RequestId" xml:space="preserve">
+    <value>Vorgangsnummer</value>
+  </data>
+  <data name="Error.BackToStart" xml:space="preserve">
+    <value>Zur Startseite</value>
+  </data>
+  <data name="Status.Booked" xml:space="preserve">
+    <value>Gebucht</value>
+  </data>
+  <data name="Status.CheckedIn" xml:space="preserve">
+    <value>Angemeldet</value>
+  </data>
+  <data name="Status.InProgress" xml:space="preserve">
+    <value>Aufgerufen</value>
+  </data>
+  <data name="Status.AtDesk" xml:space="preserve">
+    <value>Am Schalter</value>
+  </data>
+  <data name="Status.Completed" xml:space="preserve">
+    <value>Abgeschlossen</value>
+  </data>
+  <data name="Status.Cancelled" xml:space="preserve">
+    <value>Abgesagt</value>
+  </data>
+  <data name="ErrorUi.Reconnect" xml:space="preserve">
+    <value>Es ist ein Fehler aufgetreten. Die Anwendung antwortet möglicherweise erst nach einem Neuladen wieder.</value>
+  </data>
+  <data name="ErrorUi.Development" xml:space="preserve">
+    <value>Es ist eine unbehandelte Ausnahme aufgetreten. Einzelheiten stehen in den Entwicklerwerkzeugen des Browsers.</value>
+  </data>
+  <data name="Action.Reload" xml:space="preserve">
+    <value>Neu laden</value>
+  </data>
+  <data name="Action.Dismiss" xml:space="preserve">
+    <value>Meldung schließen</value>
+  </data>
+</root>

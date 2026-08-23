@@ -7,8 +7,7 @@
 @using ConsulatTermine.Application.ViewModels
 @using ConsulatTermine.Domain.Entities
 @using ConsulatTermine.Domain.Enums
-@using ConsulatTermine.UI.Authentication
-@using MudBlazor
+@using ConsulatTermine.Application.Exceptions
 
 @inject IEmployeeAuthorization Authorization
 @inject NavigationManager Navigation
@@ -18,40 +17,47 @@
 @inject IWorkingScheduleOverviewService OverviewService
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
+@inject ILogger<AdminWorkingHours> Logger
+@inject IStringLocalizer<AdministrationTexts> Texts
+@inject IStringLocalizer<CommonTexts> CommonTexts
+
+<PageTitle>@Texts["Schedule.Title"]</PageTitle>
 
 <MudPaper Class="pa-4">
 
-    <MudText Typo="Typo.h5" Class="mb-2">Dienstplan & Öffnungszeiten – Jahrespläne pro Service</MudText>
+    <MudText Typo="Typo.h5" Class="mb-2" HtmlTag="h1">@Texts["Schedule.Title"]</MudText>
     <MudText Typo="Typo.body2" Class="mb-4">
-        Hier legst du reguläre Öffnungszeiten fest und definierst wöchentliche / datumspezifische Ausnahmen.
-        Die Kapazität pro Slot wird als Basis aus dem Service angezeigt (und kann optional pro Ausnahme überschrieben werden).
+        @Texts["Schedule.Intro"]
     </MudText>
 
     <MudExpansionPanels MultiExpansion="false" Elevation="0">
 
         <!-- STEP 1 -->
-        <MudExpansionPanel Text="1. Service auswählen" Expanded="@(_activeStep == 0)">
+        <MudExpansionPanel Text="@Texts["Schedule.Step1"]" Expanded="@(_activeStep == 0)">
             <MudStack Class="pa-4" Spacing="2">
 
                 <MudSelect T="int?"
-                           Label="Service"
-                           Placeholder="Service auswählen"
+                           Label="@Texts["Schedule.Service"]"
+                           Placeholder="@Texts["Schedule.SelectService"]"
                            Value="_selectedServiceId"
                            ValueChanged="@(async (int? value) => { _selectedServiceId = value; await OnServiceChanged(value ?? 0); })"
                            Required="true"
                            FullWidth="true">
                     @foreach (var s in _services)
                     {
-                        <MudSelectItem T="int?" Value="@s.Id">@s.Name</MudSelectItem>
+                        <MudSelectItem T="int?" Value="@s.Id">
+                            @s.NameFor(CultureInfo.CurrentUICulture.Name)
+                        </MudSelectItem>
                     }
                 </MudSelect>
 
                 @if (_model.ServiceId > 0)
                 {
                     <MudAlert Severity="Severity.Info" Dense="true">
-                        Basis-Kapazität pro Slot: <b>@(GetBaseCapacity()?.ToString() ?? "0")</b> |
-                        Mitarbeiter zugewiesen: <b>@GetEmployeeCount()</b> |
-                        Slotdauer: <b>@GetSlotDuration()</b> Min
+                        @Texts["Schedule.BaseInfo",
+                               GetBaseCapacity()?.ToString(CultureInfo.CurrentCulture) ?? "0",
+                               GetEmployeeCount(),
+                               GetSlotDuration()]
                     </MudAlert>
                 }
 
@@ -60,19 +66,19 @@
                                Color="Color.Primary"
                                Disabled="@(!IsStep1Valid)"
                                OnClick="@(() => GoToStep(1))">
-                        Weiter
+                        @CommonTexts["Action.Continue"]
                     </MudButton>
                 </MudStack>
             </MudStack>
         </MudExpansionPanel>
 
         <!-- STEP 2 -->
-        <MudExpansionPanel Text="2. Jahr auswählen" Expanded="@(_activeStep == 1)" Disabled="@(!IsStep1Valid)">
+        <MudExpansionPanel Text="@Texts["Schedule.Step2"]" Expanded="@(_activeStep == 1)" Disabled="@(!IsStep1Valid)">
             <MudStack Class="pa-4" Spacing="2">
 
                 <MudSelect T="int?"
-                           Label="Jahr"
-                           Placeholder="Jahr auswählen"
+                           Label="@Texts["Schedule.Year"]"
+                           Placeholder="@Texts["Schedule.SelectYear"]"
                            Value="_selectedYear"
                            ValueChanged="@(async (int? y) => { _selectedYear = y; await OnYearChanged(y ?? 0); })"
                            Required="true"
@@ -86,73 +92,73 @@
                 @if (_yearPlanPrefilled)
                 {
                     <MudAlert Severity="Severity.Info" Dense="true">
-                        Für dieses Jahr existiert bereits ein Dienstplan. Die Felder wurden automatisch geladen (wie „Bearbeiten“).
+                        @Texts["Schedule.PlanExists"]
                     </MudAlert>
                 }
 
                 <MudStack Row="true" Justify="Justify.SpaceBetween">
-                    <MudButton Variant="Variant.Text" OnClick="@(() => GoToStep(0))">Zurück</MudButton>
+                    <MudButton Variant="Variant.Text" OnClick="@(() => GoToStep(0))">@CommonTexts["Action.Back"]</MudButton>
                     <MudButton Variant="Variant.Filled"
                                Color="Color.Primary"
                                Disabled="@(!IsStep2Valid)"
                                OnClick="@(() => GoToStep(2))">
-                        Weiter
+                        @CommonTexts["Action.Continue"]
                     </MudButton>
                 </MudStack>
             </MudStack>
         </MudExpansionPanel>
 
         <!-- STEP 3 -->
-        <MudExpansionPanel Text="3. Monate auswählen" Expanded="@(_activeStep == 2)" Disabled="@(!IsStep2Valid)">
+        <MudExpansionPanel Text="@Texts["Schedule.Step3"]" Expanded="@(_activeStep == 2)" Disabled="@(!IsStep2Valid)">
             <MudStack Class="pa-4" Spacing="2">
 
-                <MudText Typo="Typo.subtitle2">Bitte Monate auswählen</MudText>
+                <MudText Typo="Typo.subtitle2">@Texts["Schedule.SelectMonths"]</MudText>
 
                 <MudSelect T="int"
                            MultiSelection="true"
-                           Label="Monate"
-                           Placeholder="Monate auswählen"
+                           Label="@Texts["Schedule.Months"]"
+                           Placeholder="@Texts["Schedule.SelectMonths"]"
                            Required="true"
                            FullWidth="true"
                            SelectedValues="_selectedMonths"
                            SelectedValuesChanged="@( (IEnumerable<int> values) => OnMonthsChanged(values) )">
-                    @foreach (var kvp in _monthNames)
+                    @foreach (var month in Months)
                     {
-                        <MudSelectItem Value="@kvp.Key">@kvp.Value</MudSelectItem>
+                        <MudSelectItem Value="@month">@MonthName(month)</MudSelectItem>
                     }
                 </MudSelect>
 
                 @if (IsStep2Valid && _selectedMonths.Any())
                 {
                     <MudAlert Severity="Severity.Info" Dense="true">
-                        Geplanter Zeitraum (aus Min/Max): <b>@GetPlannedRangeText()</b>
+                        @Texts["Schedule.PlannedRange", GetPlannedRangeText()]
                     </MudAlert>
                 }
 
                 <MudStack Row="true" Justify="Justify.SpaceBetween">
-                    <MudButton Variant="Variant.Text" OnClick="@(() => GoToStep(1))">Zurück</MudButton>
+                    <MudButton Variant="Variant.Text" OnClick="@(() => GoToStep(1))">@CommonTexts["Action.Back"]</MudButton>
                     <MudButton Variant="Variant.Filled"
                                Color="Color.Primary"
                                Disabled="@(!IsStep3Valid)"
                                OnClick="@(() => GoToStep(3))">
-                        Weiter
+                        @CommonTexts["Action.Continue"]
                     </MudButton>
                 </MudStack>
             </MudStack>
         </MudExpansionPanel>
 
         <!-- STEP 4 -->
-        <MudExpansionPanel Text="4. Reguläre Öffnungstage & Zeiten" Expanded="@(_activeStep == 3)" Disabled="@(!IsStep3Valid)">
+        <MudExpansionPanel Text="@Texts["Schedule.Step4"]" Expanded="@(_activeStep == 3)" Disabled="@(!IsStep3Valid)">
             <MudStack Class="pa-4" Spacing="2">
 
-                <MudText Typo="Typo.subtitle2">Reguläre Öffnungstage</MudText>
+                <MudText Typo="Typo.subtitle2">@Texts["Schedule.RegularDays"]</MudText>
 
                 <MudGrid>
                     @foreach (var d in _orderedDays)
                     {
                         <MudItem xs="6" sm="4" md="3">
                             <MudCheckBox T="bool"
-                                         Label="@d.ToString()"
+                                         Label="@DayName(d)"
                                          UncheckedColor="Color.Default"
                                          Color="Color.Success"
                                          Value="_model.RegularDays.Contains(d)"
@@ -163,53 +169,60 @@
 
                 <MudDivider Class="my-2" />
 
-                <MudText Typo="Typo.subtitle2">Reguläre Öffnungszeiten</MudText>
+                <MudText Typo="Typo.subtitle2">@Texts["Schedule.RegularHours"]</MudText>
                 <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
-                    <MudTimePicker Label="Startzeit" @bind-Time="_model.StartTime" AmPm="false" />
-                    <MudTimePicker Label="Endzeit" @bind-Time="_model.EndTime" AmPm="false" />
+                    <MudTimePicker Label="@Texts["Schedule.StartTime"]" @bind-Time="_model.StartTime" AmPm="false" />
+                    <MudTimePicker Label="@Texts["Schedule.EndTime"]" @bind-Time="_model.EndTime" AmPm="false" />
                 </MudStack>
 
                 <MudStack Row="true" Justify="Justify.SpaceBetween">
-                    <MudButton Variant="Variant.Text" OnClick="@(() => GoToStep(2))">Zurück</MudButton>
+                    <MudButton Variant="Variant.Text" OnClick="@(() => GoToStep(2))">@CommonTexts["Action.Back"]</MudButton>
                     <MudButton Variant="Variant.Filled"
                                Color="Color.Primary"
                                Disabled="@(!IsStep4Valid)"
                                OnClick="@(() => GoToStep(4))">
-                        Weiter
+                        @CommonTexts["Action.Continue"]
                     </MudButton>
                 </MudStack>
             </MudStack>
         </MudExpansionPanel>
 
         <!-- STEP 5 -->
-        <MudExpansionPanel Text="5. Ausnahmen (wöchentlich & Datum)" Expanded="@(_activeStep == 4)" Disabled="@(!IsStep4Valid)">
+        <MudExpansionPanel Text="@Texts["Schedule.Step5"]" Expanded="@(_activeStep == 4)" Disabled="@(!IsStep4Valid)">
             <MudStack Class="pa-4" Spacing="3">
 
                 <!-- WEEKLY -->
                 <MudStack Spacing="1">
-                    <MudText Typo="Typo.h6">Wöchentliche Ausnahmen</MudText>
+                    <MudText Typo="Typo.h6" HtmlTag="h2">@Texts["Schedule.WeeklyOverrides"]</MudText>
 
                     <MudTable Items="_model.WeeklyOverrides" Dense="true" Hover="true" Class="mb-2">
                         <HeaderContent>
-                            <MudTh>Tag</MudTh>
-                            <MudTh>Status</MudTh>
-                            <MudTh>Start</MudTh>
-                            <MudTh>Ende</MudTh>
-                            <MudTh>Kapazität</MudTh>
-                            <MudTh>Aktion</MudTh>
+                            <MudTh>@Texts["Schedule.Column.Day"]</MudTh>
+                            <MudTh>@Texts["Schedule.Column.Status"]</MudTh>
+                            <MudTh>@Texts["Schedule.Column.Start"]</MudTh>
+                            <MudTh>@Texts["Schedule.Column.End"]</MudTh>
+                            <MudTh>@Texts["Schedule.Column.Capacity"]</MudTh>
+                            <MudTh>@Texts["Schedule.Column.Action"]</MudTh>
                         </HeaderContent>
                         <RowTemplate>
-                            <MudTd>@context.Day</MudTd>
-                            <MudTd>@(context.IsClosed ? "Geschlossen" : "Geändert")</MudTd>
-                            <MudTd>@(context.StartTime?.ToString(@"hh\:mm") ?? "-")</MudTd>
-                            <MudTd>@(context.EndTime?.ToString(@"hh\:mm") ?? "-")</MudTd>
-                            <MudTd>@(context.CapacityPerSlotOverride?.ToString() ?? "(Basis)")</MudTd>
-                            <MudTd>
+                            @{
+                                var weeklyDayName = DayName(context.Day);
+                            }
+                            <MudTd DataLabel="@Texts["Schedule.Column.Day"]">@weeklyDayName</MudTd>
+                            <MudTd DataLabel="@Texts["Schedule.Column.Status"]">@StatusText(context.IsClosed)</MudTd>
+                            <MudTd DataLabel="@Texts["Schedule.Column.Start"]">@TimeText(context.StartTime)</MudTd>
+                            <MudTd DataLabel="@Texts["Schedule.Column.End"]">@TimeText(context.EndTime)</MudTd>
+                            <MudTd DataLabel="@Texts["Schedule.Column.Capacity"]">@CapacityText(context.CapacityPerSlotOverride)</MudTd>
+                            <MudTd DataLabel="@Texts["Schedule.Column.Action"]">
                                 <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                                Color="Color.Primary"
+                                               title="@CommonTexts["Action.Edit"]"
+                                               aria-label="@($"{CommonTexts["Action.Edit"]}: {weeklyDayName}")"
                                                OnClick="@(() => BeginEditWeekly(context))" />
                                 <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                                Color="Color.Error"
+                                               title="@CommonTexts["Action.Delete"]"
+                                               aria-label="@($"{CommonTexts["Action.Delete"]}: {weeklyDayName}")"
                                                OnClick="@(() => RemoveWeeklyOverride(context))" />
                             </MudTd>
                         </RowTemplate>
@@ -218,13 +231,13 @@
                     <MudPaper Class="pa-3">
                         <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
                             <MudText Typo="Typo.subtitle2">
-                                @(_isEditingWeekly ? "Wöchentliche Ausnahme bearbeiten" : "Neue wöchentliche Ausnahme")
+                                @(_isEditingWeekly ? Texts["Schedule.EditWeekly"] : Texts["Schedule.NewWeekly"])
                             </MudText>
 
                             @if (_isEditingWeekly)
                             {
                                 <MudButton Variant="Variant.Text" Color="Color.Default" OnClick="@CancelEditWeekly">
-                                    Abbrechen
+                                    @CommonTexts["Action.Cancel"]
                                 </MudButton>
                             }
                         </MudStack>
@@ -232,36 +245,36 @@
                         @if (_model.ServiceId > 0)
                         {
                             <MudAlert Severity="Severity.Info" Dense="true" Class="mb-2">
-                                Basis-Kapazität pro Slot für diesen Service: <b>@(GetBaseCapacity()?.ToString() ?? "0")</b>
+                                @Texts["Schedule.BaseCapacity", GetBaseCapacity()?.ToString(CultureInfo.CurrentCulture) ?? "0"]
                             </MudAlert>
                         }
 
                         <MudStack Spacing="2">
 
                             <MudSelect T="DayOfWeek"
-                                       Label="Wochentag"
+                                       Label="@Texts["Schedule.Weekday"]"
                                        @bind-Value="_newWeekly.Day"
                                        Disabled="@_isEditingWeekly"
                                        FullWidth="true">
                                 @foreach (var d in _orderedDays)
                                 {
-                                    <MudSelectItem Value="@d">@d.ToString()</MudSelectItem>
+                                    <MudSelectItem Value="@d">@DayName(d)</MudSelectItem>
                                 }
                             </MudSelect>
 
                             <MudCheckBox T="bool"
                                          Value="_newWeekly.IsClosed"
                                          ValueChanged="OnWeeklyClosedChanged"
-                                         Label="Geschlossen" />
+                                         Label="@Texts["Schedule.Closed"]" />
 
                             @if (!_newWeekly.IsClosed)
                             {
-                                <MudTimePicker Label="Startzeit" @bind-Time="_newWeekly.StartTime" AmPm="false" />
-                                <MudTimePicker Label="Endzeit" @bind-Time="_newWeekly.EndTime" AmPm="false" />
+                                <MudTimePicker Label="@Texts["Schedule.StartTime"]" @bind-Time="_newWeekly.StartTime" AmPm="false" />
+                                <MudTimePicker Label="@Texts["Schedule.EndTime"]" @bind-Time="_newWeekly.EndTime" AmPm="false" />
 
                                 <MudNumericField T="int?"
-                                                 Label="Kapazität pro Slot (optional)"
-                                                 HelperText="Leer lassen = Basis-Kapazität verwenden"
+                                                 Label="@Texts["Schedule.CapacityOverride"]"
+                                                 HelperText="@Texts["Schedule.CapacityHint"]"
                                                  @bind-Value="_newWeekly.CapacityPerSlotOverride" />
                             }
 
@@ -269,7 +282,7 @@
                                        Color="Color.Primary"
                                        Disabled="@(!CanSubmitWeekly)"
                                        OnClick="@SubmitWeekly">
-                                @(_isEditingWeekly ? "Aktualisieren" : "Hinzufügen")
+                                @(_isEditingWeekly ? Texts["Schedule.Update"] : CommonTexts["Action.Add"])
                             </MudButton>
 
                         </MudStack>
@@ -280,29 +293,36 @@
 
                 <!-- DATE -->
                 <MudStack Spacing="1">
-                    <MudText Typo="Typo.h6">Datumspezifische Ausnahmen</MudText>
+                    <MudText Typo="Typo.h6" HtmlTag="h2">@Texts["Schedule.DateOverrides"]</MudText>
 
                     <MudTable Items="_model.DateOverrides" Dense="true" Hover="true" Class="mb-2">
                         <HeaderContent>
-                            <MudTh>Datum</MudTh>
-                            <MudTh>Status</MudTh>
-                            <MudTh>Start</MudTh>
-                            <MudTh>Ende</MudTh>
-                            <MudTh>Kapazität</MudTh>
-                            <MudTh>Aktion</MudTh>
+                            <MudTh>@Texts["Schedule.Column.Date"]</MudTh>
+                            <MudTh>@Texts["Schedule.Column.Status"]</MudTh>
+                            <MudTh>@Texts["Schedule.Column.Start"]</MudTh>
+                            <MudTh>@Texts["Schedule.Column.End"]</MudTh>
+                            <MudTh>@Texts["Schedule.Column.Capacity"]</MudTh>
+                            <MudTh>@Texts["Schedule.Column.Action"]</MudTh>
                         </HeaderContent>
                         <RowTemplate>
-                            <MudTd>@(context.Date?.ToString("dd.MM.yyyy") ?? "-")</MudTd>
-                            <MudTd>@(context.IsClosed ? "Geschlossen" : "Geändert")</MudTd>
-                            <MudTd>@(context.StartTime?.ToString(@"hh\:mm") ?? "-")</MudTd>
-                            <MudTd>@(context.EndTime?.ToString(@"hh\:mm") ?? "-")</MudTd>
-                            <MudTd>@(context.CapacityPerSlotOverride?.ToString() ?? "(Basis)")</MudTd>
-                            <MudTd>
+                            @{
+                                var overrideDate = DateText(context.Date);
+                            }
+                            <MudTd DataLabel="@Texts["Schedule.Column.Date"]">@overrideDate</MudTd>
+                            <MudTd DataLabel="@Texts["Schedule.Column.Status"]">@StatusText(context.IsClosed)</MudTd>
+                            <MudTd DataLabel="@Texts["Schedule.Column.Start"]">@TimeText(context.StartTime)</MudTd>
+                            <MudTd DataLabel="@Texts["Schedule.Column.End"]">@TimeText(context.EndTime)</MudTd>
+                            <MudTd DataLabel="@Texts["Schedule.Column.Capacity"]">@CapacityText(context.CapacityPerSlotOverride)</MudTd>
+                            <MudTd DataLabel="@Texts["Schedule.Column.Action"]">
                                 <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                                Color="Color.Primary"
+                                               title="@CommonTexts["Action.Edit"]"
+                                               aria-label="@($"{CommonTexts["Action.Edit"]}: {overrideDate}")"
                                                OnClick="@(() => BeginEditDate(context))" />
                                 <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                                Color="Color.Error"
+                                               title="@CommonTexts["Action.Delete"]"
+                                               aria-label="@($"{CommonTexts["Action.Delete"]}: {overrideDate}")"
                                                OnClick="@(() => RemoveDateOverride(context))" />
                             </MudTd>
                         </RowTemplate>
@@ -311,13 +331,13 @@
                     <MudPaper Class="pa-3">
                         <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
                             <MudText Typo="Typo.subtitle2">
-                                @(_isEditingDate ? "Datums-Ausnahme bearbeiten" : "Neue Datums-Ausnahme")
+                                @(_isEditingDate ? Texts["Schedule.EditDate"] : Texts["Schedule.NewDate"])
                             </MudText>
 
                             @if (_isEditingDate)
                             {
                                 <MudButton Variant="Variant.Text" Color="Color.Default" OnClick="@CancelEditDate">
-                                    Abbrechen
+                                    @CommonTexts["Action.Cancel"]
                                 </MudButton>
                             }
                         </MudStack>
@@ -325,27 +345,27 @@
                         @if (_model.ServiceId > 0)
                         {
                             <MudAlert Severity="Severity.Info" Dense="true" Class="mb-2">
-                                Basis-Kapazität pro Slot für diesen Service: <b>@(GetBaseCapacity()?.ToString() ?? "0")</b>
+                                @Texts["Schedule.BaseCapacity", GetBaseCapacity()?.ToString(CultureInfo.CurrentCulture) ?? "0"]
                             </MudAlert>
                         }
 
                         <MudStack Spacing="2">
 
-                            <MudDatePicker Label="Datum" @bind-Date="_newDate.Date" Disabled="@_isEditingDate" />
+                            <MudDatePicker Label="@Texts["Schedule.Date"]" @bind-Date="_newDate.Date" Disabled="@_isEditingDate" />
 
                             <MudCheckBox T="bool"
                                          Value="_newDate.IsClosed"
                                          ValueChanged="OnDateClosedChanged"
-                                         Label="Geschlossen" />
+                                         Label="@Texts["Schedule.Closed"]" />
 
                             @if (!_newDate.IsClosed)
                             {
-                                <MudTimePicker Label="Startzeit" @bind-Time="_newDate.StartTime" AmPm="false" />
-                                <MudTimePicker Label="Endzeit" @bind-Time="_newDate.EndTime" AmPm="false" />
+                                <MudTimePicker Label="@Texts["Schedule.StartTime"]" @bind-Time="_newDate.StartTime" AmPm="false" />
+                                <MudTimePicker Label="@Texts["Schedule.EndTime"]" @bind-Time="_newDate.EndTime" AmPm="false" />
 
                                 <MudNumericField T="int?"
-                                                 Label="Kapazität pro Slot (optional)"
-                                                 HelperText="Leer lassen = Basis-Kapazität verwenden"
+                                                 Label="@Texts["Schedule.CapacityOverride"]"
+                                                 HelperText="@Texts["Schedule.CapacityHint"]"
                                                  @bind-Value="_newDate.CapacityPerSlotOverride" />
                             }
 
@@ -353,7 +373,7 @@
                                        Color="Color.Primary"
                                        Disabled="@(!CanSubmitDate)"
                                        OnClick="@SubmitDate">
-                                @(_isEditingDate ? "Aktualisieren" : "Hinzufügen")
+                                @(_isEditingDate ? Texts["Schedule.Update"] : CommonTexts["Action.Add"])
                             </MudButton>
 
                         </MudStack>
@@ -361,11 +381,11 @@
                 </MudStack>
 
                 <MudStack Row="true" Justify="Justify.SpaceBetween">
-                    <MudButton Variant="Variant.Text" OnClick="@(() => GoToStep(3))">Zurück</MudButton>
+                    <MudButton Variant="Variant.Text" OnClick="@(() => GoToStep(3))">@CommonTexts["Action.Back"]</MudButton>
                     <MudButton Variant="Variant.Filled"
                                Color="Color.Primary"
                                OnClick="@(() => GoToStep(5))">
-                        Weiter
+                        @CommonTexts["Action.Continue"]
                     </MudButton>
                 </MudStack>
 
@@ -373,52 +393,58 @@
         </MudExpansionPanel>
 
         <!-- STEP 6 -->
-        <MudExpansionPanel Text="6. Speichern" Expanded="@(_activeStep == 5)" Disabled="@(!IsStep4Valid)">
+        <MudExpansionPanel Text="@Texts["Schedule.Step6"]" Expanded="@(_activeStep == 5)" Disabled="@(!IsStep4Valid)">
             <MudStack Class="pa-4" Spacing="2">
 
-                <MudText Typo="Typo.h6">Zusammenfassung</MudText>
+                <MudText Typo="Typo.h6" HtmlTag="h2">@Texts["Schedule.Summary"]</MudText>
 
                 <MudPaper Class="pa-3">
                     <MudGrid>
 
                         <MudItem xs="12" md="6">
-                            <MudText Typo="Typo.subtitle2">Allgemein</MudText>
+                            <MudText Typo="Typo.subtitle2">@Texts["Schedule.SummaryGeneral"]</MudText>
                             <MudList T="string" Dense="true">
                                 <MudListItem T="string">
-                                    <MudText><b>Service:</b> @GetSelectedService()?.Name</MudText>
+                                    <MudText>
+                                        <b>@Texts["Schedule.Service"]:</b>
+                                        @GetSelectedService()?.NameFor(CultureInfo.CurrentUICulture.Name)
+                                    </MudText>
                                 </MudListItem>
                                 <MudListItem T="string">
-                                    <MudText><b>Jahr:</b> @_model.Year</MudText>
+                                    <MudText><b>@Texts["Schedule.Year"]:</b> @_model.Year</MudText>
                                 </MudListItem>
                                 <MudListItem T="string">
-                                    <MudText><b>Monate:</b> @FormatMonths(_model.Months)</MudText>
+                                    <MudText><b>@Texts["Schedule.Months"]:</b> @FormatMonths(_model.Months)</MudText>
                                 </MudListItem>
                                 <MudListItem T="string">
-                                    <MudText><b>Zeitraum (Min/Max):</b> @GetPlannedRangeText()</MudText>
+                                    <MudText><b>@Texts["Schedule.SummaryPeriod"]:</b> @GetPlannedRangeText()</MudText>
                                 </MudListItem>
                                 <MudListItem T="string">
-                                    <MudText><b>Basis-Kapazität:</b> @(GetBaseCapacity()?.ToString() ?? "0")</MudText>
+                                    <MudText>
+                                        <b>@Texts["Schedule.SummaryCapacity"]:</b>
+                                        @(GetBaseCapacity()?.ToString(CultureInfo.CurrentCulture) ?? "0")
+                                    </MudText>
                                 </MudListItem>
                                 <MudListItem T="string">
-                                    <MudText><b>Mitarbeiter:</b> @GetEmployeeCount()</MudText>
+                                    <MudText><b>@Texts["Schedule.SummaryEmployees"]:</b> @GetEmployeeCount()</MudText>
                                 </MudListItem>
                                 <MudListItem T="string">
-                                    <MudText><b>Slotdauer:</b> @GetSlotDuration() Min</MudText>
+                                    <MudText><b>@Texts["Schedule.SummarySlotDuration"]:</b> @GetSlotDuration()</MudText>
                                 </MudListItem>
                             </MudList>
                         </MudItem>
 
                         <MudItem xs="12" md="6">
-                            <MudText Typo="Typo.subtitle2">Regulär</MudText>
+                            <MudText Typo="Typo.subtitle2">@Texts["Schedule.SummaryRegular"]</MudText>
                             <MudList T="string" Dense="true">
                                 <MudListItem T="string">
                                     <MudText>
-                                        <b>Tage:</b> @FormatDays(_model.RegularDays)
+                                        <b>@Texts["Schedule.SummaryDays"]:</b> @FormatDays(_model.RegularDays)
                                     </MudText>
                                 </MudListItem>
                                 <MudListItem T="string">
                                     <MudText>
-                                        <b>Zeiten:</b>
+                                        <b>@Texts["Schedule.SummaryHours"]:</b>
                                         @if (_model.StartTime.HasValue && _model.EndTime.HasValue)
                                         {
                                             @($"{_model.StartTime:hh\\:mm} - {_model.EndTime:hh\\:mm}")
@@ -437,11 +463,11 @@
                         </MudItem>
 
                         <MudItem xs="12" md="6">
-                            <MudText Typo="Typo.subtitle2">Wöchentliche Ausnahmen</MudText>
+                            <MudText Typo="Typo.subtitle2">@Texts["Schedule.WeeklyOverrides"]</MudText>
 
                             @if (_model.WeeklyOverrides.Count == 0)
                             {
-                                <MudText Typo="Typo.body2">-</MudText>
+                                <MudText Typo="Typo.body2">@Texts["Schedule.None"]</MudText>
                             }
                             else
                             {
@@ -450,11 +476,8 @@
                                     {
                                         <MudListItem T="string">
                                             <MudText>
-                                                <b>@w.Day:</b>
-                                                @(w.IsClosed
-                                                    ? "Geschlossen"
-                                                    : $"{w.StartTime:hh\\:mm} - {w.EndTime:hh\\:mm}")
-                                                @(w.CapacityPerSlotOverride.HasValue ? $" | Kap: {w.CapacityPerSlotOverride}" : " | Kap: (Basis)")
+                                                <b>@DayName(w.Day):</b>
+                                                @OverrideSummary(w.IsClosed, w.StartTime, w.EndTime, w.CapacityPerSlotOverride)
                                             </MudText>
                                         </MudListItem>
                                     }
@@ -463,11 +486,11 @@
                         </MudItem>
 
                         <MudItem xs="12" md="6">
-                            <MudText Typo="Typo.subtitle2">Datumspezifische Ausnahmen</MudText>
+                            <MudText Typo="Typo.subtitle2">@Texts["Schedule.DateOverrides"]</MudText>
 
                             @if (_model.DateOverrides.Count == 0)
                             {
-                                <MudText Typo="Typo.body2">-</MudText>
+                                <MudText Typo="Typo.body2">@Texts["Schedule.None"]</MudText>
                             }
                             else
                             {
@@ -478,11 +501,8 @@
                                     {
                                         <MudListItem T="string">
                                             <MudText>
-                                                <b>@d.Date!.Value.ToString("dd.MM.yyyy"):</b>
-                                                @(d.IsClosed
-                                                    ? "Geschlossen"
-                                                    : $"{d.StartTime:hh\\:mm} - {d.EndTime:hh\\:mm}")
-                                                @(d.CapacityPerSlotOverride.HasValue ? $" | Kap: {d.CapacityPerSlotOverride}" : " | Kap: (Basis)")
+                                                <b>@DateText(d.Date):</b>
+                                                @OverrideSummary(d.IsClosed, d.StartTime, d.EndTime, d.CapacityPerSlotOverride)
                                             </MudText>
                                         </MudListItem>
                                     }
@@ -494,14 +514,14 @@
                 </MudPaper>
 
                 <MudAlert Severity="Severity.Info" Dense="true">
-                    Beim Speichern werden WorkingSchedulePlan, WorkingHours und ServiceDayOverrides generiert.
+                    @Texts["Schedule.SaveNotice"]
                 </MudAlert>
 
                 <MudStack Row="true" Justify="Justify.SpaceBetween" Spacing="2">
-                    <MudButton Variant="Variant.Text" OnClick="@(() => GoToStep(4))">Zurück</MudButton>
+                    <MudButton Variant="Variant.Text" OnClick="@(() => GoToStep(4))">@CommonTexts["Action.Back"]</MudButton>
 
                     <MudStack Row="true" Spacing="2">
-                        <MudButton Variant="Variant.Outlined" OnClick="@ResetForm">Zurücksetzen</MudButton>
+                        <MudButton Variant="Variant.Outlined" OnClick="@ResetForm">@CommonTexts["Action.Reset"]</MudButton>
 
                         <MudButton Variant="Variant.Filled"
                                    Color="Color.Success"
@@ -511,7 +531,7 @@
                             {
                                 <MudProgressCircular Indeterminate="true" Size="Size.Small" Class="me-2" />
                             }
-                            Speichern
+                            @CommonTexts["Action.Save"]
                         </MudButton>
                     </MudStack>
                 </MudStack>
@@ -525,72 +545,70 @@
 
     <!-- Overview -->
     <MudStack Spacing="2">
-        <MudText Typo="Typo.h6">Aktuelle Dienstplan-Übersicht</MudText>
+        <MudText Typo="Typo.h6" HtmlTag="h2">@Texts["Schedule.Overview"]</MudText>
 
         @if (_overviewLoading)
         {
-            <MudProgressCircular Indeterminate="true" />
+            <MudProgressCircular Indeterminate="true" aria-label="@CommonTexts["State.Loading"]" />
         }
         else if (_overview.Count == 0)
         {
-            <MudText>Keine Pläne vorhanden.</MudText>
+            <MudText>@Texts["Schedule.OverviewEmpty"]</MudText>
         }
         else
         {
             <MudExpansionPanels MultiExpansion="true" Elevation="0">
                 @foreach (var item in _overview)
                 {
-                    <MudExpansionPanel Text="@($"{item.ServiceName} (Mitarbeiter: {item.EmployeeCount}, Basis-Kapazität: {item.DefaultCapacityPerSlot})")">
+                    <MudExpansionPanel Text="@Texts["Schedule.OverviewService", item.ServiceName, item.EmployeeCount, item.DefaultCapacityPerSlot]">
 
                         @if (item.YearPlans == null || item.YearPlans.Count == 0)
                         {
-                            <MudText Class="pa-4">Noch keine Jahrespläne vorhanden.</MudText>
+                            <MudText Class="pa-4">@Texts["Schedule.NoYearPlans"]</MudText>
                         }
                         else
                         {
                             <MudTable Items="item.YearPlans" Dense="true" Hover="true" Class="ma-2">
                                 <HeaderContent>
-                                    <MudTh style="width:90px;">Jahr</MudTh>
-                                    <MudTh>Monate</MudTh>
-                                    <MudTh>Regulär</MudTh>
-                                    <MudTh>Wöchentlich</MudTh>
-                                    <MudTh>Datum</MudTh>
-                                    <MudTh style="width:170px;">Aktionen</MudTh>
+                                    <MudTh style="width:90px;">@Texts["Schedule.Column.Year"]</MudTh>
+                                    <MudTh>@Texts["Schedule.Column.Months"]</MudTh>
+                                    <MudTh>@Texts["Schedule.Column.Regular"]</MudTh>
+                                    <MudTh>@Texts["Schedule.Column.Weekly"]</MudTh>
+                                    <MudTh>@Texts["Schedule.Column.Date"]</MudTh>
+                                    <MudTh style="width:170px;">@Texts["Schedule.Column.Action"]</MudTh>
                                 </HeaderContent>
 
                                 <RowTemplate>
-                                    <MudTd DataLabel="Jahr">@context.Year</MudTd>
+                                    <MudTd DataLabel="@Texts["Schedule.Column.Year"]">@context.Year</MudTd>
 
-                                    <MudTd DataLabel="Monate">
-                                        @string.Join(", ", context.Months.OrderBy(x => x))
+                                    <MudTd DataLabel="@Texts["Schedule.Column.Months"]">
+                                        @FormatMonths(context.Months)
                                     </MudTd>
 
-                                    <MudTd DataLabel="Regulär">
+                                    <MudTd DataLabel="@Texts["Schedule.Column.Regular"]">
                                         @FormatRegularSummary(context)
                                     </MudTd>
 
-                                    <MudTd DataLabel="Wöchentlich">
+                                    <MudTd DataLabel="@Texts["Schedule.Column.Weekly"]">
                                         @if (context.WeeklyOverrides.Any())
                                         {
                                             <MudList T="string" Dense="true">
                                                 @foreach (var w in context.WeeklyOverrides.OrderBy(x => x.Day))
                                                 {
                                                     <MudListItem T="string">
-                                                        @($"{w.Day}: " +
-                                                          (w.IsClosed ? "Geschlossen" :
-                                                           $"{w.StartTime:hh\\:mm}-{w.EndTime:hh\\:mm}") +
-                                                          (w.CapacityPerSlotOverride.HasValue ? $" | Kap: {w.CapacityPerSlotOverride}" : " | Kap: (Basis)"))
+                                                        @($"{DayName(w.Day)}: ")
+                                                        @OverrideSummary(w.IsClosed, w.StartTime, w.EndTime, w.CapacityPerSlotOverride)
                                                     </MudListItem>
                                                 }
                                             </MudList>
                                         }
                                         else
                                         {
-                                            <MudText>-</MudText>
+                                            <MudText>@Texts["Schedule.None"]</MudText>
                                         }
                                     </MudTd>
 
-                                    <MudTd DataLabel="Datum">
+                                    <MudTd DataLabel="@Texts["Schedule.Column.Date"]">
                                         @if (context.DateOverrides.Any())
                                         {
                                             <MudList T="string" Dense="true">
@@ -602,23 +620,23 @@
                                         }
                                         else
                                         {
-                                            <MudText>-</MudText>
+                                            <MudText>@Texts["Schedule.None"]</MudText>
                                         }
                                     </MudTd>
 
-                                    <MudTd DataLabel="Aktionen">
+                                    <MudTd DataLabel="@Texts["Schedule.Column.Action"]">
                                         <MudButton Variant="Variant.Text"
                                                    Color="Color.Primary"
                                                    StartIcon="@Icons.Material.Filled.Edit"
                                                    OnClick="@(() => OnEditYear(context))">
-                                            Bearbeiten
+                                            @CommonTexts["Action.Edit"]
                                         </MudButton>
 
                                         <MudButton Variant="Variant.Text"
                                                    Color="Color.Error"
                                                    StartIcon="@Icons.Material.Filled.Delete"
                                                    OnClick="@(() => ConfirmDeleteYearAsync(context))">
-                                            Löschen
+                                            @CommonTexts["Action.Delete"]
                                         </MudButton>
                                     </MudTd>
                                 </RowTemplate>
@@ -661,11 +679,46 @@
     private bool _isAdmin;
     private bool _yearPlanPrefilled = false;
 
-    private readonly Dictionary<int, string> _monthNames = new()
+    private static readonly int[] Months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+
+    /// <summary>
+    /// Monatsname in der Sprache der Oberflaeche. Die Namen stammen aus der Kultur
+    /// und nicht aus einer eigenen Liste: sonst muesste jede weitere Sprache hier
+    /// nachgepflegt werden.
+    /// </summary>
+    private static string MonthName(int month) =>
+        CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month);
+
+    /// <summary>
+    /// Name des Wochentags in der Sprache der Oberflaeche.
+    /// </summary>
+    private static string DayName(DayOfWeek day) =>
+        CultureInfo.CurrentCulture.DateTimeFormat.GetDayName(day);
+
+    private string StatusText(bool isClosed) =>
+        isClosed ? Texts["Schedule.Closed"] : Texts["Schedule.Changed"];
+
+    private string TimeText(TimeSpan? time) =>
+        time?.ToString(@"hh\:mm", CultureInfo.CurrentCulture) ?? Texts["Schedule.None"];
+
+    private string DateText(DateTime? date) =>
+        date?.ToString("d", CultureInfo.CurrentCulture) ?? Texts["Schedule.None"];
+
+    private string CapacityText(int? capacityOverride) =>
+        capacityOverride?.ToString(CultureInfo.CurrentCulture) ?? Texts["Schedule.CapacityBase"];
+
+    /// <summary>
+    /// Fasst eine Ausnahme in einer Zeile zusammen: Zeitraum beziehungsweise
+    /// "geschlossen", dahinter die Kapazitaet.
+    /// </summary>
+    private string OverrideSummary(bool isClosed, TimeSpan? start, TimeSpan? end, int? capacityOverride)
     {
-        {1,"Januar"},{2,"Februar"},{3,"März"},{4,"April"},{5,"Mai"},{6,"Juni"},
-        {7,"Juli"},{8,"August"},{9,"September"},{10,"Oktober"},{11,"November"},{12,"Dezember"}
-    };
+        var period = isClosed
+            ? Texts["Schedule.Closed"].Value
+            : $"{TimeText(start)} - {TimeText(end)}";
+
+        return $"{period} | {Texts["Schedule.Column.Capacity"]}: {CapacityText(capacityOverride)}";
+    }
 
     private List<int> _years = new();
     private readonly List<DayOfWeek> _orderedDays = new()
@@ -1076,18 +1129,26 @@ else
 
             if (!ok)
             {
-                Snackbar.Add("Fehler beim Speichern des Dienstplans.", Severity.Error);
+                Snackbar.Add(Texts["Schedule.SaveFailed"], Severity.Error);
                 return;
             }
 
-            Snackbar.Add("Dienstplan erfolgreich erstellt/aktualisiert.", Severity.Success);
+            Snackbar.Add(Texts["Schedule.Saved"], Severity.Success);
 
             await LoadOverviewAsync();
             ResetForm();
         }
+        catch (BusinessRuleViolationException ex)
+        {
+            // Fachliche Ablehnung: die Meldung ist in der Anwendungsschicht bereits
+            // uebersetzt und benennt den Grund.
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
         catch (Exception ex)
         {
-            Snackbar.Add($"Fehler: {ex.Message}", Severity.Error);
+            // Technische Einzelheiten gehoeren ins Log, nicht in die Oberflaeche.
+            Snackbar.Add(Texts["Schedule.SaveFailed"], Severity.Error);
+            Logger.LogError(ex, "Der Dienstplan des Service {ServiceId} konnte nicht gespeichert werden.", _model.ServiceId);
         }
         finally
         {
@@ -1126,13 +1187,12 @@ else
     {
         var parameters = new DialogParameters
         {
-            ["Title"] = "Jahresplan löschen",
-            ["Message"] = $"Bist du sicher, dass du den Jahresplan **{year.Year}** für den Service **{year.ServiceName}** löschen möchtest?"
+            ["Title"] = Texts["Schedule.DeleteYearTitle"].Value,
+            ["Message"] = Texts["Schedule.DeleteYearMessage", year.Year, year.ServiceName].Value
         };
 
-        // ✅ MudBlazor v8: ShowAsync statt Show
         var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>(
-            title: "Bestätigung",
+            title: Texts["Schedule.DeleteYearTitle"],
             parameters);
 
         var result = await dialog.Result;
@@ -1151,16 +1211,21 @@ else
 
             if (ok)
             {
-                Snackbar.Add("Jahresplan gelöscht.", Severity.Success);
+                Snackbar.Add(Texts["Schedule.YearDeleted"], Severity.Success);
                 await LoadOverviewAsync();
                 return;
             }
 
-            Snackbar.Add("Fehler beim Löschen des Jahresplans.", Severity.Error);
+            Snackbar.Add(Texts["Schedule.YearDeleteFailed"], Severity.Error);
+        }
+        catch (BusinessRuleViolationException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Fehler: {ex.Message}", Severity.Error);
+            Snackbar.Add(Texts["Schedule.YearDeleteFailed"], Severity.Error);
+            Logger.LogError(ex, "Der Jahresplan {Year} des Service {ServiceId} konnte nicht geloescht werden.", year.Year, year.ServiceId);
         }
     }
 
@@ -1231,21 +1296,21 @@ else
     private string FormatMonths(IEnumerable<int> months)
     {
         var list = months?.OrderBy(x => x).ToList() ?? new List<int>();
-        if (list.Count == 0) return "-";
-        return string.Join(", ", list.Select(m => _monthNames.TryGetValue(m, out var name) ? name : m.ToString()));
+        if (list.Count == 0) return Texts["Schedule.None"];
+        return string.Join(", ", list.Select(MonthName));
     }
 
     private string FormatDays(IEnumerable<DayOfWeek> days)
     {
         var list = days?.OrderBy(d => _orderedDays.IndexOf(d)).ToList() ?? new List<DayOfWeek>();
-        if (list.Count == 0) return "-";
-        return string.Join(", ", list.Select(d => d.ToString()));
+        if (list.Count == 0) return Texts["Schedule.None"];
+        return string.Join(", ", list.Select(DayName));
     }
 
     private string FormatRegularSummary(WorkingScheduleYearPlan plan)
     {
         if (plan.RegularHours == null || plan.RegularHours.Count == 0)
-            return "-";
+            return Texts["Schedule.None"];
 
         var first = plan.RegularHours.First();
         bool consistent = plan.RegularHours.All(x => x.StartTime == first.StartTime && x.EndTime == first.EndTime);
@@ -1257,7 +1322,7 @@ else
                 .OrderBy(d => _orderedDays.IndexOf(d))
                 .ToList();
 
-            return $"{string.Join(", ", days)} | {first.StartTime:hh\\:mm} - {first.EndTime:hh\\:mm}";
+            return $"{string.Join(", ", days.Select(DayName))} | {TimeText(first.StartTime)} - {TimeText(first.EndTime)}";
         }
 
         return string.Join(" | ", plan.RegularHours.Select(r => r.ToString()));
@@ -1266,12 +1331,14 @@ else
     private string GetPlannedRangeText()
     {
         if (_model.Year <= 0 || _selectedMonths.Count == 0)
-            return "-";
+            return Texts["Schedule.None"];
 
         var fromMonth = _selectedMonths.Min();
         var toMonth = _selectedMonths.Max();
 
-        return $"{fromMonth:00}/{_model.Year} bis {toMonth:00}/{_model.Year}";
+        // Monatsnamen statt Zahlen: "Januar – Juni 2026" ist in jeder Sprache
+        // eindeutig, waehrend 01/2026 je nach Herkunft als Tag gelesen wird.
+        return $"{MonthName(fromMonth)} – {MonthName(toMonth)} {_model.Year}";
     }
 
     private string FormatPlanRange(WorkingSchedulePlanDto p)

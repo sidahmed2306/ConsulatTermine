@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Salutation" xml:space="preserve">
+    <value>Sehr geehrte Damen und Herren,</value>
+  </data>
+  <data name="PersonalSalutation" xml:space="preserve">
+    <value>Guten Tag {0},</value>
+  </data>
+  <data name="Closing" xml:space="preserve">
+    <value>Mit freundlichen Grüßen</value>
+  </data>
+  <data name="Signature" xml:space="preserve">
+    <value>Konsulat Algerien Frankfurt – Terminservice</value>
+  </data>
+  <data name="AutomatedNotice" xml:space="preserve">
+    <value>Dies ist eine automatisch erzeugte Nachricht. Bitte antworten Sie nicht darauf.</value>
+  </data>
+  <data name="Label.Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Label.BookingNumber" xml:space="preserve">
+    <value>Buchungsnummer</value>
+  </data>
+  <data name="Label.Service" xml:space="preserve">
+    <value>Service</value>
+  </data>
+  <data name="Label.Date" xml:space="preserve">
+    <value>Datum</value>
+  </data>
+  <data name="Label.Time" xml:space="preserve">
+    <value>Uhrzeit</value>
+  </data>
+  <data name="Label.EmployeeCode" xml:space="preserve">
+    <value>Mitarbeiterkennung</value>
+  </data>
+  <data name="Label.TemporaryPassword" xml:space="preserve">
+    <value>Vorläufiges Passwort</value>
+  </data>
+  <data name="Confirmation.Subject" xml:space="preserve">
+    <value>Terminbestätigung – Konsulat Algerien Frankfurt</value>
+  </data>
+  <data name="Confirmation.Heading" xml:space="preserve">
+    <value>Terminbestätigung</value>
+  </data>
+  <data name="Confirmation.Intro" xml:space="preserve">
+    <value>Ihr Termin beim Konsulat Algerien in Frankfurt wurde registriert.</value>
+  </data>
+  <data name="Confirmation.ListHeading" xml:space="preserve">
+    <value>Gebuchte Termine</value>
+  </data>
+  <data name="Confirmation.NoDetails" xml:space="preserve">
+    <value>Zu dieser Buchung liegen keine Termindetails vor.</value>
+  </data>
+  <data name="Confirmation.ManageIntro" xml:space="preserve">
+    <value>Über den folgenden Link können Sie Ihre Termine einsehen und einzeln absagen:</value>
+  </data>
+  <data name="Confirmation.ManageButton" xml:space="preserve">
+    <value>Termine verwalten</value>
+  </data>
+  <data name="Confirmation.BringDocuments" xml:space="preserve">
+    <value>Bitte erscheinen Sie pünktlich und bringen Sie alle erforderlichen Unterlagen mit.</value>
+  </data>
+  <data name="PartialCancellation.Subject" xml:space="preserve">
+    <value>Termin abgesagt – Konsulat Algerien Frankfurt</value>
+  </data>
+  <data name="PartialCancellation.Heading" xml:space="preserve">
+    <value>Ein Termin wurde abgesagt</value>
+  </data>
+  <data name="PartialCancellation.Others" xml:space="preserve">
+    <value>Alle übrigen Termine dieser Buchung bleiben bestehen.</value>
+  </data>
+  <data name="Cancellation.Subject" xml:space="preserve">
+    <value>Alle Termine abgesagt – Konsulat Algerien Frankfurt</value>
+  </data>
+  <data name="Cancellation.Heading" xml:space="preserve">
+    <value>Alle Termine abgesagt</value>
+  </data>
+  <data name="Cancellation.Rebook" xml:space="preserve">
+    <value>Sie können jederzeit einen neuen Termin über das Online-Terminportal buchen.</value>
+  </data>
+  <data name="EmployeeWelcome.Subject" xml:space="preserve">
+    <value>Ihr Mitarbeiterzugang – Konsulat Algerien Frankfurt</value>
+  </data>
+  <data name="EmployeeWelcome.Heading" xml:space="preserve">
+    <value>Willkommen</value>
+  </data>
+  <data name="EmployeeWelcome.Intro" xml:space="preserve">
+    <value>Für Sie wurde ein Zugang zum Mitarbeiterbereich eingerichtet.</value>
+  </data>
+  <data name="EmployeeWelcome.Button" xml:space="preserve">
+    <value>Passwort jetzt ändern</value>
+  </data>
+  <data name="EmployeeWelcome.Notice" xml:space="preserve">
+    <value>Bitte ändern Sie das vorläufige Passwort bei der ersten Anmeldung.</value>
+  </data>
+  <data name="PasswordReset.Subject" xml:space="preserve">
+    <value>Passwort zurücksetzen – Konsulat Algerien Frankfurt</value>
+  </data>
+  <data name="PasswordReset.Heading" xml:space="preserve">
+    <value>Passwort zurücksetzen</value>
+  </data>
+  <data name="PasswordReset.Intro" xml:space="preserve">
+    <value>Für Ihr Konto wurde eine Zurücksetzung des Passworts angefordert.</value>
+  </data>
+  <data name="PasswordReset.Button" xml:space="preserve">
+    <value>Passwort zurücksetzen</value>
+  </data>
+  <data name="PasswordReset.Validity" xml:space="preserve">
+    <value>Der Link ist eine Stunde gültig. Wenn Sie die Zurücksetzung nicht angefordert haben, ignorieren Sie diese Nachricht.</value>
+  </data>
+  <data name="PasswordChanged.Subject" xml:space="preserve">
+    <value>Passwort geändert – Konsulat Algerien Frankfurt</value>
+  </data>
+  <data name="PasswordChanged.Heading" xml:space="preserve">
+    <value>Passwort geändert</value>
+  </data>
+  <data name="PasswordChanged.Intro" xml:space="preserve">
+    <value>Das Passwort Ihres Kontos wurde geändert. Falls Sie das nicht selbst veranlasst haben, wenden Sie sich bitte umgehend an die Administration.</value>
+  </data>
+  <data name="PasswordChanged.Button" xml:space="preserve">
+    <value>Zur Anmeldung</value>
+  </data>
+</root>

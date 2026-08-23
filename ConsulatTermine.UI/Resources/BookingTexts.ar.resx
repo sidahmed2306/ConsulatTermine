@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Landing.PageTitle" xml:space="preserve">
+    <value>حجز موعد – قنصلية الجزائر بفرانكفورت</value>
+  </data>
+  <data name="Landing.Hero.Title" xml:space="preserve">
+    <value>مرحبًا بكم في قنصلية الجزائر بفرانكفورت</value>
+  </data>
+  <data name="Landing.Hero.Subtitle" xml:space="preserve">
+    <value>احجز موعدك عبر الإنترنت – بسرعة وأمان وراحة.</value>
+  </data>
+  <data name="Landing.Hero.Cta" xml:space="preserve">
+    <value>احجز موعدًا الآن</value>
+  </data>
+  <data name="Landing.Notes.Title" xml:space="preserve">
+    <value>معلومات مهمة</value>
+  </data>
+  <data name="Landing.Notes.Pickup" xml:space="preserve">
+    <value>يتم استلام جواز السفر وبطاقة الهوية دون موعد مسبق.</value>
+  </data>
+  <data name="Landing.Notes.SpouseVisa" xml:space="preserve">
+    <value>تُقبل طلبات التأشيرة لأزواج المواطنين الجزائريين دون موعد، من الثلاثاء إلى السبت من 09:00 إلى 13:00.</value>
+  </data>
+  <data name="Landing.Hours.Title" xml:space="preserve">
+    <value>أوقات العمل</value>
+  </data>
+  <data name="Landing.Hours.Schedule" xml:space="preserve">
+    <value>من الثلاثاء إلى السبت، 09:00 – 15:00</value>
+  </data>
+  <data name="Landing.Contact.Title" xml:space="preserve">
+    <value>الاتصال والهاتف</value>
+  </data>
+  <data name="Landing.Contact.EmailPrefix" xml:space="preserve">
+    <value>البريد الإلكتروني</value>
+  </data>
+  <data name="Service.Visa" xml:space="preserve">
+    <value>خدمة التأشيرات</value>
+  </data>
+  <data name="Service.Passport" xml:space="preserve">
+    <value>خدمة جوازات السفر</value>
+  </data>
+  <data name="Service.CivilStatus" xml:space="preserve">
+    <value>الحالة المدنية</value>
+  </data>
+  <data name="Service.PassportOffice" xml:space="preserve">
+    <value>مصلحة الجوازات ومكتب التسجيل</value>
+  </data>
+  <data name="Service.BiometricId" xml:space="preserve">
+    <value>بطاقات الهوية البيومترية</value>
+  </data>
+  <data name="Stepper.Aria" xml:space="preserve">
+    <value>مراحل حجز الموعد</value>
+  </data>
+  <data name="Stepper.Step" xml:space="preserve">
+    <value>الخطوة {0} من {1}: {2}</value>
+  </data>
+  <data name="Stepper.Service" xml:space="preserve">
+    <value>اختيار الخدمة</value>
+  </data>
+  <data name="Stepper.Slot" xml:space="preserve">
+    <value>اختيار الموعد</value>
+  </data>
+  <data name="Stepper.Form" xml:space="preserve">
+    <value>البيانات</value>
+  </data>
+  <data name="Stepper.Confirmation" xml:space="preserve">
+    <value>التأكيد</value>
+  </data>
+  <data name="Services.Title" xml:space="preserve">
+    <value>حجز موعد</value>
+  </data>
+  <data name="Services.PersonQuestion" xml:space="preserve">
+    <value>لكم شخصًا ترغب في حجز موعد؟</value>
+  </data>
+  <data name="Services.PersonLess" xml:space="preserve">
+    <value>شخص واحد أقل</value>
+  </data>
+  <data name="Services.PersonMore" xml:space="preserve">
+    <value>شخص واحد أكثر</value>
+  </data>
+  <data name="Services.PersonCount" xml:space="preserve">
+    <value>عدد الأشخاص المختار: {0}</value>
+  </data>
+  <data name="Services.ServiceQuestion" xml:space="preserve">
+    <value>ما الخدمات التي ترغب في حجز مواعيد لها؟</value>
+  </data>
+  <data name="Services.ServiceHint" xml:space="preserve">
+    <value>حدّد لكل خدمة عدد الأشخاص الذين يحتاجونها. يحتاج كل شخص إلى موعد واحد على الأقل و{0} على الأكثر.</value>
+  </data>
+  <data name="Services.Loading" xml:space="preserve">
+    <value>جارٍ تحميل الخدمات</value>
+  </data>
+  <data name="Services.Empty" xml:space="preserve">
+    <value>لا توجد خدمات متاحة للحجز حاليًا. يرجى المحاولة لاحقًا.</value>
+  </data>
+  <data name="Services.DecrementAria" xml:space="preserve">
+    <value>{0}: شخص واحد أقل</value>
+  </data>
+  <data name="Services.IncrementAria" xml:space="preserve">
+    <value>{0}: شخص واحد أكثر</value>
+  </data>
+  <data name="Services.AssignedAria" xml:space="preserve">
+    <value>{0}: تم تخصيص {1}</value>
+  </data>
+  <data name="Services.Status.Missing" xml:space="preserve">
+    <value>تم التخصيص: {0} من {1}. لا يزال ينقص {2}.</value>
+  </data>
+  <data name="Services.Status.Complete" xml:space="preserve">
+    <value>تم تخصيص جميع المواعيد. يمكنك المتابعة.</value>
+  </data>
+  <data name="Slots.CalendarHint" xml:space="preserve">
+    <value>لا يمكن اختيار الأيام التي لا تتوفر فيها مواعيد.</value>
+  </data>
+  <data name="Slots.TitleForService" xml:space="preserve">
+    <value>مواعيد {0}</value>
+  </data>
+  <data name="Slots.Duration" xml:space="preserve">
+    <value>مدة كل موعد: {0} دقيقة</value>
+  </data>
+  <data name="Slots.Selected" xml:space="preserve">
+    <value>المحدد: {0} من {1}</value>
+  </data>
+  <data name="Slots.StillToSelect" xml:space="preserve">
+    <value>يرجى اختيار {0} إضافية.</value>
+  </data>
+  <data name="Slots.ChooseDayFirst" xml:space="preserve">
+    <value>يرجى اختيار يوم أولًا.</value>
+  </data>
+  <data name="Slots.NoneForDay" xml:space="preserve">
+    <value>لا تتوفر مواعيد في هذا اليوم.</value>
+  </data>
+  <data name="Slots.Free" xml:space="preserve">
+    <value>المتاح: {0}</value>
+  </data>
+  <data name="Slots.SelectAria" xml:space="preserve">
+    <value>اختيار الموعد في {0}</value>
+  </data>
+  <data name="Slots.DecreaseAria" xml:space="preserve">
+    <value>{0}: مكان واحد أقل</value>
+  </data>
+  <data name="Slots.IncreaseAria" xml:space="preserve">
+    <value>{0}: مكان واحد أكثر</value>
+  </data>
+  <data name="Slots.ServiceProgress" xml:space="preserve">
+    <value>الخدمة {0} من {1}</value>
+  </data>
+  <data name="Form.Title" xml:space="preserve">
+    <value>البيانات الشخصية</value>
+  </data>
+  <data name="Form.Person" xml:space="preserve">
+    <value>الشخص {0}</value>
+  </data>
+  <data name="Form.FirstName" xml:space="preserve">
+    <value>الاسم</value>
+  </data>
+  <data name="Form.LastName" xml:space="preserve">
+    <value>اللقب</value>
+  </data>
+  <data name="Form.DateOfBirth" xml:space="preserve">
+    <value>تاريخ الميلاد</value>
+  </data>
+  <data name="Form.Email" xml:space="preserve">
+    <value>البريد الإلكتروني</value>
+  </data>
+  <data name="Form.Phone" xml:space="preserve">
+    <value>الهاتف</value>
+  </data>
+  <data name="Form.SlotForService" xml:space="preserve">
+    <value>موعد {0}</value>
+  </data>
+  <data name="Form.Submit" xml:space="preserve">
+    <value>تأكيد حجز الموعد</value>
+  </data>
+  <data name="Form.Submitting" xml:space="preserve">
+    <value>جارٍ إرسال الحجز …</value>
+  </data>
+  <data name="Form.InvalidSubmit" xml:space="preserve">
+    <value>يرجى تعبئة جميع الحقول المطلوبة بشكل صحيح.</value>
+  </data>
+  <data name="Form.SlotMissing" xml:space="preserve">
+    <value>يرجى اختيار موعد لـ {0}.</value>
+  </data>
+  <data name="Form.BookingFailed" xml:space="preserve">
+    <value>تعذّر إتمام الحجز. يرجى المحاولة مرة أخرى.</value>
+  </data>
+  <data name="Confirmation.Title" xml:space="preserve">
+    <value>تم حجز الموعد بنجاح</value>
+  </data>
+  <data name="Confirmation.Text" xml:space="preserve">
+    <value>تم تسجيل موعدك لدى القنصلية.</value>
+  </data>
+  <data name="Confirmation.BookingNumber" xml:space="preserve">
+    <value>رقم الحجز</value>
+  </data>
+  <data name="Confirmation.EmailSent" xml:space="preserve">
+    <value>تم إرسال تأكيد يتضمن جميع التفاصيل إلى {0}.</value>
+  </data>
+  <data name="Confirmation.NoReference" xml:space="preserve">
+    <value>تعذّر تحديد رقم الحجز. يرجى الاتصال بالقنصلية.</value>
+  </data>
+  <data name="Confirmation.Footer" xml:space="preserve">
+    <value>يرجى الحضور في الوقت المحدد للموعد وإحضار جميع الوثائق المطلوبة.</value>
+  </data>
+  <data name="Confirmation.NewBooking" xml:space="preserve">
+    <value>حجز جديد</value>
+  </data>
+  <data name="Cancel.Title" xml:space="preserve">
+    <value>إلغاء الموعد</value>
+  </data>
+  <data name="Cancel.Hint" xml:space="preserve">
+    <value>يمكنك إلغاء مواعيد فردية. تبقى المواعيد الأخرى سارية.</value>
+  </data>
+  <data name="Cancel.TableAria" xml:space="preserve">
+    <value>مواعيد هذا الحجز</value>
+  </data>
+  <data name="Cancel.Column.Service" xml:space="preserve">
+    <value>الخدمة</value>
+  </data>
+  <data name="Cancel.Column.Date" xml:space="preserve">
+    <value>التاريخ والوقت</value>
+  </data>
+  <data name="Cancel.Column.Name" xml:space="preserve">
+    <value>الاسم</value>
+  </data>
+  <data name="Cancel.Column.Status" xml:space="preserve">
+    <value>الحالة</value>
+  </data>
+  <data name="Cancel.Column.Action" xml:space="preserve">
+    <value>الإجراء</value>
+  </data>
+  <data name="Cancel.Button" xml:space="preserve">
+    <value>إلغاء</value>
+  </data>
+  <data name="Cancel.ButtonAria" xml:space="preserve">
+    <value>إلغاء موعد {0} بتاريخ {1}</value>
+  </data>
+  <data name="Cancel.NotCancellable" xml:space="preserve">
+    <value>لم يعد قابلًا للإلغاء</value>
+  </data>
+  <data name="Cancel.Error.InvalidLink" xml:space="preserve">
+    <value>هذا الرابط غير صالح.</value>
+  </data>
+  <data name="Cancel.Error.NotFound" xml:space="preserve">
+    <value>لم يُعثر على موعد لهذا الرابط.</value>
+  </data>
+  <data name="Cancel.Error.Expired" xml:space="preserve">
+    <value>انتهت صلاحية رابط الإلغاء. يرجى الاتصال بالقنصلية.</value>
+  </data>
+  <data name="Cancel.Error.LoadFailed" xml:space="preserve">
+    <value>تعذّر تحميل الموعد. يرجى المحاولة لاحقًا.</value>
+  </data>
+  <data name="Cancel.Success" xml:space="preserve">
+    <value>تم إلغاء الموعد.</value>
+  </data>
+  <data name="Cancel.Failed" xml:space="preserve">
+    <value>تعذّر إلغاء الموعد. يرجى المحاولة مرة أخرى.</value>
+  </data>
+  <data name="CancelSuccess.Title" xml:space="preserve">
+    <value>تم إلغاء جميع المواعيد</value>
+  </data>
+  <data name="CancelSuccess.Text" xml:space="preserve">
+    <value>تم إلغاء جميع مواعيد هذا الحجز.</value>
+  </data>
+  <data name="CancelSuccess.NewBooking" xml:space="preserve">
+    <value>حجز موعد جديد</value>
+  </data>
+</root>

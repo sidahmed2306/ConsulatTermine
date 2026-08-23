@@ -275,12 +275,35 @@ a,
   border-color: rgba(25, 135, 84, 0.4);
 }
 
-/* Desktop: Zeit links, daneben die Zeile mit Plätze frei + Counter */
+/* Bei Einzelauswahl ist die Kachel selbst die Schaltflaeche. Die eigene
+   Gestaltung des Browsers wird zurueckgenommen, Aussehen und Groesse bleiben. */
+button.slot-pill {
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  /* Mindestgroesse eines Beruehrungsziels nach harness/uiux.md Abschnitt 12. */
+  min-height: 44px;
+  justify-content: space-between;
+}
+
+button.slot-pill[disabled] {
+  cursor: default;
+  opacity: 0.55;
+}
+
+button.slot-pill:focus-visible {
+  outline: 2px solid var(--mud-palette-success, #198754);
+  outline-offset: 2px;
+}
+
+/* Desktop: Zeit am Zeilenanfang, daneben die Zeile mit Plätze frei + Counter */
 .slot-time-top {
   font-weight: 700;
   font-size: 16px;
   line-height: 1.2;
-  text-align: left;
+  /* start statt left: folgt der Schreibrichtung und steht auf Arabisch rechts. */
+  text-align: start;
   margin-bottom: 0;
   flex-shrink: 0;
 }
@@ -533,4 +556,37 @@ a,
     width: 40px;
     margin-bottom: 17px;
   }
+}
+
+/* Der Schritt ist jetzt ein Button in einer Liste: die Standardgestaltung von
+   Liste und Schaltflaeche wird zurueckgenommen, das bestehende Aussehen bleibt. */
+.booking-stepper-inner {
+  list-style: none;
+  padding: 0;
+}
+
+.booking-step-button {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  /* Mindestgroesse eines Beruehrungsziels nach harness/uiux.md Abschnitt 12. */
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.booking-step-button[disabled] {
+  cursor: default;
+}
+
+.booking-step-button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+  border-radius: 6px;
 }

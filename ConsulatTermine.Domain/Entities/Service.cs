@@ -6,9 +6,33 @@ public class Service
 {
     public int Id { get; set; }
 
+    /// <summary>
+    /// Bezeichnung in der Amtssprache des Standorts. Pflichtangabe und zugleich
+    /// Rueckfallebene, wenn fuer eine Sprache keine Uebersetzung gepflegt ist.
+    /// </summary>
     public string Name { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Englische Bezeichnung. Leer, solange die Verwaltung sie nicht gepflegt hat.
+    /// </summary>
+    public string? NameEnglish { get; set; }
+
+    /// <summary>
+    /// Arabische Bezeichnung. Leer, solange die Verwaltung sie nicht gepflegt hat.
+    /// </summary>
+    public string? NameArabic { get; set; }
+
     public string Description { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Englische Beschreibung. Leer, solange die Verwaltung sie nicht gepflegt hat.
+    /// </summary>
+    public string? DescriptionEnglish { get; set; }
+
+    /// <summary>
+    /// Arabische Beschreibung. Leer, solange die Verwaltung sie nicht gepflegt hat.
+    /// </summary>
+    public string? DescriptionArabic { get; set; }
 
     // Kapazität pro Zeitslot
     public int? CapacityPerSlot { get; set; }

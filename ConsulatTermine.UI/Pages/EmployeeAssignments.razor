@@ -2,10 +2,9 @@
 @attribute [Authorize(Policy = AuthorizationPolicies.DienstplanVerwalten)]
 
 @using ConsulatTermine.Domain.Enums
-@using MudBlazor
+@using ConsulatTermine.Application.Exceptions
 @using ConsulatTermine.Application.Interfaces
 @using ConsulatTermine.Domain.Entities
-@using ConsulatTermine.UI.Authentication
 
 @inject IEmployeeAuthorization Authorization
 @inject IEmployeeAssignmentService AssignmentService
@@ -13,68 +12,82 @@
 @inject IServiceService ServiceService
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
-@inject NavigationManager Navigation
+@inject ILogger<EmployeeAssignments> Logger
+@inject IStringLocalizer<AdministrationTexts> Texts
+@inject IStringLocalizer<CommonTexts> CommonTexts
+
+<PageTitle>@Texts["Assignments.Title"]</PageTitle>
 
 <MudPaper Class="pa-4">
     <MudStack Spacing="3">
 
-        <MudText Typo="Typo.h5">Mitarbeiter & Services</MudText>
+        <MudText Typo="Typo.h5" HtmlTag="h1">@Texts["Assignments.Title"]</MudText>
 
-        <!-- Assignment Übersicht -->
-        <MudTable Items="_assignments" Hover Dense>
+        <MudTable Items="_assignments" Hover Dense aria-label="@Texts["Assignments.TableAria"]">
             <HeaderContent>
-                <MudTh>Mitarbeiter</MudTh>
-                <MudTh>Service</MudTh>
-                <MudTh>Aktionen</MudTh>
+                <MudTh>@Texts["Assignments.Column.Employee"]</MudTh>
+                <MudTh>@Texts["Assignments.Column.Service"]</MudTh>
+                <MudTh>@Texts["Assignments.Column.Actions"]</MudTh>
             </HeaderContent>
 
             <RowTemplate>
-                <MudTd>
-                    @(context.Employee == null
-                        ? "N/A"
-                        : $"{context.Employee.FirstName} {context.Employee.LastName}")
-                </MudTd>
+                @{
+                    var employeeName = NameOf(context.Employee);
+                    var serviceName = NameOf(context.Service);
+                }
 
-                <MudTd>@(context.Service?.Name ?? "N/A")</MudTd>
+                <MudTd DataLabel="@Texts["Assignments.Column.Employee"]">@employeeName</MudTd>
 
-                <MudTd>
+                <MudTd DataLabel="@Texts["Assignments.Column.Service"]">@serviceName</MudTd>
+
+                <MudTd DataLabel="@Texts["Assignments.Column.Actions"]">
                     <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                    Color="Color.Error"
-                                   OnClick="@(() => ConfirmDeleteAssignment(context))" />
+                                   title="@Texts["Assignments.DeleteAria", employeeName, serviceName]"
+                                   aria-label="@Texts["Assignments.DeleteAria", employeeName, serviceName]"
+                                   OnClick="@(() => ConfirmDeleteAssignmentAsync(context))" />
                 </MudTd>
             </RowTemplate>
+
+            <NoRecordsContent>
+                <MudText>@Texts["Assignments.Empty"]</MudText>
+            </NoRecordsContent>
         </MudTable>
 
-        <!-- Neue Zuordnung -->
         <MudPaper Class="pa-4">
-            <MudText Typo="Typo.h6">Neue Zuordnung</MudText>
+            <MudText Typo="Typo.h6" HtmlTag="h2">@Texts["Assignments.New"]</MudText>
 
             <MudStack Spacing="2">
 
-                <MudSelect T="int?" Label="Mitarbeiter"
-                           Placeholder="Mitarbeiter auswählen"
+                <MudSelect T="int?"
+                           Label="@Texts["Assignments.Column.Employee"]"
+                           Placeholder="@Texts["Assignments.SelectEmployee"]"
                            @bind-Value="_selectedEmployee">
-                    @foreach (var e in _employees)
+                    @foreach (var employee in _employees)
                     {
-                        <MudSelectItem T="int?" Value="@e.Id">
-                            @($"{e.FirstName} {e.LastName}")
+                        <MudSelectItem T="int?" Value="@employee.Id">
+                            @($"{employee.FirstName} {employee.LastName}")
                         </MudSelectItem>
                     }
                 </MudSelect>
 
-                <MudSelect T="int?" Label="Service"
-                           Placeholder="Service auswählen"
+                <MudSelect T="int?"
+                           Label="@Texts["Assignments.Column.Service"]"
+                           Placeholder="@Texts["Assignments.SelectService"]"
                            @bind-Value="_selectedService">
-                    @foreach (var s in _services)
+                    @foreach (var service in _services)
                     {
-                        <MudSelectItem T="int?" Value="@s.Id">@s.Name</MudSelectItem>
+                        <MudSelectItem T="int?" Value="@service.Id">
+                            @service.NameFor(CultureInfo.CurrentUICulture.Name)
+                        </MudSelectItem>
                     }
                 </MudSelect>
 
                 <MudButton Variant="Variant.Filled"
                            Color="Color.Primary"
-                           OnClick="AddAssignment">
-                    Hinzufügen
+                           Disabled="@_saving"
+                           OnClick="AddAssignmentAsync">
+                    @Texts["Assignments.Add"]
                 </MudButton>
 
             </MudStack>
@@ -85,19 +98,17 @@
 
 @code {
 
-    private List<EmployeeServiceAssignment> _assignments = new();
-    private List<Employee> _employees = new();
-    private List<Service> _services = new();
+    private List<EmployeeServiceAssignment> _assignments = [];
+    private List<Employee> _employees = [];
+    private List<Service> _services = [];
 
     private int? _selectedEmployee;
     private int? _selectedService;
+    private bool _saving;
 
     private int _currentEmployeeId;
     private bool _isAdmin;
 
-    // -------------------------------------------------
-    // LOGIN-GUARD
-    // -------------------------------------------------
     // Der Zugang zu dieser Seite wird über [Authorize] geprüft; die
     // Anwendungsfälle prüfen die Berechtigung serverseitig zusätzlich.
     protected override async Task OnInitializedAsync()
@@ -109,18 +120,22 @@
         await LoadDataAsync();
     }
 
-    // -------------------------------------------------
-    // DATA LOAD
-    // -------------------------------------------------
+    private string NameOf(Employee? employee) =>
+        employee is null
+            ? Texts["Assignments.Unknown"]
+            : $"{employee.FirstName} {employee.LastName}";
+
+    private string NameOf(Service? service) =>
+        service is null
+            ? Texts["Assignments.Unknown"]
+            : service.NameFor(CultureInfo.CurrentUICulture.Name);
+
     private async Task LoadDataAsync()
     {
-        // Services
-        if (_isAdmin)
-            _services = await ServiceService.GetAllServicesAsync();
-        else
-            _services = await ServiceService.GetServicesForEmployeeAsync(_currentEmployeeId);
+        _services = _isAdmin
+            ? await ServiceService.GetAllServicesAsync()
+            : await ServiceService.GetServicesForEmployeeAsync(_currentEmployeeId);
 
-        // Assignments
         var allAssignments = await AssignmentService.GetAllAssignmentsAsync();
 
         if (_isAdmin)
@@ -129,13 +144,12 @@
         }
         else
         {
-            var allowedServiceIds = _services.Select(s => s.Id).ToHashSet();
+            var allowedServiceIds = _services.Select(service => service.Id).ToHashSet();
             _assignments = allAssignments
-                .Where(a => allowedServiceIds.Contains(a.ServiceId))
+                .Where(assignment => allowedServiceIds.Contains(assignment.ServiceId))
                 .ToList();
         }
 
-        // Employees
         var allEmployees = await EmployeeService.GetAllEmployeesAsync();
 
         if (_isAdmin)
@@ -144,94 +158,113 @@
         }
         else
         {
-            var allowedServiceIds = _services.Select(s => s.Id).ToHashSet();
+            var allowedServiceIds = _services.Select(service => service.Id).ToHashSet();
 
             _employees = allEmployees
-                .Where(e =>
-                    !e.AssignedServices.Any() ||
-                    e.AssignedServices.Any(a => allowedServiceIds.Contains(a.ServiceId)))
+                .Where(employee =>
+                    employee.AssignedServices.Count == 0 ||
+                    employee.AssignedServices.Any(assignment => allowedServiceIds.Contains(assignment.ServiceId)))
                 .ToList();
         }
     }
 
-    // -------------------------------------------------
-    // ADD
-    // -------------------------------------------------
-    private async Task AddAssignment()
+    private async Task AddAssignmentAsync()
     {
         if (!_selectedEmployee.HasValue || !_selectedService.HasValue)
         {
-            Snackbar.Add("Bitte Mitarbeiter und Service wählen.", Severity.Warning);
+            Snackbar.Add(Texts["Assignments.Incomplete"], Severity.Warning);
             return;
         }
 
+        if (_saving)
+        {
+            return;
+        }
+
+        _saving = true;
+
         try
         {
-            var ok = await AssignmentService.AddAssignmentAsync(_selectedEmployee.Value, _selectedService.Value);
+            var added = await AssignmentService.AddAssignmentAsync(
+                _selectedEmployee.Value,
+                _selectedService.Value);
 
-            if (ok)
+            if (added)
             {
-                Snackbar.Add("✅ Zuordnung erfolgreich hinzugefügt.", Severity.Success);
+                Snackbar.Add(Texts["Assignments.Added"], Severity.Success);
                 _selectedEmployee = null;
                 _selectedService = null;
                 await LoadDataAsync();
             }
             else
             {
-                Snackbar.Add("ℹ️ Diese Zuordnung existiert bereits.", Severity.Warning);
+                Snackbar.Add(Texts["Assignments.Exists"], Severity.Warning);
             }
+        }
+        catch (BusinessRuleViolationException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"❌ Fehler beim Hinzufügen der Zuordnung: {ex.Message}", Severity.Error);
+            Snackbar.Add(Texts["Assignments.AddFailed"], Severity.Error);
+            Logger.LogError(ex, "Die Zuweisung konnte nicht angelegt werden.");
+        }
+        finally
+        {
+            _saving = false;
         }
     }
 
-    // -------------------------------------------------
-    // DELETE
-    // -------------------------------------------------
-    private async Task ConfirmDeleteAssignment(EmployeeServiceAssignment assignment)
+    private async Task ConfirmDeleteAssignmentAsync(EmployeeServiceAssignment assignment)
     {
+        var employeeName = NameOf(assignment.Employee);
+        var serviceName = NameOf(assignment.Service);
+
         var parameters = new DialogParameters
         {
-            ["Title"] = "Zuweisung löschen",
-            ["Message"] =
-                $"Möchtest du die Zuweisung " +
-                $"**{assignment.Employee?.FirstName} {assignment.Employee?.LastName}** → " +
-                $"**{assignment.Service?.Name}** wirklich löschen?"
+            ["Title"] = Texts["Assignments.DeleteTitle"].Value,
+            ["Message"] = Texts["Assignments.DeleteMessage", employeeName, serviceName].Value
         };
 
         var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>(
-            "Bestätigung",
+            Texts["Assignments.DeleteTitle"],
             parameters);
 
         var result = await dialog.Result;
 
         if (result is { Canceled: false })
         {
-            await DeleteAssignment(assignment);
+            await DeleteAssignmentAsync(assignment);
         }
     }
 
-    private async Task DeleteAssignment(EmployeeServiceAssignment a)
+    private async Task DeleteAssignmentAsync(EmployeeServiceAssignment assignment)
     {
         try
         {
-            var ok = await AssignmentService.RemoveAssignmentAsync(a.EmployeeId, a.ServiceId);
+            var removed = await AssignmentService.RemoveAssignmentAsync(
+                assignment.EmployeeId,
+                assignment.ServiceId);
 
-            if (ok)
+            if (removed)
             {
-                Snackbar.Add("✅ Zuordnung erfolgreich gelöscht.", Severity.Success);
+                Snackbar.Add(Texts["Assignments.Deleted"], Severity.Success);
                 await LoadDataAsync();
             }
             else
             {
-                Snackbar.Add("ℹ️ Zuordnung wurde nicht gefunden.", Severity.Warning);
+                Snackbar.Add(Texts["Assignments.NotFound"], Severity.Warning);
             }
+        }
+        catch (BusinessRuleViolationException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"❌ Fehler beim Löschen der Zuordnung: {ex.Message}", Severity.Error);
+            Snackbar.Add(Texts["Assignments.DeleteFailed"], Severity.Error);
+            Logger.LogError(ex, "Die Zuweisung konnte nicht geloescht werden.");
         }
     }
 }

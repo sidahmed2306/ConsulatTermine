@@ -1,0 +1,505 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Employees.Title" xml:space="preserve">
+    <value>الموظفون</value>
+  </data>
+  <data name="Employees.New" xml:space="preserve">
+    <value>موظف جديد</value>
+  </data>
+  <data name="Employees.Edit" xml:space="preserve">
+    <value>تعديل بيانات الموظف</value>
+  </data>
+  <data name="Employees.TableAria" xml:space="preserve">
+    <value>قائمة الموظفين</value>
+  </data>
+  <data name="Employees.Column.Code" xml:space="preserve">
+    <value>الرقم</value>
+  </data>
+  <data name="Employees.Column.Name" xml:space="preserve">
+    <value>الاسم</value>
+  </data>
+  <data name="Employees.Column.Role" xml:space="preserve">
+    <value>الدور</value>
+  </data>
+  <data name="Employees.Column.Email" xml:space="preserve">
+    <value>البريد الإلكتروني</value>
+  </data>
+  <data name="Employees.Column.Actions" xml:space="preserve">
+    <value>الإجراءات</value>
+  </data>
+  <data name="Employees.FirstName" xml:space="preserve">
+    <value>الاسم</value>
+  </data>
+  <data name="Employees.LastName" xml:space="preserve">
+    <value>اللقب</value>
+  </data>
+  <data name="Employees.Email" xml:space="preserve">
+    <value>البريد الإلكتروني</value>
+  </data>
+  <data name="Employees.Role" xml:space="preserve">
+    <value>الدور</value>
+  </data>
+  <data name="Employees.EditAria" xml:space="preserve">
+    <value>تعديل {0}</value>
+  </data>
+  <data name="Employees.DeleteAria" xml:space="preserve">
+    <value>حذف {0}</value>
+  </data>
+  <data name="Employees.Empty" xml:space="preserve">
+    <value>لم يتم إنشاء أي موظفين.</value>
+  </data>
+  <data name="Employees.Created" xml:space="preserve">
+    <value>تم إنشاء {0}.</value>
+  </data>
+  <data name="Employees.Updated" xml:space="preserve">
+    <value>تم تحديث {0}.</value>
+  </data>
+  <data name="Employees.Deleted" xml:space="preserve">
+    <value>تم حذف {0}.</value>
+  </data>
+  <data name="Employees.SaveFailed" xml:space="preserve">
+    <value>تعذّر حفظ بيانات الموظف.</value>
+  </data>
+  <data name="Employees.DeleteFailed" xml:space="preserve">
+    <value>تعذّر حذف الموظف.</value>
+  </data>
+  <data name="Employees.DeleteTitle" xml:space="preserve">
+    <value>حذف الموظف</value>
+  </data>
+  <data name="Employees.DeleteMessage" xml:space="preserve">
+    <value>هل تريد حذف الموظف {0} نهائيًا؟ سيتم سحب صلاحيات الدخول.</value>
+  </data>
+  <data name="Role.Employee" xml:space="preserve">
+    <value>موظف</value>
+  </data>
+  <data name="Role.ServiceChef" xml:space="preserve">
+    <value>مسؤول الخدمة</value>
+  </data>
+  <data name="Role.Admin" xml:space="preserve">
+    <value>مدير النظام</value>
+  </data>
+  <data name="Assignments.Title" xml:space="preserve">
+    <value>إسناد الخدمات</value>
+  </data>
+  <data name="Assignments.TableAria" xml:space="preserve">
+    <value>الإسنادات القائمة</value>
+  </data>
+  <data name="Assignments.Column.Employee" xml:space="preserve">
+    <value>الموظف</value>
+  </data>
+  <data name="Assignments.Column.Service" xml:space="preserve">
+    <value>الخدمة</value>
+  </data>
+  <data name="Assignments.Column.Actions" xml:space="preserve">
+    <value>الإجراءات</value>
+  </data>
+  <data name="Assignments.New" xml:space="preserve">
+    <value>إسناد جديد</value>
+  </data>
+  <data name="Assignments.SelectEmployee" xml:space="preserve">
+    <value>اختر موظفًا</value>
+  </data>
+  <data name="Assignments.SelectService" xml:space="preserve">
+    <value>اختر خدمة</value>
+  </data>
+  <data name="Assignments.Add" xml:space="preserve">
+    <value>إضافة إسناد</value>
+  </data>
+  <data name="Assignments.Empty" xml:space="preserve">
+    <value>لا توجد إسنادات بعد.</value>
+  </data>
+  <data name="Assignments.Incomplete" xml:space="preserve">
+    <value>يرجى اختيار موظف وخدمة.</value>
+  </data>
+  <data name="Assignments.Added" xml:space="preserve">
+    <value>تمت إضافة الإسناد.</value>
+  </data>
+  <data name="Assignments.Exists" xml:space="preserve">
+    <value>هذا الإسناد موجود بالفعل.</value>
+  </data>
+  <data name="Assignments.AddFailed" xml:space="preserve">
+    <value>تعذّرت إضافة الإسناد.</value>
+  </data>
+  <data name="Assignments.Deleted" xml:space="preserve">
+    <value>تم حذف الإسناد.</value>
+  </data>
+  <data name="Assignments.NotFound" xml:space="preserve">
+    <value>لم يُعثر على الإسناد.</value>
+  </data>
+  <data name="Assignments.DeleteFailed" xml:space="preserve">
+    <value>تعذّر حذف الإسناد.</value>
+  </data>
+  <data name="Assignments.DeleteTitle" xml:space="preserve">
+    <value>حذف الإسناد</value>
+  </data>
+  <data name="Assignments.DeleteMessage" xml:space="preserve">
+    <value>هل تريد حذف إسناد {0} إلى خدمة {1}؟</value>
+  </data>
+  <data name="Assignments.DeleteAria" xml:space="preserve">
+    <value>حذف إسناد {0} إلى {1}</value>
+  </data>
+  <data name="Assignments.Unknown" xml:space="preserve">
+    <value>غير معروف</value>
+  </data>
+  <data name="Services.Title" xml:space="preserve">
+    <value>إدارة الخدمات</value>
+  </data>
+  <data name="Services.New" xml:space="preserve">
+    <value>خدمة جديدة</value>
+  </data>
+  <data name="Services.Create" xml:space="preserve">
+    <value>إنشاء خدمة جديدة</value>
+  </data>
+  <data name="Services.Edit" xml:space="preserve">
+    <value>تعديل الخدمة</value>
+  </data>
+  <data name="Services.Loading" xml:space="preserve">
+    <value>جارٍ تحميل الخدمات …</value>
+  </data>
+  <data name="Services.TableAria" xml:space="preserve">
+    <value>قائمة الخدمات</value>
+  </data>
+  <data name="Services.Column.Name" xml:space="preserve">
+    <value>التسمية (بالألمانية)</value>
+  </data>
+  <data name="Services.Column.Translations" xml:space="preserve">
+    <value>الترجمات</value>
+  </data>
+  <data name="Services.Column.Floor" xml:space="preserve">
+    <value>الطابق</value>
+  </data>
+  <data name="Services.Column.SlotDuration" xml:space="preserve">
+    <value>مدة الفترة</value>
+  </data>
+  <data name="Services.Column.Actions" xml:space="preserve">
+    <value>الإجراءات</value>
+  </data>
+  <data name="Services.Empty" xml:space="preserve">
+    <value>لم يتم إنشاء أي خدمات.</value>
+  </data>
+  <data name="Services.Name" xml:space="preserve">
+    <value>التسمية (بالألمانية)</value>
+  </data>
+  <data name="Services.NameEnglish" xml:space="preserve">
+    <value>التسمية (بالإنجليزية)</value>
+  </data>
+  <data name="Services.NameArabic" xml:space="preserve">
+    <value>التسمية (بالعربية)</value>
+  </data>
+  <data name="Services.Description" xml:space="preserve">
+    <value>الوصف (بالألمانية)</value>
+  </data>
+  <data name="Services.DescriptionEnglish" xml:space="preserve">
+    <value>الوصف (بالإنجليزية)</value>
+  </data>
+  <data name="Services.DescriptionArabic" xml:space="preserve">
+    <value>الوصف (بالعربية)</value>
+  </data>
+  <data name="Services.TranslationHint" xml:space="preserve">
+    <value>في حال عدم وجود ترجمة، تُعرض التسمية الألمانية.</value>
+  </data>
+  <data name="Services.TranslationsComplete" xml:space="preserve">
+    <value>كاملة</value>
+  </data>
+  <data name="Services.TranslationsMissing" xml:space="preserve">
+    <value>ناقصة: {0}</value>
+  </data>
+  <data name="Services.Floor" xml:space="preserve">
+    <value>الطابق (مثال: الأرضي أو الأول)</value>
+  </data>
+  <data name="Services.SlotDuration" xml:space="preserve">
+    <value>مدة الفترة بالدقائق</value>
+  </data>
+  <data name="Services.EditAria" xml:space="preserve">
+    <value>تعديل خدمة {0}</value>
+  </data>
+  <data name="Services.DeleteAria" xml:space="preserve">
+    <value>حذف خدمة {0}</value>
+  </data>
+  <data name="Services.Created" xml:space="preserve">
+    <value>تم إنشاء خدمة {0}.</value>
+  </data>
+  <data name="Services.Updated" xml:space="preserve">
+    <value>تم تحديث خدمة {0}.</value>
+  </data>
+  <data name="Services.Deleted" xml:space="preserve">
+    <value>تم حذف خدمة {0}.</value>
+  </data>
+  <data name="Services.SaveFailed" xml:space="preserve">
+    <value>تعذّر حفظ الخدمة.</value>
+  </data>
+  <data name="Services.DeleteFailed" xml:space="preserve">
+    <value>تعذّر حذف الخدمة.</value>
+  </data>
+  <data name="Services.DeleteTitle" xml:space="preserve">
+    <value>حذف الخدمة</value>
+  </data>
+  <data name="Services.DeleteMessage" xml:space="preserve">
+    <value>هل تريد حذف خدمة {0} نهائيًا؟</value>
+  </data>
+  <data name="Services.RequiredFields" xml:space="preserve">
+    <value>يرجى تعبئة جميع الحقول المطلوبة.</value>
+  </data>
+  <data name="Schedule.Title" xml:space="preserve">
+    <value>جدول العمل وأوقات الفتح</value>
+  </data>
+  <data name="Schedule.Intro" xml:space="preserve">
+    <value>حدّد أوقات الفتح المعتادة لكل خدمة وأضف استثناءات أسبوعية أو مرتبطة بتاريخ. تُؤخذ السعة لكل فترة من الخدمة ويمكن تجاوزها لكل استثناء.</value>
+  </data>
+  <data name="Schedule.Step1" xml:space="preserve">
+    <value>1. اختيار الخدمة</value>
+  </data>
+  <data name="Schedule.Step2" xml:space="preserve">
+    <value>2. اختيار السنة</value>
+  </data>
+  <data name="Schedule.Step3" xml:space="preserve">
+    <value>3. اختيار الأشهر</value>
+  </data>
+  <data name="Schedule.Step4" xml:space="preserve">
+    <value>4. أيام وأوقات الفتح المعتادة</value>
+  </data>
+  <data name="Schedule.Step5" xml:space="preserve">
+    <value>5. الاستثناءات</value>
+  </data>
+  <data name="Schedule.Step6" xml:space="preserve">
+    <value>6. الحفظ</value>
+  </data>
+  <data name="Schedule.Service" xml:space="preserve">
+    <value>الخدمة</value>
+  </data>
+  <data name="Schedule.SelectService" xml:space="preserve">
+    <value>اختر خدمة</value>
+  </data>
+  <data name="Schedule.Year" xml:space="preserve">
+    <value>السنة</value>
+  </data>
+  <data name="Schedule.SelectYear" xml:space="preserve">
+    <value>اختر سنة</value>
+  </data>
+  <data name="Schedule.Months" xml:space="preserve">
+    <value>الأشهر</value>
+  </data>
+  <data name="Schedule.SelectMonths" xml:space="preserve">
+    <value>اختر الأشهر</value>
+  </data>
+  <data name="Schedule.BaseInfo" xml:space="preserve">
+    <value>السعة الأساسية لكل فترة: {0} · الموظفون المسنَدون: {1} · مدة الفترة: {2} دقيقة</value>
+  </data>
+  <data name="Schedule.BaseCapacity" xml:space="preserve">
+    <value>السعة الأساسية لكل فترة لهذه الخدمة: {0}</value>
+  </data>
+  <data name="Schedule.PlanExists" xml:space="preserve">
+    <value>يوجد بالفعل جدول عمل لهذه السنة. تم ملء الحقول بالقيم الموجودة.</value>
+  </data>
+  <data name="Schedule.PlannedRange" xml:space="preserve">
+    <value>الفترة المخططة: {0}</value>
+  </data>
+  <data name="Schedule.RegularDays" xml:space="preserve">
+    <value>أيام الفتح المعتادة</value>
+  </data>
+  <data name="Schedule.RegularHours" xml:space="preserve">
+    <value>أوقات الفتح المعتادة</value>
+  </data>
+  <data name="Schedule.StartTime" xml:space="preserve">
+    <value>وقت البدء</value>
+  </data>
+  <data name="Schedule.EndTime" xml:space="preserve">
+    <value>وقت الانتهاء</value>
+  </data>
+  <data name="Schedule.WeeklyOverrides" xml:space="preserve">
+    <value>الاستثناءات الأسبوعية</value>
+  </data>
+  <data name="Schedule.DateOverrides" xml:space="preserve">
+    <value>الاستثناءات المرتبطة بتاريخ</value>
+  </data>
+  <data name="Schedule.NewWeekly" xml:space="preserve">
+    <value>استثناء أسبوعي جديد</value>
+  </data>
+  <data name="Schedule.EditWeekly" xml:space="preserve">
+    <value>تعديل الاستثناء الأسبوعي</value>
+  </data>
+  <data name="Schedule.NewDate" xml:space="preserve">
+    <value>استثناء جديد مرتبط بتاريخ</value>
+  </data>
+  <data name="Schedule.EditDate" xml:space="preserve">
+    <value>تعديل الاستثناء المرتبط بتاريخ</value>
+  </data>
+  <data name="Schedule.Weekday" xml:space="preserve">
+    <value>يوم الأسبوع</value>
+  </data>
+  <data name="Schedule.Date" xml:space="preserve">
+    <value>التاريخ</value>
+  </data>
+  <data name="Schedule.Closed" xml:space="preserve">
+    <value>مغلق</value>
+  </data>
+  <data name="Schedule.Changed" xml:space="preserve">
+    <value>معدّل</value>
+  </data>
+  <data name="Schedule.CapacityOverride" xml:space="preserve">
+    <value>السعة لكل فترة (اختياري)</value>
+  </data>
+  <data name="Schedule.CapacityHint" xml:space="preserve">
+    <value>اتركه فارغًا لاستخدام السعة الأساسية.</value>
+  </data>
+  <data name="Schedule.CapacityBase" xml:space="preserve">
+    <value>أساسية</value>
+  </data>
+  <data name="Schedule.Column.Day" xml:space="preserve">
+    <value>اليوم</value>
+  </data>
+  <data name="Schedule.Column.Status" xml:space="preserve">
+    <value>الحالة</value>
+  </data>
+  <data name="Schedule.Column.Start" xml:space="preserve">
+    <value>البداية</value>
+  </data>
+  <data name="Schedule.Column.End" xml:space="preserve">
+    <value>النهاية</value>
+  </data>
+  <data name="Schedule.Column.Capacity" xml:space="preserve">
+    <value>السعة</value>
+  </data>
+  <data name="Schedule.Column.Action" xml:space="preserve">
+    <value>الإجراء</value>
+  </data>
+  <data name="Schedule.Column.Year" xml:space="preserve">
+    <value>السنة</value>
+  </data>
+  <data name="Schedule.Column.Months" xml:space="preserve">
+    <value>الأشهر</value>
+  </data>
+  <data name="Schedule.Column.Regular" xml:space="preserve">
+    <value>معتاد</value>
+  </data>
+  <data name="Schedule.Column.Weekly" xml:space="preserve">
+    <value>أسبوعي</value>
+  </data>
+  <data name="Schedule.Column.Date" xml:space="preserve">
+    <value>التاريخ</value>
+  </data>
+  <data name="Schedule.Update" xml:space="preserve">
+    <value>تحديث</value>
+  </data>
+  <data name="Schedule.Summary" xml:space="preserve">
+    <value>ملخص</value>
+  </data>
+  <data name="Schedule.SummaryGeneral" xml:space="preserve">
+    <value>عام</value>
+  </data>
+  <data name="Schedule.SummaryRegular" xml:space="preserve">
+    <value>معتاد</value>
+  </data>
+  <data name="Schedule.SummaryDays" xml:space="preserve">
+    <value>الأيام</value>
+  </data>
+  <data name="Schedule.SummaryHours" xml:space="preserve">
+    <value>الأوقات</value>
+  </data>
+  <data name="Schedule.SummaryPeriod" xml:space="preserve">
+    <value>الفترة</value>
+  </data>
+  <data name="Schedule.SummaryCapacity" xml:space="preserve">
+    <value>السعة الأساسية</value>
+  </data>
+  <data name="Schedule.SummaryEmployees" xml:space="preserve">
+    <value>الموظفون</value>
+  </data>
+  <data name="Schedule.SummarySlotDuration" xml:space="preserve">
+    <value>مدة الفترة</value>
+  </data>
+  <data name="Schedule.SaveNotice" xml:space="preserve">
+    <value>عند الحفظ يُعاد إنشاء خطة أوقات العمل والأوقات والاستثناءات الخاصة بالخدمة.</value>
+  </data>
+  <data name="Schedule.Saved" xml:space="preserve">
+    <value>تم حفظ جدول العمل.</value>
+  </data>
+  <data name="Schedule.SaveFailed" xml:space="preserve">
+    <value>تعذّر حفظ جدول العمل.</value>
+  </data>
+  <data name="Schedule.Overview" xml:space="preserve">
+    <value>نظرة عامة على جدول العمل الحالي</value>
+  </data>
+  <data name="Schedule.OverviewEmpty" xml:space="preserve">
+    <value>لا توجد خطط.</value>
+  </data>
+  <data name="Schedule.NoYearPlans" xml:space="preserve">
+    <value>لا توجد خطط سنوية لهذه الخدمة بعد.</value>
+  </data>
+  <data name="Schedule.OverviewService" xml:space="preserve">
+    <value>{0} (الموظفون: {1}، السعة الأساسية: {2})</value>
+  </data>
+  <data name="Schedule.DeleteYearTitle" xml:space="preserve">
+    <value>حذف الخطة السنوية</value>
+  </data>
+  <data name="Schedule.DeleteYearMessage" xml:space="preserve">
+    <value>هل تريد حذف الخطة السنوية {0} لخدمة {1}؟</value>
+  </data>
+  <data name="Schedule.YearDeleted" xml:space="preserve">
+    <value>تم حذف الخطة السنوية.</value>
+  </data>
+  <data name="Schedule.YearDeleteFailed" xml:space="preserve">
+    <value>تعذّر حذف الخطة السنوية.</value>
+  </data>
+  <data name="Schedule.None" xml:space="preserve">
+    <value>لا شيء</value>
+  </data>
+</root>

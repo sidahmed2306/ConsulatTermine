@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Login.PageTitle" xml:space="preserve">
+    <value>تسجيل الدخول لقسم الموظفين</value>
+  </data>
+  <data name="Login.Title" xml:space="preserve">
+    <value>تسجيل الدخول لقسم الموظفين</value>
+  </data>
+  <data name="Login.EmployeeCode" xml:space="preserve">
+    <value>رقم الموظف</value>
+  </data>
+  <data name="Login.Password" xml:space="preserve">
+    <value>كلمة المرور</value>
+  </data>
+  <data name="Login.Submit" xml:space="preserve">
+    <value>تسجيل الدخول</value>
+  </data>
+  <data name="Login.ForgotPassword" xml:space="preserve">
+    <value>هل نسيت كلمة المرور؟</value>
+  </data>
+  <data name="Home.Loading" xml:space="preserve">
+    <value>جارٍ تحميل بيانات الموظف …</value>
+  </data>
+  <data name="Home.Welcome" xml:space="preserve">
+    <value>مرحبًا</value>
+  </data>
+  <data name="Home.Greeting" xml:space="preserve">
+    <value>أتمنى لك يوم عمل موفقًا، {0}.</value>
+  </data>
+  <data name="Home.NextStep" xml:space="preserve">
+    <value>للبدء، اختر خدمتك ومكان عملك.</value>
+  </data>
+  <data name="Home.StartWork" xml:space="preserve">
+    <value>اختيار مكان العمل</value>
+  </data>
+  <data name="Home.NotFound" xml:space="preserve">
+    <value>لم يُعثر على سجل الموظف.</value>
+  </data>
+  <data name="Home.LoadFailed" xml:space="preserve">
+    <value>تعذّر تحميل بيانات الموظف.</value>
+  </data>
+  <data name="ServiceSelection.Title" xml:space="preserve">
+    <value>بدء العمل – الخدمة ومكان العمل</value>
+  </data>
+  <data name="ServiceSelection.Service" xml:space="preserve">
+    <value>الخدمة</value>
+  </data>
+  <data name="ServiceSelection.Office" xml:space="preserve">
+    <value>المكتب</value>
+  </data>
+  <data name="ServiceSelection.Room" xml:space="preserve">
+    <value>الغرفة</value>
+  </data>
+  <data name="ServiceSelection.Start" xml:space="preserve">
+    <value>بدء العمل</value>
+  </data>
+  <data name="ServiceSelection.Empty" xml:space="preserve">
+    <value>لم تُسنَد إليك أي خدمة. يرجى الاتصال بمسؤول الخدمة.</value>
+  </data>
+  <data name="Password.New" xml:space="preserve">
+    <value>كلمة المرور الجديدة</value>
+  </data>
+  <data name="Password.Confirm" xml:space="preserve">
+    <value>تأكيد كلمة المرور</value>
+  </data>
+  <data name="Password.Show" xml:space="preserve">
+    <value>إظهار كلمة المرور</value>
+  </data>
+  <data name="Password.Hide" xml:space="preserve">
+    <value>إخفاء كلمة المرور</value>
+  </data>
+  <data name="Password.RequiredNew" xml:space="preserve">
+    <value>يرجى إدخال كلمة مرور جديدة.</value>
+  </data>
+  <data name="Password.RequiredConfirm" xml:space="preserve">
+    <value>يرجى تأكيد كلمة المرور.</value>
+  </data>
+  <data name="Password.Mismatch" xml:space="preserve">
+    <value>كلمتا المرور غير متطابقتين.</value>
+  </data>
+  <data name="Password.Save" xml:space="preserve">
+    <value>حفظ كلمة المرور</value>
+  </data>
+  <data name="Password.SaveFailed" xml:space="preserve">
+    <value>تعذّر حفظ كلمة المرور. يرجى المحاولة مرة أخرى.</value>
+  </data>
+  <data name="ChangePassword.Title" xml:space="preserve">
+    <value>تغيير كلمة المرور</value>
+  </data>
+  <data name="ForgotPassword.Title" xml:space="preserve">
+    <value>نسيت كلمة المرور</value>
+  </data>
+  <data name="ForgotPassword.Intro" xml:space="preserve">
+    <value>أدخل بريدك الإلكتروني المهني. ستتلقى رابطًا لإعادة تعيين كلمة المرور.</value>
+  </data>
+  <data name="ForgotPassword.Email" xml:space="preserve">
+    <value>البريد الإلكتروني المهني</value>
+  </data>
+  <data name="ForgotPassword.Submit" xml:space="preserve">
+    <value>إرسال الرابط</value>
+  </data>
+  <data name="ForgotPassword.Sent" xml:space="preserve">
+    <value>إذا كان هناك حساب بهذا العنوان، فقد تم إرسال رابط لإعادة تعيين كلمة المرور.</value>
+  </data>
+  <data name="ForgotPassword.BackToLogin" xml:space="preserve">
+    <value>العودة إلى تسجيل الدخول</value>
+  </data>
+  <data name="ResetPassword.Title" xml:space="preserve">
+    <value>تعيين كلمة مرور جديدة</value>
+  </data>
+  <data name="ResetPassword.Invalid" xml:space="preserve">
+    <value>الرابط غير صالح أو منتهي الصلاحية. يرجى طلب رابط جديد.</value>
+  </data>
+  <data name="ResetPassword.RequestNew" xml:space="preserve">
+    <value>طلب رابط جديد</value>
+  </data>
+  <data name="Dashboard.Loading" xml:space="preserve">
+    <value>جارٍ تحميل لوحة التحكم …</value>
+  </data>
+  <data name="Dashboard.Title" xml:space="preserve">
+    <value>لوحة التحكم – {0}</value>
+  </data>
+  <data name="Dashboard.Workplace" xml:space="preserve">
+    <value>الغرفة {0} · المكتب {1} · {2}</value>
+  </data>
+  <data name="Dashboard.Next" xml:space="preserve">
+    <value>نداء التالي</value>
+  </data>
+  <data name="Dashboard.Recall" xml:space="preserve">
+    <value>إعادة النداء</value>
+  </data>
+  <data name="Dashboard.Arrived" xml:space="preserve">
+    <value>قد حضر</value>
+  </data>
+  <data name="Dashboard.Complete" xml:space="preserve">
+    <value>إنهاء الموعد</value>
+  </data>
+  <data name="Dashboard.Column.Time" xml:space="preserve">
+    <value>الوقت</value>
+  </data>
+  <data name="Dashboard.Column.Name" xml:space="preserve">
+    <value>الاسم</value>
+  </data>
+  <data name="Dashboard.Column.Status" xml:space="preserve">
+    <value>الحالة</value>
+  </data>
+  <data name="Dashboard.TableAria" xml:space="preserve">
+    <value>مواعيد اليوم</value>
+  </data>
+  <data name="Dashboard.Empty" xml:space="preserve">
+    <value>لا توجد مواعيد محجوزة لهذا اليوم.</value>
+  </data>
+  <data name="Dashboard.Statistics" xml:space="preserve">
+    <value>إحصائيات</value>
+  </data>
+  <data name="Dashboard.Total" xml:space="preserve">
+    <value>الإجمالي: {0}</value>
+  </data>
+  <data name="Dashboard.Waiting" xml:space="preserve">
+    <value>في الانتظار: {0}</value>
+  </data>
+  <data name="Dashboard.WithMe" xml:space="preserve">
+    <value>لدي: {0}</value>
+  </data>
+  <data name="Dashboard.StatusWithMe" xml:space="preserve">
+    <value>لدي</value>
+  </data>
+  <data name="Dashboard.StatusArrived" xml:space="preserve">
+    <value>قد حضر</value>
+  </data>
+</root>

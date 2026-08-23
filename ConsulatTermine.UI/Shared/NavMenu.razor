@@ -1,25 +1,27 @@
+@inject IStringLocalizer<CommonTexts> Texts
+
 @* Die Sichtbarkeit der Einträge steuert die Benutzerführung. Sie ist keine
    Sicherheitsgrenze: jede Seite prüft zusätzlich per [Authorize], und jeder
    Anwendungsfall prüft serverseitig erneut. Siehe harness/security.md Abschnitt 4. *@
 
-<MudNavMenu>
+<MudNavMenu aria-label="@Texts["Nav.Menu"]">
 
     <AuthorizeView Policy="@AuthorizationPolicies.MitarbeiterZugriff">
         <Authorized>
 
             <MudNavLink Href="/employee/home" Match="NavLinkMatch.All">
                 <MudIcon Icon="@Icons.Material.Filled.Home" />
-                <span class="ml-2">Home</span>
+                <span class="nav-label">@Texts["Nav.Home"]</span>
             </MudNavLink>
 
             <MudNavLink Href="/employee/dashboard">
                 <MudIcon Icon="@Icons.Material.Filled.Dashboard" />
-                <span class="ml-2">Dashboard</span>
+                <span class="nav-label">@Texts["Nav.Dashboard"]</span>
             </MudNavLink>
 
             <MudNavLink Href="/employee/select-service">
                 <MudIcon Icon="@Icons.Material.Filled.SwapHoriz" />
-                <span class="ml-2">Service wechseln</span>
+                <span class="nav-label">@Texts["Nav.SwitchService"]</span>
             </MudNavLink>
 
         </Authorized>
@@ -32,17 +34,17 @@
 
             <MudNavLink Href="/admin/employees">
                 <MudIcon Icon="@Icons.Material.Filled.People" />
-                <span class="ml-2">Mitarbeiter</span>
+                <span class="nav-label">@Texts["Nav.Employees"]</span>
             </MudNavLink>
 
             <MudNavLink Href="/admin/assignments">
                 <MudIcon Icon="@Icons.Material.Filled.Link" />
-                <span class="ml-2">Service-Zuweisungen</span>
+                <span class="nav-label">@Texts["Nav.Assignments"]</span>
             </MudNavLink>
 
             <MudNavLink Href="/admin/working-schedule">
                 <MudIcon Icon="@Icons.Material.Filled.Schedule" />
-                <span class="ml-2">Arbeitszeiten</span>
+                <span class="nav-label">@Texts["Nav.WorkingHours"]</span>
             </MudNavLink>
 
         </Authorized>
@@ -53,7 +55,7 @@
 
             <MudNavLink Href="/admin/services">
                 <MudIcon Icon="@Icons.Material.Filled.BusinessCenter" />
-                <span class="ml-2">Services</span>
+                <span class="nav-label">@Texts["Nav.Services"]</span>
             </MudNavLink>
 
         </Authorized>
@@ -68,7 +70,7 @@
                HTTP-Kontext und ist daher eine Razor Page, kein Blazor-Aufruf. *@
             <MudNavLink Href="/employee/logout" ForceLoad="true">
                 <MudIcon Icon="@Icons.Material.Filled.Logout" />
-                <span class="ml-2">Logout</span>
+                <span class="nav-label">@Texts["Nav.Logout"]</span>
             </MudNavLink>
 
         </Authorized>

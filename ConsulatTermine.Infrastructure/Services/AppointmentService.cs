@@ -1,6 +1,9 @@
+using System.Globalization;
 using ConsulatTermine.Application.DTOs;
 using ConsulatTermine.Application.Exceptions;
 using ConsulatTermine.Application.Interfaces;
+using ConsulatTermine.Application.Localization;
+using ConsulatTermine.Application.Resources;
 using ConsulatTermine.Application.Services;
 using ConsulatTermine.Domain.Entities;
 using ConsulatTermine.Domain.Enums;
@@ -55,7 +58,7 @@ public class AppointmentService : IAppointmentService
 
         if (service == null)
         {
-            throw new BusinessRuleViolationException("Der Service wurde nicht gefunden.");
+            throw new BusinessRuleViolationException(BusinessMessages.Get("ServiceNotFound"));
         }
 
         // Aktiven Plan laden
@@ -124,12 +127,12 @@ public class AppointmentService : IAppointmentService
         var slotDto = available.SingleOrDefault(s => s.SlotStart == slotStart);
         if (slotDto == null)
         {
-            throw new BusinessRuleViolationException("Der gewählte Termin ist ungültig.");
+            throw new BusinessRuleViolationException(BusinessMessages.Get("SlotInvalid"));
         }
 
         if (!slotDto.IsAvailable)
         {
-            throw new BusinessRuleViolationException("Der gewählte Termin ist bereits ausgebucht.");
+            throw new BusinessRuleViolationException(BusinessMessages.Get("SlotFullyBooked"));
         }
 
         var appointment = new Appointment
@@ -204,11 +207,14 @@ public class AppointmentService : IAppointmentService
             if (hasActiveAppointments)
             {
                 // 🟨 TEIL-ABSAGE
+                // Die Sprache stammt aus dem Termin und nicht aus der Sitzung des
+                // Mitarbeiters: der Empfaenger ist der Buerger, der gebucht hat.
                 await _emailService.SendPartialCancellationAsync(
                     mainPerson.Email!,
                     appointment.FullName,
-                    appointment.Service!.Name,
-                    appointment.Date);
+                    appointment.Service!.NameFor(appointment.Language),
+                    appointment.Date,
+                    appointment.Language);
             }
             else
             {
@@ -216,7 +222,8 @@ public class AppointmentService : IAppointmentService
                 await _emailService.SendCancellationConfirmationAsync(
                     mainPerson.Email!,
                     mainPerson.FullName,
-                    appointment.BookingReference);
+                    appointment.BookingReference,
+                    appointment.Language);
             }
         }
         catch (Exception ex)
@@ -399,18 +406,18 @@ public class AppointmentService : IAppointmentService
 
         if (service == null)
         {
-            throw new BusinessRuleViolationException("Der Service wurde nicht gefunden.");
+            throw new BusinessRuleViolationException(BusinessMessages.Get("ServiceNotFound"));
         }
 
         // Gruppengröße prüfen
         if (dto.TotalPersons < 1 || dto.TotalPersons > 5)
         {
-            throw new BusinessRuleViolationException("Gruppengröße muss zwischen 1 und 5 liegen.");
+            throw new BusinessRuleViolationException(BusinessMessages.Get("GroupSizeInvalid"));
         }
 
         if (dto.Persons.Count != dto.TotalPersons)
         {
-            throw new BusinessRuleViolationException("Anzahl der Personen stimmt nicht mit TotalPersons überein.");
+            throw new BusinessRuleViolationException(BusinessMessages.Get("PersonCountMismatch"));
         }
 
         var allSlotStarts = dto.Persons.Select(p => p.SlotStart).ToList();
@@ -419,20 +426,20 @@ public class AppointmentService : IAppointmentService
         var appointmentDate = allSlotStarts.First().Date;
         if (allSlotStarts.Any(s => s.Date != appointmentDate.Date))
         {
-            throw new BusinessRuleViolationException("Alle Slots müssen am selben Tag liegen.");
+            throw new BusinessRuleViolationException(BusinessMessages.Get("SlotsSameDay"));
         }
 
         // Aktiven Plan laden
         var plan = await GetActivePlanAsync(dto.ServiceId);
         if (plan == null)
         {
-            throw new BusinessRuleViolationException("Für diesen Service ist derzeit kein Arbeitszeitplan hinterlegt.");
+            throw new BusinessRuleViolationException(BusinessMessages.Get("NoSchedulePlan"));
         }
 
         // Datum muss im Plan-Zeitraum liegen
         if (!IsInsidePlan(plan, appointmentDate))
         {
-            throw new BusinessRuleViolationException("Datum liegt außerhalb des aktiven Plan-Zeitraums.");
+            throw new BusinessRuleViolationException(BusinessMessages.Get("DateOutsidePlan"));
         }
 
         // Plan-gebundene WorkingHours/Overrides laden
@@ -466,7 +473,7 @@ public class AppointmentService : IAppointmentService
             var slot = freeSlots.Keys.FirstOrDefault(k => k.Start == slotStart);
             if (slot.Start == default)
             {
-                throw new BusinessRuleViolationException($"Der Termin um {slotStart:HH:mm} Uhr ist ungültig.");
+                throw new BusinessRuleViolationException(BusinessMessages.Format("SlotInvalidAt", slotStart.ToString("HH:mm", CultureInfo.CurrentCulture)));
             }
 
             int free = freeSlots[slot];
@@ -474,7 +481,7 @@ public class AppointmentService : IAppointmentService
 
             if (needed > free)
             {
-                throw new BusinessRuleViolationException($"Für {slotStart:HH:mm} Uhr sind nur noch {free} von {needed} benötigten Plätzen frei.");
+                throw new BusinessRuleViolationException(BusinessMessages.Format("SlotCapacityShort", slotStart.ToString("HH:mm", CultureInfo.CurrentCulture), free, needed));
             }
         }
 

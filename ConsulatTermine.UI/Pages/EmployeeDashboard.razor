@@ -5,24 +5,27 @@
 @using ConsulatTermine.Domain.Entities
 @using ConsulatTermine.Domain.Enums
 @using ConsulatTermine.Application.Interfaces
-@using ConsulatTermine.UI.Authentication
-@using MudBlazor
 @using Blazored.SessionStorage
 
 @inject IAppointmentService AppointmentService
+@inject IServiceService ServiceService
 @inject IEmployeeAuthorization Authorization
 @inject IWaitingRoomNotifier WaitingRoomNotifier
 @inject ISessionStorageService Session
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IStringLocalizer<EmployeeTexts> Texts
+@inject IStringLocalizer<CommonTexts> CommonTexts
+
+<PageTitle>@CommonTexts["Nav.Dashboard"]</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-6">
 
     @if (_loading)
     {
         <MudStack AlignItems="AlignItems.Center" Spacing="2" Class="mt-8">
-            <MudProgressCircular Indeterminate />
-            <MudText>Dashboard wird geladen…</MudText>
+            <MudProgressCircular Indeterminate aria-label="@Texts["Dashboard.Loading"]" />
+            <MudText>@Texts["Dashboard.Loading"]</MudText>
         </MudStack>
     }
     else
@@ -33,59 +36,74 @@
             <MudItem xs="12" md="9">
 
                 <MudPaper Class="pa-4 mb-3">
-                    <MudText Typo="Typo.h5">Dashboard – @_serviceName</MudText>
+                    <MudText Typo="Typo.h5" HtmlTag="h1">@Texts["Dashboard.Title", _serviceName]</MudText>
                     <MudText Typo="Typo.subtitle2" Color="Color.Secondary">
-                        Zimmer @_room · Büro @_office · @DateTime.Today.ToString("dd.MM.yyyy")
+                        @Texts["Dashboard.Workplace", _room, _office, DateTime.Today.ToString("d", CultureInfo.CurrentCulture)]
                     </MudText>
                 </MudPaper>
 
                 <MudPaper Class="pa-4 mb-3">
                     <MudStack Row="true" Spacing="2">
 
+                        @* Die Beschriftungen tragen die Bedeutung; die Symbole sind nur
+                           Beiwerk und deshalb Icons statt Zeichen im Text. *@
                         <MudButton Color="Color.Primary"
+                                   Variant="Variant.Filled"
+                                   StartIcon="@Icons.Material.Filled.PlayArrow"
                                    Disabled="@(!_canNext)"
                                    OnClick="NextAsync">
-                            ▶ NEXT
+                            @Texts["Dashboard.Next"]
                         </MudButton>
 
                         <MudButton Color="Color.Warning"
                                    Variant="Variant.Outlined"
+                                   StartIcon="@Icons.Material.Filled.NotificationsActive"
                                    Disabled="@(!_hasMyInProgress)"
                                    OnClick="RecallAsync">
-                            🔔 NOCHMAL AUFRUFEN
+                            @Texts["Dashboard.Recall"]
                         </MudButton>
 
                         <MudButton Color="Color.Info"
+                                   Variant="Variant.Outlined"
+                                   StartIcon="@Icons.Material.Filled.HowToReg"
                                    Disabled="@(!_hasMyInProgress)"
                                    OnClick="ArrivedAsync">
-                            👤 IST DA
+                            @Texts["Dashboard.Arrived"]
                         </MudButton>
 
                         <MudButton Color="Color.Success"
+                                   Variant="Variant.Filled"
+                                   StartIcon="@Icons.Material.Filled.Check"
                                    Disabled="@(!_hasMyInProgress)"
                                    OnClick="CompleteAsync">
-                            ✅ TERMIN ABSCHLIESSEN
+                            @Texts["Dashboard.Complete"]
                         </MudButton>
 
                     </MudStack>
                 </MudPaper>
 
-                <MudTable Items="_appointments" Dense Hover>
+                <MudTable Items="_appointments" Dense Hover aria-label="@Texts["Dashboard.TableAria"]">
                     <HeaderContent>
-                        <MudTh>Uhrzeit</MudTh>
-                        <MudTh>Name</MudTh>
-                        <MudTh>Status</MudTh>
+                        <MudTh>@Texts["Dashboard.Column.Time"]</MudTh>
+                        <MudTh>@Texts["Dashboard.Column.Name"]</MudTh>
+                        <MudTh>@Texts["Dashboard.Column.Status"]</MudTh>
                     </HeaderContent>
 
                     <RowTemplate>
-                        <MudTd>@context.Date.ToString("HH:mm")</MudTd>
-                        <MudTd>@context.FullName</MudTd>
-                        <MudTd>
+                        <MudTd DataLabel="@Texts["Dashboard.Column.Time"]">
+                            @context.Date.ToString("HH:mm", CultureInfo.CurrentCulture)
+                        </MudTd>
+                        <MudTd DataLabel="@Texts["Dashboard.Column.Name"]">@context.FullName</MudTd>
+                        <MudTd DataLabel="@Texts["Dashboard.Column.Status"]">
                             <MudChip T="String" Color="@GetStatusColor(context)" Size="Size.Small">
                                 @GetStatusText(context)
                             </MudChip>
                         </MudTd>
                     </RowTemplate>
+
+                    <NoRecordsContent>
+                        <MudText>@Texts["Dashboard.Empty"]</MudText>
+                    </NoRecordsContent>
                 </MudTable>
 
             </MudItem>
@@ -93,13 +111,13 @@
             <!-- RECHTS -->
             <MudItem xs="12" md="3">
                 <MudPaper Class="pa-4">
-                    <MudText Typo="Typo.h6">Statistik</MudText>
+                    <MudText Typo="Typo.h6" HtmlTag="h2">@Texts["Dashboard.Statistics"]</MudText>
                     <MudDivider />
-                    <MudText>Gesamt: @_appointments.Count</MudText>
-                    <MudText>Wartend: @_appointments.Count(a => a.Status == AppointmentStatus.Booked)</MudText>
-                    <MudText>Bei mir: @_appointments.Count(a =>
+                    <MudText>@Texts["Dashboard.Total", _appointments.Count]</MudText>
+                    <MudText>@Texts["Dashboard.Waiting", _appointments.Count(a => a.Status == AppointmentStatus.Booked)]</MudText>
+                    <MudText>@Texts["Dashboard.WithMe", _appointments.Count(a =>
                         a.Status == AppointmentStatus.InProgress &&
-                        a.CurrentEmployeeId == _employeeId)</MudText>
+                        a.CurrentEmployeeId == _employeeId)]</MudText>
                 </MudPaper>
             </MudItem>
 
@@ -177,7 +195,11 @@
 
         _office = await Session.GetItemAsync<string>(SessionKeys.OfficeName) ?? "";
         _room = await Session.GetItemAsync<string>(SessionKeys.RoomName) ?? "";
-        _serviceName = await Session.GetItemAsync<string>(SessionKeys.ServiceName) ?? _serviceName;
+
+        // Die Bezeichnung wird bei jedem Aufbau neu gelesen statt im Sitzungsspeicher
+        // gehalten: nach einem Sprachwechsel stuende dort sonst die alte Fassung.
+        var service = await ServiceService.GetByIdAsync(_serviceId);
+        _serviceName = service?.NameFor(CultureInfo.CurrentUICulture.Name) ?? string.Empty;
 
         await WithLockAsync(async () => await LoadAsync());
 
@@ -288,15 +310,27 @@
     };
 
     // ✅ WAR FEHLEND
-    private string GetStatusText(Appointment a)
+    /// <summary>
+    /// Beschriftet den Status aus Sicht des angemeldeten Mitarbeiters. Ein Termin,
+    /// den er selbst aufgerufen hat, wird eigens benannt; sonst gilt die allgemeine
+    /// Bezeichnung des Status.
+    /// </summary>
+    private string GetStatusText(Appointment appointment)
     {
-        if (a.Status == AppointmentStatus.InProgress && a.CurrentEmployeeId == _employeeId)
-            return "Bei mir";
+        if (appointment.CurrentEmployeeId == _employeeId)
+        {
+            if (appointment.Status == AppointmentStatus.InProgress)
+            {
+                return Texts["Dashboard.StatusWithMe"];
+            }
 
-        if (a.Status == AppointmentStatus.AtDesk && a.CurrentEmployeeId == _employeeId)
-            return "Ist da";
+            if (appointment.Status == AppointmentStatus.AtDesk)
+            {
+                return Texts["Dashboard.StatusArrived"];
+            }
+        }
 
-        return a.Status.ToString();
+        return appointment.Status.ToDisplayText(CommonTexts);
     }
 
     public void Dispose()

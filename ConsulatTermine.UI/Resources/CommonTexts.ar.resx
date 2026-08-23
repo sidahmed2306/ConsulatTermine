@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="App.Name" xml:space="preserve">
+    <value>قنصلية الجزائر بفرانكفورت</value>
+  </data>
+  <data name="App.LogoAlt" xml:space="preserve">
+    <value>شعار الجمهورية الجزائرية الديمقراطية الشعبية</value>
+  </data>
+  <data name="Language.Menu" xml:space="preserve">
+    <value>اللغة</value>
+  </data>
+  <data name="Language.Choose" xml:space="preserve">
+    <value>اختر اللغة</value>
+  </data>
+  <data name="Language.Current" xml:space="preserve">
+    <value>اللغة الحالية: {0}</value>
+  </data>
+  <data name="Nav.Menu" xml:space="preserve">
+    <value>تنقل الموظفين</value>
+  </data>
+  <data name="Nav.Home" xml:space="preserve">
+    <value>الصفحة الرئيسية</value>
+  </data>
+  <data name="Nav.Dashboard" xml:space="preserve">
+    <value>لوحة التحكم</value>
+  </data>
+  <data name="Nav.SwitchService" xml:space="preserve">
+    <value>تغيير الخدمة</value>
+  </data>
+  <data name="Nav.Employees" xml:space="preserve">
+    <value>الموظفون</value>
+  </data>
+  <data name="Nav.Assignments" xml:space="preserve">
+    <value>إسناد الخدمات</value>
+  </data>
+  <data name="Nav.WorkingHours" xml:space="preserve">
+    <value>أوقات العمل</value>
+  </data>
+  <data name="Nav.Services" xml:space="preserve">
+    <value>الخدمات</value>
+  </data>
+  <data name="Nav.Logout" xml:space="preserve">
+    <value>تسجيل الخروج</value>
+  </data>
+  <data name="Auth.Forbidden" xml:space="preserve">
+    <value>ليس لديك الصلاحية للوصول إلى هذا القسم.</value>
+  </data>
+  <data name="Auth.Checking" xml:space="preserve">
+    <value>جارٍ التحقق من الصلاحية</value>
+  </data>
+  <data name="NotFound.Title" xml:space="preserve">
+    <value>الصفحة غير موجودة</value>
+  </data>
+  <data name="NotFound.Message" xml:space="preserve">
+    <value>لا توجد صفحة على هذا العنوان.</value>
+  </data>
+  <data name="Action.Save" xml:space="preserve">
+    <value>حفظ</value>
+  </data>
+  <data name="Action.Cancel" xml:space="preserve">
+    <value>إلغاء</value>
+  </data>
+  <data name="Action.Delete" xml:space="preserve">
+    <value>حذف</value>
+  </data>
+  <data name="Action.Confirm" xml:space="preserve">
+    <value>تأكيد</value>
+  </data>
+  <data name="Action.Reset" xml:space="preserve">
+    <value>إعادة تعيين</value>
+  </data>
+  <data name="Action.Back" xml:space="preserve">
+    <value>رجوع</value>
+  </data>
+  <data name="Action.Continue" xml:space="preserve">
+    <value>متابعة</value>
+  </data>
+  <data name="Action.Close" xml:space="preserve">
+    <value>إغلاق</value>
+  </data>
+  <data name="Action.Edit" xml:space="preserve">
+    <value>تعديل</value>
+  </data>
+  <data name="Action.Add" xml:space="preserve">
+    <value>إضافة</value>
+  </data>
+  <data name="Action.New" xml:space="preserve">
+    <value>جديد</value>
+  </data>
+  <data name="Dialog.ConfirmTitle" xml:space="preserve">
+    <value>تأكيد</value>
+  </data>
+  <data name="State.Loading" xml:space="preserve">
+    <value>جارٍ التحميل …</value>
+  </data>
+  <data name="State.NoData" xml:space="preserve">
+    <value>لا توجد بيانات.</value>
+  </data>
+  <data name="State.Saving" xml:space="preserve">
+    <value>جارٍ الحفظ …</value>
+  </data>
+  <data name="Error.PageTitle" xml:space="preserve">
+    <value>خطأ</value>
+  </data>
+  <data name="Error.Heading" xml:space="preserve">
+    <value>حدث خطأ</value>
+  </data>
+  <data name="Error.Message" xml:space="preserve">
+    <value>تعذّرت معالجة طلبك. يرجى المحاولة مرة أخرى.</value>
+  </data>
+  <data name="Error.RequestId" xml:space="preserve">
+    <value>رقم الطلب</value>
+  </data>
+  <data name="Error.BackToStart" xml:space="preserve">
+    <value>إلى الصفحة الرئيسية</value>
+  </data>
+  <data name="Status.Booked" xml:space="preserve">
+    <value>محجوز</value>
+  </data>
+  <data name="Status.CheckedIn" xml:space="preserve">
+    <value>تم التسجيل</value>
+  </data>
+  <data name="Status.InProgress" xml:space="preserve">
+    <value>تم النداء</value>
+  </data>
+  <data name="Status.AtDesk" xml:space="preserve">
+    <value>عند الشباك</value>
+  </data>
+  <data name="Status.Completed" xml:space="preserve">
+    <value>مكتمل</value>
+  </data>
+  <data name="Status.Cancelled" xml:space="preserve">
+    <value>ملغى</value>
+  </data>
+  <data name="ErrorUi.Reconnect" xml:space="preserve">
+    <value>حدث خطأ. قد لا يستجيب التطبيق مجددًا إلا بعد إعادة التحميل.</value>
+  </data>
+  <data name="ErrorUi.Development" xml:space="preserve">
+    <value>حدث استثناء غير معالَج. راجع أدوات مطوّري المتصفح للتفاصيل.</value>
+  </data>
+  <data name="Action.Reload" xml:space="preserve">
+    <value>إعادة التحميل</value>
+  </data>
+  <data name="Action.Dismiss" xml:space="preserve">
+    <value>إغلاق الرسالة</value>
+  </data>
+</root>

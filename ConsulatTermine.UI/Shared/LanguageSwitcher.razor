@@ -1,0 +1,90 @@
+@using Microsoft.AspNetCore.Components.Routing
+
+@implements IDisposable
+
+@inject NavigationManager Navigation
+@inject IStringLocalizer<CommonTexts> Texts
+
+@*
+    Sprachwahl im Kopfbereich. Jeder Eintrag ist ein echter Verweis auf den
+    Endpunkt der Sprachumschaltung und laedt die Seite vollstaendig neu
+    (ForceLoad): Die Kultur wird zu Beginn einer Anfrage gesetzt, ein bereits
+    laufender Blazor-Kreis wuerde sie sonst nicht uebernehmen.
+*@
+
+<MudMenu AnchorOrigin="Origin.BottomRight"
+         TransformOrigin="Origin.TopRight"
+         AriaLabel="@Texts["Language.Choose"]"
+         Class="language-switcher"
+         ListClass="language-switcher-list">
+
+    <ActivatorContent>
+        <MudButton Variant="Variant.Text"
+                   Color="Color.Inherit"
+                   StartIcon="@Icons.Material.Filled.Language"
+                   EndIcon="@Icons.Material.Filled.ArrowDropDown"
+                   Class="language-switcher-trigger"
+                   aria-label="@Texts["Language.Current", _current.NativeName]">
+            <span class="language-switcher-name">@_current.NativeName</span>
+            <span class="language-switcher-code">@_current.TwoLetterCode.ToUpperInvariant()</span>
+        </MudButton>
+    </ActivatorContent>
+
+    <ChildContent>
+        @foreach (var language in SupportedLanguages.All)
+        {
+            var isCurrent = language.CultureCode == _current.CultureCode;
+
+            <MudMenuItem Href="@CultureEndpoints.BuildSetCultureUrl(language.CultureCode, _returnUrl)"
+                         ForceLoad="true"
+                         Class="@(isCurrent ? "language-switcher-item active" : "language-switcher-item")">
+
+                @* Die aktive Sprache wird nicht nur farblich hervorgehoben, sondern
+                   zusaetzlich durch ein Haken-Icon und aria-current gekennzeichnet. *@
+                <span class="language-switcher-mark" aria-hidden="true">
+                    @if (isCurrent)
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" />
+                    }
+                </span>
+
+                <span lang="@language.TwoLetterCode"
+                      dir="@language.TextDirection"
+                      aria-current="@(isCurrent ? "true" : null)">
+                    @language.NativeName
+                </span>
+            </MudMenuItem>
+        }
+    </ChildContent>
+
+</MudMenu>
+
+@code {
+    private SupportedLanguage _current = SupportedLanguages.Default;
+    private string _returnUrl = LocalReturnUrl.Fallback;
+
+    protected override void OnInitialized()
+    {
+        _current = SupportedLanguages.Resolve(CultureInfo.CurrentUICulture.Name);
+        _returnUrl = BuildReturnUrl();
+
+        // Ohne dieses Abonnement behielten die Verweise die Adresse der Seite, auf der
+        // das Layout zuletzt gerendert wurde. Nach einem Sprachwechsel landete der
+        // Besucher dann nicht auf der Seite, auf der er sich gerade befindet.
+        Navigation.LocationChanged += HandleLocationChanged;
+    }
+
+    private void HandleLocationChanged(object? sender, LocationChangedEventArgs args)
+    {
+        _returnUrl = BuildReturnUrl();
+        StateHasChanged();
+    }
+
+    private string BuildReturnUrl() =>
+        LocalReturnUrl.Sanitize("/" + Navigation.ToBaseRelativePath(Navigation.Uri));
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= HandleLocationChanged;
+    }
+}

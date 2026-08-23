@@ -1,12 +1,13 @@
-using System.Globalization;
 using Blazored.SessionStorage;
 using ConsulatTermine.Application.Configuration;
 using ConsulatTermine.Application.Interfaces;
+using ConsulatTermine.Application.Localization;
 using ConsulatTermine.Application.Security;
 using ConsulatTermine.Domain.Enums;
 using ConsulatTermine.Infrastructure;
 using ConsulatTermine.Infrastructure.SignalR;
 using ConsulatTermine.UI.Authentication;
+using ConsulatTermine.UI.Localization;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Localization;
 using MudBlazor.Services;
@@ -106,26 +107,40 @@ builder.Services.AddMudServices();
 // Ausdruecklich kein Sicherheitsmechanismus.
 builder.Services.AddBlazoredSessionStorage();
 
-builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+// Ohne ResourcesPath sucht der Localizer die Ressourcen unter dem vollen Typnamen
+// des Ankers, also ConsulatTermine.UI.Resources.<Name>. Genau so liegen die Dateien
+// im Ordner Resources. Ein zusaetzlich gesetzter ResourcesPath wuerde den Ordner ein
+// zweites Mal voranstellen und alle Suchen ins Leere laufen lassen.
+builder.Services.AddLocalization();
 
 var app = builder.Build();
 
 // =====================================================================
 // LOKALISIERUNG
+// Die Kultur wird zu Beginn jeder Anfrage festgelegt. Blazor Server uebernimmt
+// sie danach fuer die Lebensdauer des Kreises, sodass Ressourcen, Datums- und
+// Zahlenformate in Komponenten ohne weitere Uebergabe stimmen.
 // =====================================================================
-var supportedCultures = new[]
+var localizationOptions = new RequestLocalizationOptions
 {
-    new CultureInfo("de-DE"),
-    new CultureInfo("en-US"),
-    new CultureInfo("ar-DZ")
+    ApplyCurrentCultureToResponseHeaders = true
 };
 
-app.UseRequestLocalization(new RequestLocalizationOptions
-{
-    DefaultRequestCulture = new RequestCulture("de-DE"),
-    SupportedCultures = supportedCultures,
-    SupportedUICultures = supportedCultures
-});
+localizationOptions.SupportedCultures = [.. SupportedLanguages.Cultures];
+localizationOptions.SupportedUICultures = [.. SupportedLanguages.Cultures];
+localizationOptions.SetDefaultCulture(SupportedLanguages.DefaultCultureCode);
+
+// Reihenfolge ist die Rangfolge: die ausdrueckliche Wahl des Besuchers schlaegt
+// die Voreinstellung seines Browsers. Der Abfrageparameter-Provider entfaellt,
+// weil die Sprache ausschliesslich ueber den Endpunkt gesetzt wird und sonst zwei
+// Wege mit unterschiedlicher Haltbarkeit nebeneinander bestuenden.
+localizationOptions.RequestCultureProviders =
+[
+    new CookieRequestCultureProvider(),
+    new BrowserLanguageRequestCultureProvider()
+];
+
+app.UseRequestLocalization(localizationOptions);
 
 // =====================================================================
 // PIPELINE
@@ -148,6 +163,7 @@ app.UseAntiforgery();
 
 app.MapRazorPages();
 app.MapBlazorHub();
+app.MapCultureEndpoints();
 
 app.MapHub<DisplayHub>("/hubs/display");
 app.MapHub<EmployeeHub>("/hubs/employee");

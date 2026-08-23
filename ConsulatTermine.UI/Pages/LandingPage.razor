@@ -1,68 +1,121 @@
 @page "/"
 @attribute [AllowAnonymous]
-@using MudBlazor
-@using ConsulatTermine.UI.Theme
-@inject NavigationManager NavigationManager
 
-<PageTitle>Consulat Algerien Frankfurt</PageTitle>
+@inject NavigationManager NavigationManager
+@inject IStringLocalizer<BookingTexts> Texts
+
+<PageTitle>@Texts["Landing.PageTitle"]</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.False" Class="mt-12">
 
     <!-- Hero-Section -->
     <MudPaper Elevation="0" Class="pa-8 text-center">
-        <MudText Typo="Typo.h3" GutterBottom="true">Willkommen beim Konsulat Algerien – Frankfurt</MudText>
-        <MudText Typo="Typo.body1" Class="mb-4">
-            Buchen Sie Ihren Termin einfach online — schnell, sicher und bequem.
+        <MudText Typo="Typo.h3" GutterBottom="true" HtmlTag="h1">
+            @Texts["Landing.Hero.Title"]
         </MudText>
+
+        <MudText Typo="Typo.body1" Class="mb-4">
+            @Texts["Landing.Hero.Subtitle"]
+        </MudText>
+
         <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
                    OnClick="HandleNavigateToServices">
-            Termin jetzt buchen
+            @Texts["Landing.Hero.Cta"]
         </MudButton>
     </MudPaper>
 
     <!-- Info / Hinweise Section -->
     <MudContainer MaxWidth="MaxWidth.Medium" Class="py-8">
+
         <MudCard Outlined="true" Class="pa-4 mb-6">
             <MudCardContent>
-                <MudText Typo="Typo.h6" Class="mb-2">Wichtige Hinweise</MudText>
+                <MudText Typo="Typo.h6" Class="mb-2" HtmlTag="h2">
+                    @Texts["Landing.Notes.Title"]
+                </MudText>
                 <ul>
-                    <li>Die Abholung des Reisepasses und/oder Personalausweises erfolgt <strong>ohne Terminvereinbarung</strong>.</li>
-                    <li>Anträge auf Visa für Ehepartner von Algeriern werden <strong>ohne Termin</strong> (Dienstag bis Samstag, 09:00–13:00 Uhr) entgegengenommen.</li>
+                    <li>@Texts["Landing.Notes.Pickup"]</li>
+                    <li>@Texts["Landing.Notes.SpouseVisa"]</li>
                 </ul>
             </MudCardContent>
         </MudCard>
 
         <MudCard Outlined="true" Class="pa-4 mb-6">
             <MudCardContent>
-                <MudText Typo="Typo.h6" Class="mb-2">Öffnungszeiten</MudText>
-                <MudText Typo="Typo.body2">
-                    <strong>VISA-Service:</strong> Dienstag bis Samstag, 9:00 – 15:00 Uhr<br />
-                    <strong>Passservice:</strong> Dienstag bis Samstag, 9:00 – 15:00 Uhr<br />
-                    <strong>Standesamt:</strong> Dienstag bis Samstag, 9:00 – 15:00 Uhr
+                <MudText Typo="Typo.h6" Class="mb-2" HtmlTag="h2">
+                    @Texts["Landing.Hours.Title"]
                 </MudText>
+
+                @* Definitionsliste statt Fliesstext: Bezeichnung und Zeit gehoeren
+                   zusammen und bleiben das auch fuer Screenreader und auf Arabisch. *@
+                <dl class="info-list">
+                    @foreach (var serviceKey in OpeningHourServices)
+                    {
+                        <div class="info-list-row">
+                            <dt>@Texts[serviceKey]</dt>
+                            <dd>@Texts["Landing.Hours.Schedule"]</dd>
+                        </div>
+                    }
+                </dl>
             </MudCardContent>
         </MudCard>
 
         <MudCard Outlined="true" Class="pa-4 mb-6">
             <MudCardContent>
-                <MudText Typo="Typo.h6" Class="mb-2">Kontakt & Telefon</MudText>
-                <MudText Typo="Typo.body2">
-                    <strong>VISA-Service:</strong> 069 7060 95 129 / 069 7060 95 120<br />
-                    <strong>Passdienst & Zulassungsstelle:</strong> 069 7060 95 113 / 069 7060 95 118 / 069 7060 95 119<br />
-                    <strong>Biometrische Personalausweise:</strong> 069 7060 95 134<br />
-                    <strong>Standesamt:</strong> 069 7060 95 114 / 069 7060 95 117 / 069 7060 95 137<br />
-                    <br />
-                    <strong>E-Mail Standesamt:</strong> zivilstand@konsulat-algerien.de<br />
-                    <strong>E-Mail Reisepass / biometrischer Pass:</strong> biometrischer.reisepass@konsulat-algerien.de<br />
-                    <strong>E-Mail VISA-Service:</strong> visa@konsulat-algerien.de
+                <MudText Typo="Typo.h6" Class="mb-2" HtmlTag="h2">
+                    @Texts["Landing.Contact.Title"]
                 </MudText>
+
+                @* Rufnummern und Adressen sind Stammdaten des Konsulats und keine
+                   uebersetzbaren Texte. Uebersetzt wird nur ihre Bezeichnung. *@
+                <dl class="info-list">
+                    @foreach (var contact in PhoneContacts)
+                    {
+                        <div class="info-list-row">
+                            <dt>@Texts[contact.LabelKey]</dt>
+                            <dd dir="ltr">@contact.Value</dd>
+                        </div>
+                    }
+
+                    @foreach (var contact in EmailContacts)
+                    {
+                        <div class="info-list-row">
+                            <dt>@Texts["Landing.Contact.EmailPrefix"] @Texts[contact.LabelKey]</dt>
+                            <dd dir="ltr">
+                                <a href="mailto:@contact.Value">@contact.Value</a>
+                            </dd>
+                        </div>
+                    }
+                </dl>
             </MudCardContent>
         </MudCard>
+
     </MudContainer>
 
 </MudContainer>
 
 @code {
+    private static readonly string[] OpeningHourServices =
+    [
+        "Service.Visa",
+        "Service.Passport",
+        "Service.CivilStatus"
+    ];
+
+    private static readonly (string LabelKey, string Value)[] PhoneContacts =
+    [
+        ("Service.Visa", "069 7060 95 129 / 069 7060 95 120"),
+        ("Service.PassportOffice", "069 7060 95 113 / 069 7060 95 118 / 069 7060 95 119"),
+        ("Service.BiometricId", "069 7060 95 134"),
+        ("Service.CivilStatus", "069 7060 95 114 / 069 7060 95 117 / 069 7060 95 137")
+    ];
+
+    private static readonly (string LabelKey, string Value)[] EmailContacts =
+    [
+        ("Service.CivilStatus", "zivilstand@konsulat-algerien.de"),
+        ("Service.Passport", "biometrischer.reisepass@konsulat-algerien.de"),
+        ("Service.Visa", "visa@konsulat-algerien.de")
+    ];
+
     private void HandleNavigateToServices()
     {
         NavigationManager.NavigateTo("/services");

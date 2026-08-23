@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Landing.PageTitle" xml:space="preserve">
+    <value>Terminbuchung – Konsulat Algerien Frankfurt</value>
+  </data>
+  <data name="Landing.Hero.Title" xml:space="preserve">
+    <value>Willkommen beim Konsulat Algerien in Frankfurt</value>
+  </data>
+  <data name="Landing.Hero.Subtitle" xml:space="preserve">
+    <value>Buchen Sie Ihren Termin online – schnell, sicher und bequem.</value>
+  </data>
+  <data name="Landing.Hero.Cta" xml:space="preserve">
+    <value>Termin jetzt buchen</value>
+  </data>
+  <data name="Landing.Notes.Title" xml:space="preserve">
+    <value>Wichtige Hinweise</value>
+  </data>
+  <data name="Landing.Notes.Pickup" xml:space="preserve">
+    <value>Die Abholung des Reisepasses und des Personalausweises erfolgt ohne Terminvereinbarung.</value>
+  </data>
+  <data name="Landing.Notes.SpouseVisa" xml:space="preserve">
+    <value>Visumanträge für Ehepartner algerischer Staatsangehöriger werden ohne Termin entgegengenommen, Dienstag bis Samstag von 09:00 bis 13:00 Uhr.</value>
+  </data>
+  <data name="Landing.Hours.Title" xml:space="preserve">
+    <value>Öffnungszeiten</value>
+  </data>
+  <data name="Landing.Hours.Schedule" xml:space="preserve">
+    <value>Dienstag bis Samstag, 09:00 – 15:00 Uhr</value>
+  </data>
+  <data name="Landing.Contact.Title" xml:space="preserve">
+    <value>Kontakt und Telefon</value>
+  </data>
+  <data name="Landing.Contact.EmailPrefix" xml:space="preserve">
+    <value>E-Mail</value>
+  </data>
+  <data name="Service.Visa" xml:space="preserve">
+    <value>Visa-Service</value>
+  </data>
+  <data name="Service.Passport" xml:space="preserve">
+    <value>Passservice</value>
+  </data>
+  <data name="Service.CivilStatus" xml:space="preserve">
+    <value>Standesamt</value>
+  </data>
+  <data name="Service.PassportOffice" xml:space="preserve">
+    <value>Passdienst und Zulassungsstelle</value>
+  </data>
+  <data name="Service.BiometricId" xml:space="preserve">
+    <value>Biometrische Personalausweise</value>
+  </data>
+  <data name="Stepper.Aria" xml:space="preserve">
+    <value>Fortschritt der Terminbuchung</value>
+  </data>
+  <data name="Stepper.Step" xml:space="preserve">
+    <value>Schritt {0} von {1}: {2}</value>
+  </data>
+  <data name="Stepper.Service" xml:space="preserve">
+    <value>Service auswählen</value>
+  </data>
+  <data name="Stepper.Slot" xml:space="preserve">
+    <value>Termin auswählen</value>
+  </data>
+  <data name="Stepper.Form" xml:space="preserve">
+    <value>Formular</value>
+  </data>
+  <data name="Stepper.Confirmation" xml:space="preserve">
+    <value>Bestätigung</value>
+  </data>
+  <data name="Services.Title" xml:space="preserve">
+    <value>Termin buchen</value>
+  </data>
+  <data name="Services.PersonQuestion" xml:space="preserve">
+    <value>Für wie viele Personen möchten Sie einen Termin buchen?</value>
+  </data>
+  <data name="Services.PersonLess" xml:space="preserve">
+    <value>Eine Person weniger</value>
+  </data>
+  <data name="Services.PersonMore" xml:space="preserve">
+    <value>Eine Person mehr</value>
+  </data>
+  <data name="Services.PersonCount" xml:space="preserve">
+    <value>Gewählte Personenzahl: {0}</value>
+  </data>
+  <data name="Services.ServiceQuestion" xml:space="preserve">
+    <value>Für welche Services möchten Sie Termine buchen?</value>
+  </data>
+  <data name="Services.ServiceHint" xml:space="preserve">
+    <value>Zählen Sie je Service, wie viele Personen ihn benötigen. Jede Person braucht mindestens einen Termin und höchstens {0}.</value>
+  </data>
+  <data name="Services.Loading" xml:space="preserve">
+    <value>Services werden geladen</value>
+  </data>
+  <data name="Services.Empty" xml:space="preserve">
+    <value>Zurzeit stehen keine Services zur Buchung bereit. Bitte versuchen Sie es später erneut.</value>
+  </data>
+  <data name="Services.DecrementAria" xml:space="preserve">
+    <value>{0}: eine Person weniger</value>
+  </data>
+  <data name="Services.IncrementAria" xml:space="preserve">
+    <value>{0}: eine Person mehr</value>
+  </data>
+  <data name="Services.AssignedAria" xml:space="preserve">
+    <value>{0}: {1} zugeordnet</value>
+  </data>
+  <data name="Services.Status.Missing" xml:space="preserve">
+    <value>Zugeordnet: {0} von {1}. Es fehlen noch {2}.</value>
+  </data>
+  <data name="Services.Status.Complete" xml:space="preserve">
+    <value>Alle Termine sind zugeordnet. Sie können fortfahren.</value>
+  </data>
+  <data name="Slots.CalendarHint" xml:space="preserve">
+    <value>Tage ohne verfügbare Termine sind nicht auswählbar.</value>
+  </data>
+  <data name="Slots.TitleForService" xml:space="preserve">
+    <value>Termine für {0}</value>
+  </data>
+  <data name="Slots.Duration" xml:space="preserve">
+    <value>Dauer je Termin: {0} Minuten</value>
+  </data>
+  <data name="Slots.Selected" xml:space="preserve">
+    <value>Ausgewählt: {0} von {1}</value>
+  </data>
+  <data name="Slots.StillToSelect" xml:space="preserve">
+    <value>Bitte wählen Sie noch {0} aus.</value>
+  </data>
+  <data name="Slots.ChooseDayFirst" xml:space="preserve">
+    <value>Bitte wählen Sie zuerst einen Tag aus.</value>
+  </data>
+  <data name="Slots.NoneForDay" xml:space="preserve">
+    <value>Für diesen Tag sind keine Termine frei.</value>
+  </data>
+  <data name="Slots.Free" xml:space="preserve">
+    <value>Frei: {0}</value>
+  </data>
+  <data name="Slots.SelectAria" xml:space="preserve">
+    <value>Termin um {0} Uhr auswählen</value>
+  </data>
+  <data name="Slots.DecreaseAria" xml:space="preserve">
+    <value>{0} Uhr: einen Platz weniger</value>
+  </data>
+  <data name="Slots.IncreaseAria" xml:space="preserve">
+    <value>{0} Uhr: einen Platz mehr</value>
+  </data>
+  <data name="Slots.ServiceProgress" xml:space="preserve">
+    <value>Service {0} von {1}</value>
+  </data>
+  <data name="Form.Title" xml:space="preserve">
+    <value>Persönliche Angaben</value>
+  </data>
+  <data name="Form.Person" xml:space="preserve">
+    <value>Person {0}</value>
+  </data>
+  <data name="Form.FirstName" xml:space="preserve">
+    <value>Vorname</value>
+  </data>
+  <data name="Form.LastName" xml:space="preserve">
+    <value>Nachname</value>
+  </data>
+  <data name="Form.DateOfBirth" xml:space="preserve">
+    <value>Geburtsdatum</value>
+  </data>
+  <data name="Form.Email" xml:space="preserve">
+    <value>E-Mail</value>
+  </data>
+  <data name="Form.Phone" xml:space="preserve">
+    <value>Telefon</value>
+  </data>
+  <data name="Form.SlotForService" xml:space="preserve">
+    <value>Termin für {0}</value>
+  </data>
+  <data name="Form.Submit" xml:space="preserve">
+    <value>Termin verbindlich buchen</value>
+  </data>
+  <data name="Form.Submitting" xml:space="preserve">
+    <value>Buchung wird gesendet …</value>
+  </data>
+  <data name="Form.InvalidSubmit" xml:space="preserve">
+    <value>Bitte füllen Sie alle erforderlichen Felder korrekt aus.</value>
+  </data>
+  <data name="Form.SlotMissing" xml:space="preserve">
+    <value>Bitte wählen Sie einen Termin für {0}.</value>
+  </data>
+  <data name="Form.BookingFailed" xml:space="preserve">
+    <value>Die Buchung konnte nicht abgeschlossen werden. Bitte versuchen Sie es erneut.</value>
+  </data>
+  <data name="Confirmation.Title" xml:space="preserve">
+    <value>Termin erfolgreich gebucht</value>
+  </data>
+  <data name="Confirmation.Text" xml:space="preserve">
+    <value>Ihr Termin beim Konsulat wurde registriert.</value>
+  </data>
+  <data name="Confirmation.BookingNumber" xml:space="preserve">
+    <value>Buchungsnummer</value>
+  </data>
+  <data name="Confirmation.EmailSent" xml:space="preserve">
+    <value>Eine Bestätigung mit allen Angaben wurde an {0} gesendet.</value>
+  </data>
+  <data name="Confirmation.NoReference" xml:space="preserve">
+    <value>Es konnte keine Buchungsnummer ermittelt werden. Bitte wenden Sie sich an das Konsulat.</value>
+  </data>
+  <data name="Confirmation.Footer" xml:space="preserve">
+    <value>Bitte erscheinen Sie pünktlich zum gebuchten Termin und bringen Sie alle erforderlichen Unterlagen mit.</value>
+  </data>
+  <data name="Confirmation.NewBooking" xml:space="preserve">
+    <value>Neue Terminbuchung</value>
+  </data>
+  <data name="Cancel.Title" xml:space="preserve">
+    <value>Termin absagen</value>
+  </data>
+  <data name="Cancel.Hint" xml:space="preserve">
+    <value>Sie können einzelne Termine absagen. Alle übrigen Termine bleiben bestehen.</value>
+  </data>
+  <data name="Cancel.TableAria" xml:space="preserve">
+    <value>Termine dieser Buchung</value>
+  </data>
+  <data name="Cancel.Column.Service" xml:space="preserve">
+    <value>Service</value>
+  </data>
+  <data name="Cancel.Column.Date" xml:space="preserve">
+    <value>Datum und Uhrzeit</value>
+  </data>
+  <data name="Cancel.Column.Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Cancel.Column.Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Cancel.Column.Action" xml:space="preserve">
+    <value>Aktion</value>
+  </data>
+  <data name="Cancel.Button" xml:space="preserve">
+    <value>Absagen</value>
+  </data>
+  <data name="Cancel.ButtonAria" xml:space="preserve">
+    <value>Termin {0} am {1} absagen</value>
+  </data>
+  <data name="Cancel.NotCancellable" xml:space="preserve">
+    <value>Nicht mehr absagbar</value>
+  </data>
+  <data name="Cancel.Error.InvalidLink" xml:space="preserve">
+    <value>Dieser Link ist ungültig.</value>
+  </data>
+  <data name="Cancel.Error.NotFound" xml:space="preserve">
+    <value>Zu diesem Link wurde kein Termin gefunden.</value>
+  </data>
+  <data name="Cancel.Error.Expired" xml:space="preserve">
+    <value>Dieser Absagelink ist abgelaufen. Bitte wenden Sie sich an das Konsulat.</value>
+  </data>
+  <data name="Cancel.Error.LoadFailed" xml:space="preserve">
+    <value>Der Termin konnte nicht geladen werden. Bitte versuchen Sie es später erneut.</value>
+  </data>
+  <data name="Cancel.Success" xml:space="preserve">
+    <value>Der Termin wurde abgesagt.</value>
+  </data>
+  <data name="Cancel.Failed" xml:space="preserve">
+    <value>Der Termin konnte nicht abgesagt werden. Bitte versuchen Sie es erneut.</value>
+  </data>
+  <data name="CancelSuccess.Title" xml:space="preserve">
+    <value>Alle Termine abgesagt</value>
+  </data>
+  <data name="CancelSuccess.Text" xml:space="preserve">
+    <value>Alle Termine dieser Buchung wurden abgesagt.</value>
+  </data>
+  <data name="CancelSuccess.NewBooking" xml:space="preserve">
+    <value>Neuen Termin buchen</value>
+  </data>
+</root>

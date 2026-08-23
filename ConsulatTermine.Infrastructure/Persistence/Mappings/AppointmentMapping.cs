@@ -29,6 +29,13 @@ public sealed class AppointmentMapping : IEntityTypeConfiguration<Appointment>
         builder.Property(appointment => appointment.CancelToken)
             .HasMaxLength(64);
 
+        // Kulturname im Format xx-YY. Bestandsdaten ohne Sprache erhalten Deutsch,
+        // die bisher einzige Sprache des Schriftverkehrs.
+        builder.Property(appointment => appointment.Language)
+            .HasMaxLength(10)
+            .IsRequired()
+            .HasDefaultValue("de-DE");
+
         builder.HasOne(appointment => appointment.CurrentEmployee)
             .WithMany()
             .HasForeignKey(appointment => appointment.CurrentEmployeeId)

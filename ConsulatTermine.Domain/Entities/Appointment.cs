@@ -85,6 +85,13 @@ public class Appointment
     public DateTime? DateOfBirth { get; set; }
 
     /// <summary>
+    /// Sprache, in der dieser Termin gebucht wurde, als Kulturname wie <c>ar-DZ</c>.
+    /// Bestimmt die Sprache jedes Schreibens zu diesem Termin, auch wenn ein
+    /// Mitarbeiter die Absage spaeter aus einer deutschen Oberflaeche ausloest.
+    /// </summary>
+    public string Language { get; set; } = "de-DE";
+
+    /// <summary>
     /// Sicherheits-Token für die Terminabsage über E-Mail-Link.
     /// </summary>
     public string? CancelToken { get; set; }

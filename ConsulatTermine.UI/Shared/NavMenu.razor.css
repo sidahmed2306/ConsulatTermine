@@ -66,3 +66,9 @@
         overflow-y: auto;
     }
 }
+
+/* Beschriftung neben dem Icon. Logischer Abstand statt margin-left, damit der
+   Text auf Arabisch links vom Icon steht. */
+.nav-label {
+    margin-inline-start: 0.5rem;
+}

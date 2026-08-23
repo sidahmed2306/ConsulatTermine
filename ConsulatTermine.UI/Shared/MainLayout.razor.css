@@ -30,13 +30,24 @@
   flex-shrink: 0;
 }
 
+/* MARKE – Wappen und Name als eine Einheit */
+.consulate-brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  flex: 1;
+}
+
 /* TITEL – lesbar, kein Abschneiden */
 .consulate-title {
   color: white;
   font-size: 1.8rem;
   font-weight: 600;
   line-height: 1.35;
-  text-align: left;
+  /* start statt left: der Titel richtet sich nach der Schreibrichtung aus und
+     steht auf Arabisch rechts. */
+  text-align: start;
   white-space: normal;
   padding: 4px 0;
   margin: 0;
@@ -89,5 +100,15 @@
     font-size: 0.95rem;
     line-height: 1.4;
     font-weight: 600;
+  }
+}
+
+/* =====================================================
+   MOBIL – Marke kompakter
+   ===================================================== */
+
+@media (max-width: 768px) {
+  .consulate-brand {
+    gap: 10px;
   }
 }

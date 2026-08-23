@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Login.PageTitle" xml:space="preserve">
+    <value>Employee area sign-in</value>
+  </data>
+  <data name="Login.Title" xml:space="preserve">
+    <value>Employee area sign-in</value>
+  </data>
+  <data name="Login.EmployeeCode" xml:space="preserve">
+    <value>Employee code</value>
+  </data>
+  <data name="Login.Password" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="Login.Submit" xml:space="preserve">
+    <value>Sign in</value>
+  </data>
+  <data name="Login.ForgotPassword" xml:space="preserve">
+    <value>Forgotten your password?</value>
+  </data>
+  <data name="Home.Loading" xml:space="preserve">
+    <value>Loading employee data …</value>
+  </data>
+  <data name="Home.Welcome" xml:space="preserve">
+    <value>Welcome</value>
+  </data>
+  <data name="Home.Greeting" xml:space="preserve">
+    <value>Have a successful working day, {0}.</value>
+  </data>
+  <data name="Home.NextStep" xml:space="preserve">
+    <value>To get started, select your service and your workplace.</value>
+  </data>
+  <data name="Home.StartWork" xml:space="preserve">
+    <value>Choose workplace</value>
+  </data>
+  <data name="Home.NotFound" xml:space="preserve">
+    <value>The employee record was not found.</value>
+  </data>
+  <data name="Home.LoadFailed" xml:space="preserve">
+    <value>The employee data could not be loaded.</value>
+  </data>
+  <data name="ServiceSelection.Title" xml:space="preserve">
+    <value>Start of work – service and workplace</value>
+  </data>
+  <data name="ServiceSelection.Service" xml:space="preserve">
+    <value>Service</value>
+  </data>
+  <data name="ServiceSelection.Office" xml:space="preserve">
+    <value>Office</value>
+  </data>
+  <data name="ServiceSelection.Room" xml:space="preserve">
+    <value>Room</value>
+  </data>
+  <data name="ServiceSelection.Start" xml:space="preserve">
+    <value>Start work</value>
+  </data>
+  <data name="ServiceSelection.Empty" xml:space="preserve">
+    <value>No service is assigned to you. Please contact your service manager.</value>
+  </data>
+  <data name="Password.New" xml:space="preserve">
+    <value>New password</value>
+  </data>
+  <data name="Password.Confirm" xml:space="preserve">
+    <value>Confirm password</value>
+  </data>
+  <data name="Password.Show" xml:space="preserve">
+    <value>Show password</value>
+  </data>
+  <data name="Password.Hide" xml:space="preserve">
+    <value>Hide password</value>
+  </data>
+  <data name="Password.RequiredNew" xml:space="preserve">
+    <value>Please enter a new password.</value>
+  </data>
+  <data name="Password.RequiredConfirm" xml:space="preserve">
+    <value>Please confirm the password.</value>
+  </data>
+  <data name="Password.Mismatch" xml:space="preserve">
+    <value>The two passwords do not match.</value>
+  </data>
+  <data name="Password.Save" xml:space="preserve">
+    <value>Save password</value>
+  </data>
+  <data name="Password.SaveFailed" xml:space="preserve">
+    <value>The password could not be saved. Please try again.</value>
+  </data>
+  <data name="ChangePassword.Title" xml:space="preserve">
+    <value>Change password</value>
+  </data>
+  <data name="ForgotPassword.Title" xml:space="preserve">
+    <value>Forgotten password</value>
+  </data>
+  <data name="ForgotPassword.Intro" xml:space="preserve">
+    <value>Enter your work email address. You will receive a link to reset your password.</value>
+  </data>
+  <data name="ForgotPassword.Email" xml:space="preserve">
+    <value>Work email address</value>
+  </data>
+  <data name="ForgotPassword.Submit" xml:space="preserve">
+    <value>Send link</value>
+  </data>
+  <data name="ForgotPassword.Sent" xml:space="preserve">
+    <value>If an account exists for this address, a password reset link has been sent.</value>
+  </data>
+  <data name="ForgotPassword.BackToLogin" xml:space="preserve">
+    <value>Back to sign-in</value>
+  </data>
+  <data name="ResetPassword.Title" xml:space="preserve">
+    <value>Set a new password</value>
+  </data>
+  <data name="ResetPassword.Invalid" xml:space="preserve">
+    <value>The link is not valid or has expired. Please request a new link.</value>
+  </data>
+  <data name="ResetPassword.RequestNew" xml:space="preserve">
+    <value>Request a new link</value>
+  </data>
+  <data name="Dashboard.Loading" xml:space="preserve">
+    <value>Loading the dashboard …</value>
+  </data>
+  <data name="Dashboard.Title" xml:space="preserve">
+    <value>Dashboard – {0}</value>
+  </data>
+  <data name="Dashboard.Workplace" xml:space="preserve">
+    <value>Room {0} · Office {1} · {2}</value>
+  </data>
+  <data name="Dashboard.Next" xml:space="preserve">
+    <value>Call next</value>
+  </data>
+  <data name="Dashboard.Recall" xml:space="preserve">
+    <value>Call again</value>
+  </data>
+  <data name="Dashboard.Arrived" xml:space="preserve">
+    <value>Has arrived</value>
+  </data>
+  <data name="Dashboard.Complete" xml:space="preserve">
+    <value>Complete appointment</value>
+  </data>
+  <data name="Dashboard.Column.Time" xml:space="preserve">
+    <value>Time</value>
+  </data>
+  <data name="Dashboard.Column.Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Dashboard.Column.Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Dashboard.TableAria" xml:space="preserve">
+    <value>Today's appointments</value>
+  </data>
+  <data name="Dashboard.Empty" xml:space="preserve">
+    <value>No appointments are booked for today.</value>
+  </data>
+  <data name="Dashboard.Statistics" xml:space="preserve">
+    <value>Statistics</value>
+  </data>
+  <data name="Dashboard.Total" xml:space="preserve">
+    <value>Total: {0}</value>
+  </data>
+  <data name="Dashboard.Waiting" xml:space="preserve">
+    <value>Waiting: {0}</value>
+  </data>
+  <data name="Dashboard.WithMe" xml:space="preserve">
+    <value>With me: {0}</value>
+  </data>
+  <data name="Dashboard.StatusWithMe" xml:space="preserve">
+    <value>With me</value>
+  </data>
+  <data name="Dashboard.StatusArrived" xml:space="preserve">
+    <value>Has arrived</value>
+  </data>
+</root>

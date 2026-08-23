@@ -4,6 +4,7 @@ using System.Security.Claims;
 using ConsulatTermine.Application.Configuration;
 using ConsulatTermine.Application.Interfaces;
 using ConsulatTermine.UI.Authentication;
+using ConsulatTermine.UI.Resources;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -42,13 +43,15 @@ public sealed class LoginModel : PageModel
 
     public sealed class InputModel
     {
-        [Required(ErrorMessage = "Die Kennung ist erforderlich.")]
-        [Display(Name = "Mitarbeiter-Kennung")]
+        [Required(
+            ErrorMessageResourceType = typeof(ValidationTexts),
+            ErrorMessageResourceName = nameof(ValidationTexts.EmployeeCodeRequired))]
         public string EmployeeCode { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Das Passwort ist erforderlich.")]
+        [Required(
+            ErrorMessageResourceType = typeof(ValidationTexts),
+            ErrorMessageResourceName = nameof(ValidationTexts.PasswordRequired))]
         [DataType(DataType.Password)]
-        [Display(Name = "Passwort")]
         public string Password { get; set; } = string.Empty;
     }
 
@@ -75,7 +78,9 @@ public sealed class LoginModel : PageModel
         if (!result.Success || result.EmployeeId is null || result.Role is null)
         {
             // Die Meldung stammt aus der Anwendungsschicht und ist bewusst unspezifisch.
-            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Anmeldung fehlgeschlagen.");
+            // Die Meldung stammt aus der Anwendungsschicht und ist dort bereits
+            // uebersetzt und bewusst unspezifisch.
+            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? string.Empty);
             return Page();
         }
 

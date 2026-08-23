@@ -1,94 +1,114 @@
 @page "/admin/services"
 @attribute [Authorize(Policy = AuthorizationPolicies.AdministrationVerwalten)]
 
-@using ConsulatTermine.Domain.Enums
-@using ConsulatTermine.UI.Authentication
-@using MudBlazor
+@using ConsulatTermine.Application.Exceptions
 @using ConsulatTermine.Application.Interfaces
-@using ConsulatTermine.Application.DTOs
 @using ConsulatTermine.Domain.Entities
 
 @inject IDialogService DialogService
 @inject IServiceService ServiceService
 @inject ISnackbar Snackbar
-@inject NavigationManager Navigation
+@inject ILogger<ServiceVerwaltung> Logger
+@inject IStringLocalizer<AdministrationTexts> Texts
+@inject IStringLocalizer<CommonTexts> CommonTexts
+
+<PageTitle>@Texts["Services.Title"]</PageTitle>
 
 <MudPaper Class="pa-4">
 
     <MudStack Spacing="2">
 
-        <!-- Header -->
         <MudStack Row="true"
                   Justify="Justify.SpaceBetween"
                   AlignItems="AlignItems.Center">
 
-            <MudText Typo="Typo.h5">Service-Verwaltung</MudText>
+            <MudText Typo="Typo.h5" HtmlTag="h1">@Texts["Services.Title"]</MudText>
 
             <MudButton Variant="Variant.Filled"
                        Color="Color.Primary"
-                       OnClick="@NewService">
-                <MudIcon Icon="@Icons.Material.Filled.Add" Class="me-2" />
-                Neuer Service
+                       StartIcon="@Icons.Material.Filled.Add"
+                       OnClick="NewService">
+                @Texts["Services.New"]
             </MudButton>
         </MudStack>
 
-        <!-- Ladeanzeige -->
         @if (_loading)
         {
             <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="mt-4">
-                <MudProgressCircular Indeterminate="true" />
-                <MudText Class="mt-2">Lade Services...</MudText>
+                <MudProgressCircular Indeterminate="true" aria-label="@Texts["Services.Loading"]" />
+                <MudText Class="mt-2">@Texts["Services.Loading"]</MudText>
             </MudStack>
         }
         else
         {
-            @if (!string.IsNullOrEmpty(_errorMessage))
-            {
-                <MudAlert Severity="Severity.Error">@_errorMessage</MudAlert>
-            }
-
-            <!-- Tabelle -->
-            <MudTable Items="_services" Hover="true" Dense="true">
+            <MudTable Items="_services" Hover="true" Dense="true" aria-label="@Texts["Services.TableAria"]">
                 <HeaderContent>
-                    <MudTh>ID</MudTh>
-                    <MudTh>Name</MudTh>
-                    <MudTh>Beschreibung</MudTh>
-                    <MudTh>Etage</MudTh>
-                    <MudTh>Slotdauer</MudTh>
-                    <MudTh>Aktionen</MudTh>
+                    <MudTh>@Texts["Services.Column.Name"]</MudTh>
+                    <MudTh>@Texts["Services.Column.Translations"]</MudTh>
+                    <MudTh>@Texts["Services.Column.Floor"]</MudTh>
+                    <MudTh>@Texts["Services.Column.SlotDuration"]</MudTh>
+                    <MudTh>@Texts["Services.Column.Actions"]</MudTh>
                 </HeaderContent>
 
                 <RowTemplate>
-                    <MudTd>@context.Id</MudTd>
-                    <MudTd>@context.Name</MudTd>
-                    <MudTd>@context.Description</MudTd>
-                    <MudTd>@context.Floor</MudTd>
-                    <MudTd>@context.SlotDurationMinutes</MudTd>
+                    <MudTd DataLabel="@Texts["Services.Column.Name"]">@context.Name</MudTd>
 
-                    <MudTd>
+                    <MudTd DataLabel="@Texts["Services.Column.Translations"]">
+                        @* Die Vollstaendigkeit wird nicht nur ueber Farbe vermittelt:
+                           der Text nennt die fehlenden Sprachen ausdruecklich.
+                           Siehe harness/uiux.md Abschnitt 3. *@
+                        @{
+                            var missing = MissingTranslations(context);
+                        }
+
+                        @if (missing.Count == 0)
+                        {
+                            <MudChip T="string" Color="Color.Success" Size="Size.Small" Variant="Variant.Text">
+                                @Texts["Services.TranslationsComplete"]
+                            </MudChip>
+                        }
+                        else
+                        {
+                            <MudChip T="string" Color="Color.Warning" Size="Size.Small" Variant="Variant.Text">
+                                @Texts["Services.TranslationsMissing", string.Join(", ", missing)]
+                            </MudChip>
+                        }
+                    </MudTd>
+
+                    <MudTd DataLabel="@Texts["Services.Column.Floor"]">@context.Floor</MudTd>
+
+                    <MudTd DataLabel="@Texts["Services.Column.SlotDuration"]">
+                        @context.SlotDurationMinutes
+                    </MudTd>
+
+                    <MudTd DataLabel="@Texts["Services.Column.Actions"]">
                         <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                        Color="Color.Primary"
+                                       title="@Texts["Services.EditAria", context.Name]"
+                                       aria-label="@Texts["Services.EditAria", context.Name]"
                                        OnClick="@(() => EditService(context))" />
+
                         <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                        Color="Color.Error"
                                        Class="ms-1"
-                                       OnClick="@(() => ConfirmDeleteService(context))" />
+                                       title="@Texts["Services.DeleteAria", context.Name]"
+                                       aria-label="@Texts["Services.DeleteAria", context.Name]"
+                                       OnClick="@(() => ConfirmDeleteServiceAsync(context))" />
                     </MudTd>
                 </RowTemplate>
 
                 <NoRecordsContent>
-                    <MudText>Keine Services vorhanden.</MudText>
+                    <MudText>@Texts["Services.Empty"]</MudText>
                 </NoRecordsContent>
             </MudTable>
         }
 
-        <!-- Formular -->
         @if (_editOpen)
         {
             <MudPaper Class="pa-4 mt-4">
 
-                <MudText Typo="Typo.h6" Class="mb-2">
-                    @(_editId == 0 ? "Neuen Service anlegen" : "Service bearbeiten")
+                <MudText Typo="Typo.h6" Class="mb-2" HtmlTag="h2">
+                    @(_editId == 0 ? Texts["Services.Create"] : Texts["Services.Edit"])
                 </MudText>
 
                 <EditForm Model="_model"
@@ -98,39 +118,66 @@
 
                     <MudStack Spacing="2">
 
-                        <MudTextField Label="Name"
+                        <MudTextField Label="@Texts["Services.Name"]"
                                       Required="true"
                                       @bind-Value="_model.Name" />
 
-                        <MudTextField Label="Beschreibung"
+                        <MudTextField Label="@Texts["Services.Description"]"
                                       Lines="3"
                                       @bind-Value="_model.Description" />
 
-                        <MudTextField Label="Etage (z. B. EG, 1. OG)"
+                        <MudDivider Class="my-2" />
+
+                        <MudText Typo="Typo.subtitle2">@Texts["Services.Column.Translations"]</MudText>
+
+                        <MudAlert Severity="Severity.Info" Dense="true">
+                            @Texts["Services.TranslationHint"]
+                        </MudAlert>
+
+                        <MudTextField Label="@Texts["Services.NameEnglish"]"
+                                      dir="ltr"
+                                      @bind-Value="_model.NameEnglish" />
+
+                        <MudTextField Label="@Texts["Services.DescriptionEnglish"]"
+                                      Lines="3"
+                                      dir="ltr"
+                                      @bind-Value="_model.DescriptionEnglish" />
+
+                        <MudTextField Label="@Texts["Services.NameArabic"]"
+                                      dir="rtl"
+                                      @bind-Value="_model.NameArabic" />
+
+                        <MudTextField Label="@Texts["Services.DescriptionArabic"]"
+                                      Lines="3"
+                                      dir="rtl"
+                                      @bind-Value="_model.DescriptionArabic" />
+
+                        <MudDivider Class="my-2" />
+
+                        <MudTextField Label="@Texts["Services.Floor"]"
                                       Required="true"
                                       @bind-Value="_model.Floor" />
 
-                        <MudNumericField Label="Slotdauer (Minuten)"
+                        <MudNumericField Label="@Texts["Services.SlotDuration"]"
                                          Min="1"
                                          Required="true"
                                          @bind-Value="_model.SlotDurationMinutes" />
 
-
                         @if (!string.IsNullOrEmpty(_formError))
                         {
-                            <MudAlert Severity="Severity.Error">@_formError</MudAlert>
+                            <MudAlert Severity="Severity.Error" role="alert">@_formError</MudAlert>
                         }
 
                         <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
-                            <MudButton Variant="Variant.Text" OnClick="@CancelEdit">
-                                Abbrechen
+                            <MudButton Variant="Variant.Text" OnClick="CancelEdit">
+                                @CommonTexts["Action.Cancel"]
                             </MudButton>
 
                             <MudButton Variant="Variant.Filled"
                                        Color="Color.Primary"
                                        Disabled="_saving"
                                        ButtonType="ButtonType.Submit">
-                                Speichern
+                                @CommonTexts["Action.Save"]
                             </MudButton>
                         </MudStack>
 
@@ -146,7 +193,7 @@
 
 @code {
 
-    private List<Service> _services = new();
+    private List<Service> _services = [];
     private bool _loading = true;
 
     private bool _editOpen;
@@ -154,16 +201,37 @@
     private ServiceDto _model = new();
 
     private bool _saving;
-    private string? _errorMessage = null;
     private string? _formError;
 
     protected override async Task OnInitializedAsync()
     {
         Snackbar.Configuration.PositionClass = Defaults.Classes.Position.BottomLeft;
-        await LoadServices();
+        await LoadServicesAsync();
     }
 
-    private async Task LoadServices()
+    /// <summary>
+    /// Nennt die Sprachen, fuer die noch keine Bezeichnung gepflegt ist. Ohne diese
+    /// Anzeige bliebe in der Verwaltung unsichtbar, dass ein Buerger den Service in
+    /// seiner Sprache weiterhin auf Deutsch angeboten bekommt.
+    /// </summary>
+    private List<string> MissingTranslations(Service service)
+    {
+        var missing = new List<string>();
+
+        if (string.IsNullOrWhiteSpace(service.NameEnglish))
+        {
+            missing.Add(SupportedLanguages.Resolve("en").NativeName);
+        }
+
+        if (string.IsNullOrWhiteSpace(service.NameArabic))
+        {
+            missing.Add(SupportedLanguages.Resolve("ar").NativeName);
+        }
+
+        return missing;
+    }
+
+    private async Task LoadServicesAsync()
     {
         _loading = true;
         _services = await ServiceService.GetAllServicesAsync();
@@ -174,30 +242,34 @@
     {
         _model = new ServiceDto
         {
-            Name = "",
-            Description = "",
-            Floor = "",
+            Name = string.Empty,
+            Description = string.Empty,
+            Floor = string.Empty,
             SlotDurationMinutes = 10
         };
 
         _editId = 0;
-        _errorMessage = null;
+        _formError = null;
         _editOpen = true;
     }
 
-    private void EditService(Service s)
+    private void EditService(Service service)
     {
         _model = new ServiceDto
         {
-            Name = s.Name,
-            Description = s.Description,
-            Floor = s.Floor,
-            SlotDurationMinutes = s.SlotDurationMinutes,
-            CapacityPerSlot = s.CapacityPerSlot
+            Name = service.Name,
+            NameEnglish = service.NameEnglish,
+            NameArabic = service.NameArabic,
+            Description = service.Description,
+            DescriptionEnglish = service.DescriptionEnglish,
+            DescriptionArabic = service.DescriptionArabic,
+            Floor = service.Floor,
+            SlotDurationMinutes = service.SlotDurationMinutes,
+            CapacityPerSlot = service.CapacityPerSlot
         };
 
-        _editId = s.Id;
-        _errorMessage = null;
+        _editId = service.Id;
+        _formError = null;
         _editOpen = true;
     }
 
@@ -209,90 +281,96 @@
 
     private Task OnInvalidSubmit()
     {
-        _formError = "Bitte alle Pflichtfelder ausfüllen.";
+        _formError = Texts["Services.RequiredFields"];
         return Task.CompletedTask;
     }
 
-private async Task SaveAsync()
-{
-    _saving = true;
-
-    try
+    private async Task SaveAsync()
     {
-        var isCreate = _editId == 0;
+        if (_saving)
+        {
+            return;
+        }
 
-        if (isCreate)
-            await ServiceService.CreateServiceAsync(_model);
-        else
-            await ServiceService.UpdateServiceAsync(_editId, _model);
+        _saving = true;
 
-        _editOpen = false;
-        _errorMessage = null;
-        await LoadServices();
+        try
+        {
+            var isCreate = _editId == 0;
 
-        Snackbar.Add(
-            isCreate
-                ? $"Service \"{_model.Name}\" wurde erfolgreich angelegt."
-                : $"Service \"{_model.Name}\" wurde erfolgreich aktualisiert.",
-            Severity.Success);
+            if (isCreate)
+            {
+                await ServiceService.CreateServiceAsync(_model);
+            }
+            else
+            {
+                await ServiceService.UpdateServiceAsync(_editId, _model);
+            }
+
+            _editOpen = false;
+            _formError = null;
+            await LoadServicesAsync();
+
+            Snackbar.Add(
+                isCreate
+                    ? Texts["Services.Created", _model.Name]
+                    : Texts["Services.Updated", _model.Name],
+                Severity.Success);
+        }
+        catch (BusinessRuleViolationException ex)
+        {
+            _formError = ex.Message;
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            _formError = Texts["Services.SaveFailed"];
+            Snackbar.Add(Texts["Services.SaveFailed"], Severity.Error);
+            Logger.LogError(ex, "Der Service {ServiceId} konnte nicht gespeichert werden.", _editId);
+        }
+        finally
+        {
+            _saving = false;
+        }
     }
-    catch (Exception ex)
-    {
-        _errorMessage = ex.Message;
-        Snackbar.Add(
-            ex.Message,
-            Severity.Error);
 
-        Console.Error.WriteLine(ex);
+    private async Task ConfirmDeleteServiceAsync(Service service)
+    {
+        var parameters = new DialogParameters
+        {
+            ["Title"] = Texts["Services.DeleteTitle"].Value,
+            ["Message"] = Texts["Services.DeleteMessage", service.Name].Value
+        };
+
+        var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>(
+            Texts["Services.DeleteTitle"],
+            parameters);
+
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            await DeleteServiceAsync(service);
+        }
     }
-    finally
+
+    private async Task DeleteServiceAsync(Service service)
     {
-        _saving = false;
+        try
+        {
+            await ServiceService.DeleteServiceAsync(service.Id);
+            await LoadServicesAsync();
+
+            Snackbar.Add(Texts["Services.Deleted", service.Name], Severity.Success);
+        }
+        catch (BusinessRuleViolationException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(Texts["Services.DeleteFailed"], Severity.Error);
+            Logger.LogError(ex, "Der Service {ServiceId} konnte nicht geloescht werden.", service.Id);
+        }
     }
-}
-
-
-    private async Task ConfirmDeleteService(Service s)
-{
-    var parameters = new DialogParameters
-    {
-        ["Title"] = "Service löschen",
-        ["Message"] =
-            $"Möchtest du den Service **{s.Name}** wirklich löschen?"
-    };
-
-    var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>(
-        "Bestätigung",
-        parameters);
-
-    var result = await dialog.Result;
-
-    if (result is { Canceled: false })
-    {
-        await DeleteService(s); // ✅ EXISTIERENDE Methode
-    }
-}
-
-
-  private async Task DeleteService(Service s)
-{
-    try
-    {
-        await ServiceService.DeleteServiceAsync(s.Id);
-        await LoadServices();
-
-        Snackbar.Add(
-            $"Service \"{s.Name}\" wurde erfolgreich gelöscht.",
-            Severity.Success);
-    }
-    catch (Exception ex)
-    {
-        Snackbar.Add(
-            ex.Message,
-            Severity.Error);
-
-        Console.Error.WriteLine(ex);
-    }
-}
-
 }

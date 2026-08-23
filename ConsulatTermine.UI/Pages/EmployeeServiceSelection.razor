@@ -3,53 +3,65 @@
 
 @using ConsulatTermine.Domain.Entities
 @using ConsulatTermine.Application.Interfaces
-@using ConsulatTermine.UI.Authentication
-@using MudBlazor
 
 @inject IEmployeeService EmployeeService
 @inject IEmployeeAuthorization Authorization
 @inject Blazored.SessionStorage.ISessionStorageService Session
 @inject NavigationManager Navigation
+@inject IStringLocalizer<EmployeeTexts> Texts
+@inject IStringLocalizer<CommonTexts> CommonTexts
+
+<PageTitle>@Texts["ServiceSelection.Title"]</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
 
     <MudPaper Class="pa-6">
 
-        <MudText Typo="Typo.h5" Class="mb-4">
-            Arbeitsstart – Service & Arbeitsplatz
+        <MudText Typo="Typo.h5" Class="mb-4" HtmlTag="h1">
+            @Texts["ServiceSelection.Title"]
         </MudText>
 
         @if (_loading)
         {
-            <MudProgressCircular Indeterminate />
+            <MudProgressCircular Indeterminate aria-label="@CommonTexts["State.Loading"]" />
+        }
+        else if (_services.Count == 0)
+        {
+            @* Ohne zugewiesenen Service kann der Arbeitsplatz nicht gewaehlt werden.
+               Der Leerzustand nennt den naechsten Schritt statt eine leere Auswahl zu zeigen. *@
+            <MudAlert Severity="Severity.Warning" role="alert">
+                @Texts["ServiceSelection.Empty"]
+            </MudAlert>
         }
         else
         {
             <MudStack Spacing="3">
 
                 <MudSelect T="Service"
-                           Label="Service"
+                           Label="@Texts["ServiceSelection.Service"]"
                            @bind-Value="_selectedService"
                            Required="true">
-                    @foreach (var s in _services)
+                    @foreach (var service in _services)
                     {
-                        <MudSelectItem Value="s">@s.Name</MudSelectItem>
+                        <MudSelectItem Value="service">
+                            @service.NameFor(CultureInfo.CurrentUICulture.Name)
+                        </MudSelectItem>
                     }
                 </MudSelect>
 
-                <MudTextField Label="Büro"
+                <MudTextField Label="@Texts["ServiceSelection.Office"]"
                               @bind-Value="_office"
                               Required="true" />
 
-                <MudTextField Label="Zimmer"
+                <MudTextField Label="@Texts["ServiceSelection.Room"]"
                               @bind-Value="_room"
                               Required="true" />
 
                 <MudButton Variant="Variant.Filled"
                            Color="Color.Primary"
-                           Disabled="@(!_canStart)"
+                           Disabled="@(!CanStart)"
                            OnClick="StartAsync">
-                    Starten
+                    @Texts["ServiceSelection.Start"]
                 </MudButton>
 
             </MudStack>
@@ -59,44 +71,47 @@
 </MudContainer>
 
 @code {
-    private List<Service> _services = new();
+    private List<Service> _services = [];
     private Service? _selectedService;
 
-    private string _office = "";
-    private string _room = "";
+    private string _office = string.Empty;
+    private string _room = string.Empty;
     private bool _loading = true;
 
-    private bool _canStart =>
-        _selectedService != null &&
-        !string.IsNullOrWhiteSpace(_office) &&
-        !string.IsNullOrWhiteSpace(_room);
+    private bool CanStart =>
+        _selectedService is not null
+        && !string.IsNullOrWhiteSpace(_office)
+        && !string.IsNullOrWhiteSpace(_room);
 
     protected override async Task OnInitializedAsync()
-{
-    var current = await Authorization.RequireEmployeeAsync();
-
-    var employee = await EmployeeService.GetEmployeeByIdAsync(current.EmployeeId);
-
-    if (employee?.AssignedServices != null)
     {
-        _services = employee.AssignedServices
-            .Select(a => a.Service!)
-            .ToList();
+        var current = await Authorization.RequireEmployeeAsync();
+
+        var employee = await EmployeeService.GetEmployeeByIdAsync(current.EmployeeId);
+
+        if (employee?.AssignedServices is not null)
+        {
+            _services = employee.AssignedServices
+                .Select(assignment => assignment.Service!)
+                .ToList();
+        }
+
+        if (_services.Count == 1)
+        {
+            _selectedService = _services[0];
+        }
+
+        _loading = false;
     }
-
-    if (_services.Count == 1)
-        _selectedService = _services[0];
-
-    _loading = false;
-}
-
-
 
     private async Task StartAsync()
     {
-        if (_selectedService == null)
+        if (_selectedService is null)
+        {
             return;
+        }
 
+        // Der gewaehlte Arbeitsplatz ist Bedienzustand, keine Berechtigung.
         await Session.SetItemAsync(SessionKeys.ActiveServiceId, _selectedService.Id);
         await Session.SetItemAsync(SessionKeys.OfficeName, _office);
         await Session.SetItemAsync(SessionKeys.RoomName, _room);
@@ -104,4 +119,3 @@
         Navigation.NavigateTo("/employee/dashboard");
     }
 }
-

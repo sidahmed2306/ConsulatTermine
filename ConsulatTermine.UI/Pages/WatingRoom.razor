@@ -5,23 +5,25 @@
 @using ConsulatTermine.Domain.Entities
 @using ConsulatTermine.Domain.Enums
 @using ConsulatTermine.Application.Interfaces
-@using MudBlazor
 
 @inject IAppointmentService AppointmentService
 @inject IWaitingRoomNotifier WaitingRoomNotifier
 @inject IJSRuntime JS
+@inject IStringLocalizer<WaitingRoomTexts> Texts
+
+<PageTitle>@Texts["Title"]</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.False"
               Class="pa-6 waiting-room-root">
 
     <!-- HEADER -->
     <MudPaper Class="pa-4 mb-6">
-        <MudText Typo="Typo.h4">
-            Wartezimmer – Aufruf
+        <MudText Typo="Typo.h4" HtmlTag="h1">
+            @Texts["Title"]
         </MudText>
 
-        <MudText Typo="Typo.subtitle2" Color="Color.Secondary">
-            Stand: @_lastUpdated.ToString("HH:mm:ss")
+        <MudText Typo="Typo.subtitle2" Color="Color.Secondary" aria-live="polite">
+            @Texts["LastUpdated", _lastUpdated.ToString("HH:mm:ss", CultureInfo.CurrentCulture)]
         </MudText>
 
         @if (!_soundEnabled)
@@ -29,20 +31,39 @@
             <MudButton Color="Color.Primary"
                        Variant="Variant.Filled"
                        Class="mt-3"
+                       StartIcon="@Icons.Material.Filled.VolumeUp"
                        OnClick="EnableSoundAsync">
-                🔊 Sound aktivieren
+                @Texts["EnableSound"]
             </MudButton>
+
+            <MudText Typo="Typo.caption" Class="d-block mt-1">
+                @Texts["SoundHint"]
+            </MudText>
         }
     </MudPaper>
 
     <!-- CARDS -->
+    @if (_activeCalls.Count == 0)
+    {
+        @* Ohne eigenen Leerzustand zeigte die Anzeige eine leere Flaeche, die von
+           einer Stoerung nicht zu unterscheiden waere. *@
+        <MudPaper Elevation="0" Class="pa-8 text-center">
+            <MudText Typo="Typo.h5" Color="Color.Secondary">
+                @Texts["Empty"]
+            </MudText>
+        </MudPaper>
+    }
+
     <MudGrid Spacing="4">
         @foreach (var call in _activeCalls)
         {
+            var serviceName = call.Service?.NameFor(CultureInfo.CurrentUICulture.Name) ?? string.Empty;
+
             <MudItem xs="12" md="6" lg="4">
                 <MudPaper Elevation="6"
                           Class="pa-5  tv-card"
-                          data-appointment-id="@call.Id">
+                          data-appointment-id="@call.Id"
+                          aria-label="@Texts["CardAria", call.FullName, serviceName]">
 
                     <!-- HEADER -->
                     <div class="tv-card-header">
@@ -53,7 +74,7 @@
                         <MudChip T="String" Color="Color.Primary"
                                  Variant="Variant.Filled"
                                  Class="tv-service-chip">
-                            @call.Service?.Name
+                            @serviceName
                         </MudChip>
                     </div>
 
@@ -69,19 +90,19 @@
 
                             <MudItem xs="4" Class="tv-info-item">
                                 <div class="tv-ball">@office</div>
-                                <div class="tv-label">Büro</div>
+                                <div class="tv-label">@Texts["Office"]</div>
                             </MudItem>
 
                             <MudItem xs="4" Class="tv-info-item">
                                 <div class="tv-ball">@room</div>
-                                <div class="tv-label">Zimmer</div>
+                                <div class="tv-label">@Texts["Room"]</div>
                             </MudItem>
 
                             <MudItem xs="4" Class="tv-info-item">
                                 <div class="tv-ball">
                                     @call.Service?.Floor
                                 </div>
-                                <div class="tv-label">Etage</div>
+                                <div class="tv-label">@Texts["Floor"]</div>
                             </MudItem>
 
                         </MudGrid>
@@ -94,7 +115,7 @@
                         <MudChip T="String" Color="Color.Warning"
                                  Variant="Variant.Filled"
                                  Size="Size.Large">
-                            Bitte zum Büro gehen
+                            @Texts["GoToOffice"]
                         </MudChip>
                     </div>
 

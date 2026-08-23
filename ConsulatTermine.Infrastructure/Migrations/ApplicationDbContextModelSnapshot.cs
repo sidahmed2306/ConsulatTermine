@@ -76,6 +76,13 @@ namespace ConsulatTermine.Infrastructure.Migrations
                     b.Property<bool>("IsVisibleInWaitingRoom")
                         .HasColumnType("bit");
 
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasDefaultValue("de-DE");
+
                     b.Property<int>("PersonIndex")
                         .HasColumnType("int");
 
@@ -230,6 +237,14 @@ namespace ConsulatTermine.Infrastructure.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
 
+                    b.Property<string>("DescriptionArabic")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("DescriptionEnglish")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
                     b.Property<string>("Floor")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -237,6 +252,14 @@ namespace ConsulatTermine.Infrastructure.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("NameArabic")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("NameEnglish")
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 

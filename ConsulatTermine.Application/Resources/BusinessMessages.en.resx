@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ServiceNotFound" xml:space="preserve">
+    <value>The service was not found.</value>
+  </data>
+  <data name="WorkingHoursNotFound" xml:space="preserve">
+    <value>The working hours entry was not found.</value>
+  </data>
+  <data name="SchedulePlanNotFound" xml:space="preserve">
+    <value>The working schedule plan was not found.</value>
+  </data>
+  <data name="OverrideNotFound" xml:space="preserve">
+    <value>The exception was not found.</value>
+  </data>
+  <data name="EmployeeNotFound" xml:space="preserve">
+    <value>The employee was not found.</value>
+  </data>
+  <data name="MonthsRequired" xml:space="preserve">
+    <value>At least one month must be selected.</value>
+  </data>
+  <data name="StartAndEndRequired" xml:space="preserve">
+    <value>Start and end time must be set.</value>
+  </data>
+  <data name="StartBeforeEnd" xml:space="preserve">
+    <value>The start time must be before the end time.</value>
+  </data>
+  <data name="SlotInvalid" xml:space="preserve">
+    <value>The selected appointment is not valid.</value>
+  </data>
+  <data name="SlotFullyBooked" xml:space="preserve">
+    <value>The selected appointment is already fully booked.</value>
+  </data>
+  <data name="SlotInvalidAt" xml:space="preserve">
+    <value>The appointment at {0} is not valid.</value>
+  </data>
+  <data name="SlotCapacityShort" xml:space="preserve">
+    <value>Only {1} of the {2} required places are still available at {0}.</value>
+  </data>
+  <data name="SlotsSameDay" xml:space="preserve">
+    <value>All appointments in one booking must be on the same day.</value>
+  </data>
+  <data name="NoSchedulePlan" xml:space="preserve">
+    <value>There is currently no working schedule plan for this service.</value>
+  </data>
+  <data name="DateOutsidePlan" xml:space="preserve">
+    <value>The date is outside the active plan period.</value>
+  </data>
+  <data name="DateNotBookable" xml:space="preserve">
+    <value>No appointments can be booked for {0}.</value>
+  </data>
+  <data name="GroupSizeInvalid" xml:space="preserve">
+    <value>The group size must be between 1 and 5.</value>
+  </data>
+  <data name="PersonCountMismatch" xml:space="preserve">
+    <value>The number of people does not match the stated total.</value>
+  </data>
+  <data name="BookingNeedsPerson" xml:space="preserve">
+    <value>A booking must contain at least one person.</value>
+  </data>
+  <data name="MainPersonRequired" xml:space="preserve">
+    <value>A main person must be specified.</value>
+  </data>
+  <data name="MainPersonNameRequired" xml:space="preserve">
+    <value>The name of the main person is required.</value>
+  </data>
+  <data name="MainPersonEmailRequired" xml:space="preserve">
+    <value>The email address of the main person is required.</value>
+  </data>
+  <data name="PersonNameRequired" xml:space="preserve">
+    <value>A name is required for every person.</value>
+  </data>
+  <data name="PersonNeedsAppointment" xml:space="preserve">
+    <value>At least one appointment must be selected for {0}.</value>
+  </data>
+  <data name="FirstNameRequired" xml:space="preserve">
+    <value>The first name is required.</value>
+  </data>
+  <data name="LastNameRequired" xml:space="preserve">
+    <value>The last name is required.</value>
+  </data>
+  <data name="EmailRequired" xml:space="preserve">
+    <value>The email address is required.</value>
+  </data>
+  <data name="LoginFailed" xml:space="preserve">
+    <value>The code or the password is incorrect.</value>
+  </data>
+  <data name="NotAuthorized" xml:space="preserve">
+    <value>You do not have permission for this action.</value>
+  </data>
+  <data name="RoleChangeAdminOnly" xml:space="preserve">
+    <value>Only an administrator may change roles.</value>
+  </data>
+</root>

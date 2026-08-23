@@ -1,6 +1,9 @@
+using System.Globalization;
 using ConsulatTermine.Application.Configuration;
 using ConsulatTermine.Application.DTOs;
 using ConsulatTermine.Application.Interfaces;
+using ConsulatTermine.Application.Localization;
+using ConsulatTermine.Application.Resources;
 using ConsulatTermine.Domain.Entities;
 using ConsulatTermine.Infrastructure.Persistence;
 using ConsulatTermine.Infrastructure.Security;
@@ -22,7 +25,7 @@ public sealed class EmployeeAuthService : IEmployeeAuthService
     /// damit sich ueber die Anmeldemaske keine gueltigen Kennungen ermitteln lassen.
     /// Siehe harness/security.md Abschnitt 3.
     /// </summary>
-    private const string GenericLoginError = "Kennung oder Passwort ist falsch.";
+    private static string GenericLoginError => BusinessMessages.Get("LoginFailed");
 
     private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
     private readonly IEmailService _emailService;
@@ -173,7 +176,8 @@ public sealed class EmployeeAuthService : IEmployeeAuthService
         await _emailService.SendEmployeePasswordResetEmailAsync(
             employee.Email,
             FullNameOf(employee),
-            resetLink);
+            resetLink,
+            CurrentLanguage());
 
         ServiceLog.PasswordResetRequested(_logger, employee.Id);
         return true;
@@ -258,8 +262,20 @@ public sealed class EmployeeAuthService : IEmployeeAuthService
         await _emailService.SendEmployeePasswordChangedConfirmationEmailAsync(
             employee.Email,
             FullNameOf(employee),
-            BuildLink("employee/login"));
+            BuildLink("employee/login"),
+            CurrentLanguage());
     }
+
+    /// <summary>
+    /// Sprache des Schriftverkehrs an Mitarbeiter.
+    /// </summary>
+    /// <remarks>
+    /// Fuer ein Mitarbeiterkonto ist keine Sprachvorliebe hinterlegt. Bis das
+    /// entschieden ist (siehe OPEN_DECISIONS Nummer 18), gilt die Sprache der
+    /// Sitzung, die den Versand ausloest.
+    /// </remarks>
+    private static string CurrentLanguage() =>
+        SupportedLanguages.Normalize(CultureInfo.CurrentUICulture.Name);
 
     private string BuildLink(string relativePath)
     {

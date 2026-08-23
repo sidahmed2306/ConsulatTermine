@@ -1,36 +1,53 @@
 @page "/appointment-cancel-success"
 @attribute [AllowAnonymous]
+
 @using Microsoft.AspNetCore.WebUtilities
-@using MudBlazor
+
 @inject NavigationManager Navigation
+@inject IStringLocalizer<BookingTexts> Texts
+
+<PageTitle>@Texts["CancelSuccess.Title"]</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mx-auto mt-8">
     <MudCard Class="pa-6" Style="border-radius:12px">
-        <MudText Typo="Typo.h5" Class="mb-2">Termin abgesagt</MudText>
+
+        <MudText Typo="Typo.h5" Class="mb-2" HtmlTag="h1">
+            @Texts["CancelSuccess.Title"]
+        </MudText>
 
         <MudText Typo="Typo.body1">
-            Ihr Termin wurde erfolgreich storniert.
+            @Texts["CancelSuccess.Text"]
         </MudText>
 
-        <MudText Typo="Typo.body2" Class="mt-3">
-            Buchungsnummer: <b>@BookingReference</b>
-        </MudText>
+        @if (!string.IsNullOrWhiteSpace(_bookingReference))
+        {
+            <MudText Typo="Typo.body2" Class="mt-3">
+                @Texts["Confirmation.BookingNumber"]:
+                <b dir="ltr">@_bookingReference</b>
+            </MudText>
+        }
 
         <MudDivider Class="my-4" />
 
-        <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="@(()=>Navigation.NavigateTo("/"))">
-            Neuen Termin buchen
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Success"
+                   OnClick="@(() => Navigation.NavigateTo("/"))">
+            @Texts["CancelSuccess.NewBooking"]
         </MudButton>
+
     </MudCard>
 </MudContainer>
 
 @code {
-    private string? BookingReference;
+    private string? _bookingReference;
 
     protected override void OnInitialized()
     {
         var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
         var query = QueryHelpers.ParseQuery(uri.Query);
-        BookingReference = query.TryGetValue("ref", out var val) ? val.ToString() : "-";
+
+        _bookingReference = query.TryGetValue("ref", out var value)
+            ? value.ToString()
+            : null;
     }
 }

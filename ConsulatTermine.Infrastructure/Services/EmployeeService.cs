@@ -1,7 +1,10 @@
+using System.Globalization;
 using ConsulatTermine.Application.Configuration;
 using ConsulatTermine.Application.DTOs;
 using ConsulatTermine.Application.Exceptions;
 using ConsulatTermine.Application.Interfaces;
+using ConsulatTermine.Application.Localization;
+using ConsulatTermine.Application.Resources;
 using ConsulatTermine.Application.Security;
 using ConsulatTermine.Domain.Entities;
 using ConsulatTermine.Domain.Enums;
@@ -94,17 +97,17 @@ public sealed class EmployeeService : IEmployeeService
 
         if (string.IsNullOrWhiteSpace(dto.FirstName))
         {
-            throw new BusinessRuleViolationException("Der Vorname ist erforderlich.");
+            throw new BusinessRuleViolationException(BusinessMessages.Get("FirstNameRequired"));
         }
 
         if (string.IsNullOrWhiteSpace(dto.LastName))
         {
-            throw new BusinessRuleViolationException("Der Nachname ist erforderlich.");
+            throw new BusinessRuleViolationException(BusinessMessages.Get("LastNameRequired"));
         }
 
         if (string.IsNullOrWhiteSpace(dto.Email))
         {
-            throw new BusinessRuleViolationException("Die E-Mail-Adresse ist erforderlich.");
+            throw new BusinessRuleViolationException(BusinessMessages.Get("EmailRequired"));
         }
 
         await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
@@ -150,7 +153,8 @@ public sealed class EmployeeService : IEmployeeService
             fullName: FullNameOf(employee),
             employeeCode: employee.EmployeeCode,
             temporaryPassword: initialPassword,
-            changePasswordLink: BuildLink("employee/login"));
+            changePasswordLink: BuildLink("employee/login"),
+            language: CurrentLanguage());
 
         return employee;
     }
@@ -167,13 +171,13 @@ public sealed class EmployeeService : IEmployeeService
         await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
 
         var employee = await context.Employees.FindAsync([id], cancellationToken)
-            ?? throw new BusinessRuleViolationException("Der Mitarbeiter wurde nicht gefunden.");
+            ?? throw new BusinessRuleViolationException(BusinessMessages.Get("EmployeeNotFound"));
 
         // Nur ein Admin darf Rollen vergeben. Sonst koennte sich ein ServiceChef selbst
         // oder andere zum Admin befoerdern.
         if (employee.Role != dto.Role && current.Role < EmployeeRole.Admin)
         {
-            throw new NotAuthorizedException("Nur ein Administrator darf Rollen aendern.");
+            throw new NotAuthorizedException(BusinessMessages.Get("RoleChangeAdminOnly"));
         }
 
         employee.FirstName = dto.FirstName.Trim();
@@ -275,8 +279,25 @@ public sealed class EmployeeService : IEmployeeService
             fullName: FullNameOf(admin),
             employeeCode: admin.EmployeeCode,
             temporaryPassword: initialPassword,
-            changePasswordLink: BuildLink("employee/login"));
+
+            // Der erste Administrator entsteht beim Start der Anwendung und damit
+            // ausserhalb einer Anfrage. Es gibt keine Sitzung, deren Sprache gelten
+            // koennte, also gilt die Standardsprache.
+            changePasswordLink: BuildLink("employee/login"),
+            language: SupportedLanguages.DefaultCultureCode);
     }
+
+    /// <summary>
+    /// Sprache des Schriftverkehrs an Mitarbeiter.
+    /// </summary>
+    /// <remarks>
+    /// Fuer ein Mitarbeiterkonto ist keine Sprachvorliebe hinterlegt. Bis das
+    /// entschieden ist (siehe OPEN_DECISIONS Nummer 18), gilt die Sprache der
+    /// Sitzung, die den Versand ausloest: sie entspricht der Oberflaeche, in der
+    /// der Vorgang gerade sichtbar war.
+    /// </remarks>
+    private static string CurrentLanguage() =>
+        SupportedLanguages.Normalize(CultureInfo.CurrentUICulture.Name);
 
     /// <summary>
     /// Bildet die naechste freie Kennung im Format CDZ-001.

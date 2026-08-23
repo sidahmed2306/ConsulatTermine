@@ -97,3 +97,42 @@
     font-size: 0.875rem;
     color: var(--konsulat-gruen);
 }
+
+/* ---------------------------------------------------------------------
+   SPRACHWAHL AUF DER ANMELDEMASKE
+
+   Die Maske liegt ausserhalb des Blazor-Kreises und hat deshalb kein
+   Sprachmenue der Kopfleiste. Die drei Sprachen stehen hier als einfache
+   Verweise.
+   --------------------------------------------------------------------- */
+
+.login-languages {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 16px;
+  margin-top: 24px;
+}
+
+.login-language {
+  /* Mindestgroesse eines Beruehrungsziels nach harness/uiux.md Abschnitt 12. */
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  text-decoration: none;
+  color: inherit;
+  opacity: 0.75;
+}
+
+.login-language:hover,
+.login-language:focus-visible {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+/* Die aktive Sprache traegt zusaetzlich zur Auszeichnung aria-current. */
+.login-language.active {
+  font-weight: 700;
+  opacity: 1;
+}

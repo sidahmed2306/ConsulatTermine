@@ -1,85 +1,127 @@
 @page "/admin/employees"
 @attribute [Authorize(Policy = AuthorizationPolicies.DienstplanVerwalten)]
 
-@using MudBlazor
 @using ConsulatTermine.Application.Interfaces
-@using ConsulatTermine.Application.DTOs
 @using ConsulatTermine.Domain.Entities
-@using ConsulatTermine.UI.Authentication
 @using ConsulatTermine.Domain.Enums
-
-
-
+@using ConsulatTermine.Application.Exceptions
 
 @inject IEmployeeService EmployeeService
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
+@inject ILogger<Employees> Logger
+@inject IStringLocalizer<AdministrationTexts> Texts
+@inject IStringLocalizer<CommonTexts> CommonTexts
 
-@inject NavigationManager Navigation
-
+<PageTitle>@Texts["Employees.Title"]</PageTitle>
 
 <MudPaper Class="pa-4">
     <MudStack Spacing="2">
 
-        <MudText Typo="Typo.h5">Mitarbeiter</MudText>
+        <MudText Typo="Typo.h5" HtmlTag="h1">@Texts["Employees.Title"]</MudText>
 
-        <MudButton Variant="Variant.Filled"
-                   Color="Color.Primary"
-                   OnClick="NewEmployee">
-            Neuer Mitarbeiter
-        </MudButton>
+        <MudStack Row="true" Justify="Justify.FlexStart">
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.PersonAdd"
+                       OnClick="NewEmployee">
+                @Texts["Employees.New"]
+            </MudButton>
+        </MudStack>
 
-        <MudTable Items="_employees" Hover Dense>
+        <MudTable Items="_employees" Hover Dense aria-label="@Texts["Employees.TableAria"]">
 
             <HeaderContent>
-                <MudTh>ID</MudTh>
-                <MudTh>Name</MudTh>
-                <MudTh>Rolle</MudTh>
-                <MudTh>Email</MudTh>
-                <MudTh>Aktionen</MudTh>
+                <MudTh>@Texts["Employees.Column.Code"]</MudTh>
+                <MudTh>@Texts["Employees.Column.Name"]</MudTh>
+                <MudTh>@Texts["Employees.Column.Role"]</MudTh>
+                <MudTh>@Texts["Employees.Column.Email"]</MudTh>
+                <MudTh>@Texts["Employees.Column.Actions"]</MudTh>
             </HeaderContent>
 
             <RowTemplate>
-                <MudTd>@context.Id</MudTd>
-                <MudTd>@($"{context.FirstName} {context.LastName}")</MudTd>
-                <MudTd>@context.Role</MudTd>
-                <MudTd>@context.Email</MudTd>
+                @{
+                    var displayName = $"{context.FirstName} {context.LastName}";
+                }
 
-                <MudTd>
+                <MudTd DataLabel="@Texts["Employees.Column.Code"]">
+                    <span dir="ltr">@context.EmployeeCode</span>
+                </MudTd>
+
+                <MudTd DataLabel="@Texts["Employees.Column.Name"]">@displayName</MudTd>
+
+                <MudTd DataLabel="@Texts["Employees.Column.Role"]">
+                    @context.Role.ToDisplayText(Texts)
+                </MudTd>
+
+                <MudTd DataLabel="@Texts["Employees.Column.Email"]">
+                    <span dir="ltr">@context.Email</span>
+                </MudTd>
+
+                <MudTd DataLabel="@Texts["Employees.Column.Actions"]">
+                    @* Icon-Schaltflaechen brauchen einen zugaenglichen Namen, der den
+                       betroffenen Datensatz nennt. Siehe harness/uiux.md Abschnitt 12. *@
                     <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                   title="@Texts["Employees.EditAria", displayName]"
+                                   aria-label="@Texts["Employees.EditAria", displayName]"
                                    OnClick="@(() => EditEmployee(context))" />
+
                     <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                    Color="Color.Error"
-                                   OnClick="@(() => ConfirmDeleteEmployee(context))" />
+                                   title="@Texts["Employees.DeleteAria", displayName]"
+                                   aria-label="@Texts["Employees.DeleteAria", displayName]"
+                                   OnClick="@(() => ConfirmDeleteEmployeeAsync(context))" />
                 </MudTd>
             </RowTemplate>
+
+            <NoRecordsContent>
+                <MudText>@Texts["Employees.Empty"]</MudText>
+            </NoRecordsContent>
 
         </MudTable>
 
         @if (_editOpen)
         {
             <MudPaper Class="pa-4 mt-4">
-                <MudText Typo="Typo.h6">
-                    @(_editId == 0 ? "Neuer Mitarbeiter" : "Mitarbeiter bearbeiten")
+                <MudText Typo="Typo.h6" HtmlTag="h2">
+                    @(_editId == 0 ? Texts["Employees.New"] : Texts["Employees.Edit"])
                 </MudText>
 
                 <MudStack Spacing="2">
 
-                    <MudTextField Label="Vorname" @bind-Value="_model.FirstName" Required />
-                    <MudTextField Label="Nachname" @bind-Value="_model.LastName" Required />
-                
-                    <MudTextField Label="E-Mail" @bind-Value="_model.Email" Required />
-                    <MudSelect T="EmployeeRole" Label="Rolle" @bind-Value="_model.Role" Required>
-                        <MudSelectItem Value="EmployeeRole.Employee">Mitarbeiter</MudSelectItem>
-                        <MudSelectItem Value="EmployeeRole.ServiceChef">Service-Chef</MudSelectItem>
-                        <MudSelectItem Value="EmployeeRole.Admin">Administrator</MudSelectItem>
+                    <MudTextField Label="@Texts["Employees.FirstName"]"
+                                  @bind-Value="_model.FirstName"
+                                  Required />
+
+                    <MudTextField Label="@Texts["Employees.LastName"]"
+                                  @bind-Value="_model.LastName"
+                                  Required />
+
+                    <MudTextField Label="@Texts["Employees.Email"]"
+                                  @bind-Value="_model.Email"
+                                  InputType="InputType.Email"
+                                  dir="ltr"
+                                  Required />
+
+                    <MudSelect T="EmployeeRole" Label="@Texts["Employees.Role"]" @bind-Value="_model.Role" Required>
+                        @foreach (var role in Roles)
+                        {
+                            <MudSelectItem Value="role">@role.ToDisplayText(Texts)</MudSelectItem>
+                        }
                     </MudSelect>
 
-                    <MudButton Variant="Variant.Filled"
-                               Color="Color.Primary"
-                               OnClick="SaveAsync">
-                        Speichern
-                    </MudButton>
+                    <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+                        <MudButton Variant="Variant.Text" OnClick="CancelEdit">
+                            @CommonTexts["Action.Cancel"]
+                        </MudButton>
+
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   Disabled="@_saving"
+                                   OnClick="SaveAsync">
+                            @CommonTexts["Action.Save"]
+                        </MudButton>
+                    </MudStack>
 
                 </MudStack>
             </MudPaper>
@@ -89,138 +131,155 @@
 </MudPaper>
 
 @code {
-    private List<Employee> _employees = new();
+    private static readonly EmployeeRole[] Roles =
+    [
+        EmployeeRole.Employee,
+        EmployeeRole.ServiceChef,
+        EmployeeRole.Admin
+    ];
+
+    private List<Employee> _employees = [];
     private bool _editOpen;
+    private bool _saving;
     private int _editId;
     private EmployeeDto _model = new();
 
-
-
-    // -------------------------------------------------
-    // LOGIN-GUARD (Admin Employees)
-    // -------------------------------------------------
+    // Der Zugang zu dieser Seite wird über [Authorize] geprüft; die
+    // Anwendungsfälle prüfen die Berechtigung serverseitig zusätzlich.
     protected override async Task OnInitializedAsync()
     {
         _employees = await EmployeeService.GetAllEmployeesAsync();
     }
 
- private void NewEmployee()
-{
-    _model = new EmployeeDto
-    {
-        Role = EmployeeRole.Employee
-    };
-
-    _editId = 0;
-    _editOpen = true;
-}
-
-
-    private void EditEmployee(Employee e)
+    private void NewEmployee()
     {
         _model = new EmployeeDto
         {
-            FirstName = e.FirstName,
-            LastName = e.LastName,
-            Email = e.Email,
-            Role = e.Role
+            Role = EmployeeRole.Employee
         };
 
-        _editId = e.Id;
+        _editId = 0;
         _editOpen = true;
     }
 
- private async Task SaveAsync()
-{
-    try
+    private void EditEmployee(Employee employee)
     {
-        var isCreate = _editId == 0;
+        _model = new EmployeeDto
+        {
+            FirstName = employee.FirstName,
+            LastName = employee.LastName,
+            Email = employee.Email,
+            Role = employee.Role
+        };
 
-        if (isCreate)
-            await EmployeeService.CreateEmployeeAsync(_model);
-        else
-            await EmployeeService.UpdateEmployeeAsync(_editId, _model);
+        _editId = employee.Id;
+        _editOpen = true;
+    }
 
-        _employees = await EmployeeService.GetAllEmployeesAsync();
+    private void CancelEdit()
+    {
         _editOpen = false;
-
-        Snackbar.Add(
-            isCreate
-                ? $"Mitarbeiter {_model.FirstName} {_model.LastName} wurde erfolgreich angelegt."
-                : $"Mitarbeiter {_model.FirstName} {_model.LastName} wurde erfolgreich aktualisiert.",
-            Severity.Success);
     }
-   catch (Exception ex)
-{
-    var message =
-        string.IsNullOrWhiteSpace(ex.Message)
-            ? "Fehler beim Speichern des Mitarbeiters."
-            : ex.Message;
 
-    Snackbar.Add(message, Severity.Error);
-
-    // optional für Debugging
-    Console.Error.WriteLine(ex);
-}
-
-}
-
-
-    private async Task DeleteEmployee(Employee e)
-{
-    try
+    private async Task SaveAsync()
     {
-        await EmployeeService.DeleteEmployeeAsync(e.Id);
+        if (_saving)
+        {
+            return;
+        }
 
-        _employees = await EmployeeService.GetAllEmployeesAsync();
+        _saving = true;
 
-        Snackbar.Add(
-            $"Mitarbeiter {e.FirstName} {e.LastName} wurde erfolgreich gelöscht.",
-            Severity.Success);
+        try
+        {
+            var isCreate = _editId == 0;
+            var displayName = $"{_model.FirstName} {_model.LastName}";
+
+            if (isCreate)
+            {
+                await EmployeeService.CreateEmployeeAsync(_model);
+            }
+            else
+            {
+                await EmployeeService.UpdateEmployeeAsync(_editId, _model);
+            }
+
+            _employees = await EmployeeService.GetAllEmployeesAsync();
+            _editOpen = false;
+
+            Snackbar.Add(
+                isCreate
+                    ? Texts["Employees.Created", displayName]
+                    : Texts["Employees.Updated", displayName],
+                Severity.Success);
+        }
+        catch (BusinessRuleViolationException ex)
+        {
+            // Fachliche Ablehnung: die Meldung stammt aus der Anwendungsschicht und
+            // ist dort bereits uebersetzt.
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(Texts["Employees.SaveFailed"], Severity.Error);
+            Logger.LogError(ex, "Der Mitarbeiter {EmployeeId} konnte nicht gespeichert werden.", _editId);
+        }
+        finally
+        {
+            _saving = false;
+        }
     }
-    catch (Exception ex)
-    {
-        Snackbar.Add(
-            $"Fehler beim Löschen des Mitarbeiters {e.FirstName} {e.LastName}.",
-            Severity.Error);
 
-        // Optional: für Debugging (kannst du später entfernen)
-        Console.Error.WriteLine(ex);
+    private async Task ConfirmDeleteEmployeeAsync(Employee employee)
+    {
+        var displayName = $"{employee.FirstName} {employee.LastName}";
+
+        var parameters = new DialogParameters
+        {
+            ["Title"] = Texts["Employees.DeleteTitle"].Value,
+            ["Message"] = Texts["Employees.DeleteMessage", displayName].Value
+        };
+
+        var options = new DialogOptions
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true
+        };
+
+        var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>(
+            Texts["Employees.DeleteTitle"],
+            parameters,
+            options);
+
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            await DeleteEmployeeAsync(employee);
+        }
     }
-}
 
-
-   private async Task ConfirmDeleteEmployee(Employee employee)
-{
-    var parameters = new DialogParameters
+    private async Task DeleteEmployeeAsync(Employee employee)
     {
-        ["Title"] = "Mitarbeiter löschen",
-        ["Message"] =
-            $"Bist du sicher, dass du den Mitarbeiter **{employee.FirstName} {employee.LastName}** löschen möchtest?"
-    };
+        var displayName = $"{employee.FirstName} {employee.LastName}";
 
-    var options = new DialogOptions
-    {
-        CloseButton = true,
-        MaxWidth = MaxWidth.Small,
-        FullWidth = true
-    };
+        try
+        {
+            await EmployeeService.DeleteEmployeeAsync(employee.Id);
 
-    // ✅ MudBlazor neu: ShowAsync statt Show
-    var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>(
-        "Bestätigung",
-        parameters,
-        options);
+            _employees = await EmployeeService.GetAllEmployeesAsync();
 
-    // ✅ Result funktioniert weiterhin ganz normal
-    var result = await dialog.Result;
-
-    if (result is { Canceled: false })
-    {
-        await DeleteEmployee(employee); // ✅ DEINE bestehende Methode
+            Snackbar.Add(Texts["Employees.Deleted", displayName], Severity.Success);
+        }
+        catch (BusinessRuleViolationException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(Texts["Employees.DeleteFailed"], Severity.Error);
+            Logger.LogError(ex, "Der Mitarbeiter {EmployeeId} konnte nicht geloescht werden.", employee.Id);
+        }
     }
-}
-
-
-
 }

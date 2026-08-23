@@ -1,0 +1,505 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Employees.Title" xml:space="preserve">
+    <value>Mitarbeiter</value>
+  </data>
+  <data name="Employees.New" xml:space="preserve">
+    <value>Neuer Mitarbeiter</value>
+  </data>
+  <data name="Employees.Edit" xml:space="preserve">
+    <value>Mitarbeiter bearbeiten</value>
+  </data>
+  <data name="Employees.TableAria" xml:space="preserve">
+    <value>Liste der Mitarbeiter</value>
+  </data>
+  <data name="Employees.Column.Code" xml:space="preserve">
+    <value>Kennung</value>
+  </data>
+  <data name="Employees.Column.Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Employees.Column.Role" xml:space="preserve">
+    <value>Rolle</value>
+  </data>
+  <data name="Employees.Column.Email" xml:space="preserve">
+    <value>E-Mail</value>
+  </data>
+  <data name="Employees.Column.Actions" xml:space="preserve">
+    <value>Aktionen</value>
+  </data>
+  <data name="Employees.FirstName" xml:space="preserve">
+    <value>Vorname</value>
+  </data>
+  <data name="Employees.LastName" xml:space="preserve">
+    <value>Nachname</value>
+  </data>
+  <data name="Employees.Email" xml:space="preserve">
+    <value>E-Mail</value>
+  </data>
+  <data name="Employees.Role" xml:space="preserve">
+    <value>Rolle</value>
+  </data>
+  <data name="Employees.EditAria" xml:space="preserve">
+    <value>{0} bearbeiten</value>
+  </data>
+  <data name="Employees.DeleteAria" xml:space="preserve">
+    <value>{0} löschen</value>
+  </data>
+  <data name="Employees.Empty" xml:space="preserve">
+    <value>Es sind keine Mitarbeiter angelegt.</value>
+  </data>
+  <data name="Employees.Created" xml:space="preserve">
+    <value>{0} wurde angelegt.</value>
+  </data>
+  <data name="Employees.Updated" xml:space="preserve">
+    <value>{0} wurde aktualisiert.</value>
+  </data>
+  <data name="Employees.Deleted" xml:space="preserve">
+    <value>{0} wurde gelöscht.</value>
+  </data>
+  <data name="Employees.SaveFailed" xml:space="preserve">
+    <value>Der Mitarbeiter konnte nicht gespeichert werden.</value>
+  </data>
+  <data name="Employees.DeleteFailed" xml:space="preserve">
+    <value>Der Mitarbeiter konnte nicht gelöscht werden.</value>
+  </data>
+  <data name="Employees.DeleteTitle" xml:space="preserve">
+    <value>Mitarbeiter löschen</value>
+  </data>
+  <data name="Employees.DeleteMessage" xml:space="preserve">
+    <value>Soll der Mitarbeiter {0} endgültig gelöscht werden? Der Zugang wird dabei entzogen.</value>
+  </data>
+  <data name="Role.Employee" xml:space="preserve">
+    <value>Mitarbeiter</value>
+  </data>
+  <data name="Role.ServiceChef" xml:space="preserve">
+    <value>Serviceleitung</value>
+  </data>
+  <data name="Role.Admin" xml:space="preserve">
+    <value>Administrator</value>
+  </data>
+  <data name="Assignments.Title" xml:space="preserve">
+    <value>Service-Zuweisungen</value>
+  </data>
+  <data name="Assignments.TableAria" xml:space="preserve">
+    <value>Bestehende Zuweisungen</value>
+  </data>
+  <data name="Assignments.Column.Employee" xml:space="preserve">
+    <value>Mitarbeiter</value>
+  </data>
+  <data name="Assignments.Column.Service" xml:space="preserve">
+    <value>Service</value>
+  </data>
+  <data name="Assignments.Column.Actions" xml:space="preserve">
+    <value>Aktionen</value>
+  </data>
+  <data name="Assignments.New" xml:space="preserve">
+    <value>Neue Zuweisung</value>
+  </data>
+  <data name="Assignments.SelectEmployee" xml:space="preserve">
+    <value>Mitarbeiter auswählen</value>
+  </data>
+  <data name="Assignments.SelectService" xml:space="preserve">
+    <value>Service auswählen</value>
+  </data>
+  <data name="Assignments.Add" xml:space="preserve">
+    <value>Zuweisung hinzufügen</value>
+  </data>
+  <data name="Assignments.Empty" xml:space="preserve">
+    <value>Es bestehen noch keine Zuweisungen.</value>
+  </data>
+  <data name="Assignments.Incomplete" xml:space="preserve">
+    <value>Bitte wählen Sie einen Mitarbeiter und einen Service aus.</value>
+  </data>
+  <data name="Assignments.Added" xml:space="preserve">
+    <value>Die Zuweisung wurde hinzugefügt.</value>
+  </data>
+  <data name="Assignments.Exists" xml:space="preserve">
+    <value>Diese Zuweisung besteht bereits.</value>
+  </data>
+  <data name="Assignments.AddFailed" xml:space="preserve">
+    <value>Die Zuweisung konnte nicht hinzugefügt werden.</value>
+  </data>
+  <data name="Assignments.Deleted" xml:space="preserve">
+    <value>Die Zuweisung wurde gelöscht.</value>
+  </data>
+  <data name="Assignments.NotFound" xml:space="preserve">
+    <value>Die Zuweisung wurde nicht gefunden.</value>
+  </data>
+  <data name="Assignments.DeleteFailed" xml:space="preserve">
+    <value>Die Zuweisung konnte nicht gelöscht werden.</value>
+  </data>
+  <data name="Assignments.DeleteTitle" xml:space="preserve">
+    <value>Zuweisung löschen</value>
+  </data>
+  <data name="Assignments.DeleteMessage" xml:space="preserve">
+    <value>Soll die Zuweisung von {0} zum Service {1} gelöscht werden?</value>
+  </data>
+  <data name="Assignments.DeleteAria" xml:space="preserve">
+    <value>Zuweisung von {0} zu {1} löschen</value>
+  </data>
+  <data name="Assignments.Unknown" xml:space="preserve">
+    <value>Unbekannt</value>
+  </data>
+  <data name="Services.Title" xml:space="preserve">
+    <value>Service-Verwaltung</value>
+  </data>
+  <data name="Services.New" xml:space="preserve">
+    <value>Neuer Service</value>
+  </data>
+  <data name="Services.Create" xml:space="preserve">
+    <value>Neuen Service anlegen</value>
+  </data>
+  <data name="Services.Edit" xml:space="preserve">
+    <value>Service bearbeiten</value>
+  </data>
+  <data name="Services.Loading" xml:space="preserve">
+    <value>Services werden geladen …</value>
+  </data>
+  <data name="Services.TableAria" xml:space="preserve">
+    <value>Liste der Services</value>
+  </data>
+  <data name="Services.Column.Name" xml:space="preserve">
+    <value>Bezeichnung (Deutsch)</value>
+  </data>
+  <data name="Services.Column.Translations" xml:space="preserve">
+    <value>Übersetzungen</value>
+  </data>
+  <data name="Services.Column.Floor" xml:space="preserve">
+    <value>Etage</value>
+  </data>
+  <data name="Services.Column.SlotDuration" xml:space="preserve">
+    <value>Slotdauer</value>
+  </data>
+  <data name="Services.Column.Actions" xml:space="preserve">
+    <value>Aktionen</value>
+  </data>
+  <data name="Services.Empty" xml:space="preserve">
+    <value>Es sind keine Services angelegt.</value>
+  </data>
+  <data name="Services.Name" xml:space="preserve">
+    <value>Bezeichnung (Deutsch)</value>
+  </data>
+  <data name="Services.NameEnglish" xml:space="preserve">
+    <value>Bezeichnung (Englisch)</value>
+  </data>
+  <data name="Services.NameArabic" xml:space="preserve">
+    <value>Bezeichnung (Arabisch)</value>
+  </data>
+  <data name="Services.Description" xml:space="preserve">
+    <value>Beschreibung (Deutsch)</value>
+  </data>
+  <data name="Services.DescriptionEnglish" xml:space="preserve">
+    <value>Beschreibung (Englisch)</value>
+  </data>
+  <data name="Services.DescriptionArabic" xml:space="preserve">
+    <value>Beschreibung (Arabisch)</value>
+  </data>
+  <data name="Services.TranslationHint" xml:space="preserve">
+    <value>Ohne Übersetzung wird die deutsche Bezeichnung angezeigt.</value>
+  </data>
+  <data name="Services.TranslationsComplete" xml:space="preserve">
+    <value>Vollständig</value>
+  </data>
+  <data name="Services.TranslationsMissing" xml:space="preserve">
+    <value>Fehlend: {0}</value>
+  </data>
+  <data name="Services.Floor" xml:space="preserve">
+    <value>Etage (zum Beispiel EG oder 1. OG)</value>
+  </data>
+  <data name="Services.SlotDuration" xml:space="preserve">
+    <value>Slotdauer in Minuten</value>
+  </data>
+  <data name="Services.EditAria" xml:space="preserve">
+    <value>Service {0} bearbeiten</value>
+  </data>
+  <data name="Services.DeleteAria" xml:space="preserve">
+    <value>Service {0} löschen</value>
+  </data>
+  <data name="Services.Created" xml:space="preserve">
+    <value>Der Service {0} wurde angelegt.</value>
+  </data>
+  <data name="Services.Updated" xml:space="preserve">
+    <value>Der Service {0} wurde aktualisiert.</value>
+  </data>
+  <data name="Services.Deleted" xml:space="preserve">
+    <value>Der Service {0} wurde gelöscht.</value>
+  </data>
+  <data name="Services.SaveFailed" xml:space="preserve">
+    <value>Der Service konnte nicht gespeichert werden.</value>
+  </data>
+  <data name="Services.DeleteFailed" xml:space="preserve">
+    <value>Der Service konnte nicht gelöscht werden.</value>
+  </data>
+  <data name="Services.DeleteTitle" xml:space="preserve">
+    <value>Service löschen</value>
+  </data>
+  <data name="Services.DeleteMessage" xml:space="preserve">
+    <value>Soll der Service {0} endgültig gelöscht werden?</value>
+  </data>
+  <data name="Services.RequiredFields" xml:space="preserve">
+    <value>Bitte füllen Sie alle Pflichtfelder aus.</value>
+  </data>
+  <data name="Schedule.Title" xml:space="preserve">
+    <value>Dienstplan und Öffnungszeiten</value>
+  </data>
+  <data name="Schedule.Intro" xml:space="preserve">
+    <value>Legen Sie reguläre Öffnungszeiten je Service fest und definieren Sie wöchentliche oder datumsbezogene Ausnahmen. Die Kapazität je Slot stammt aus dem Service und kann je Ausnahme überschrieben werden.</value>
+  </data>
+  <data name="Schedule.Step1" xml:space="preserve">
+    <value>1. Service auswählen</value>
+  </data>
+  <data name="Schedule.Step2" xml:space="preserve">
+    <value>2. Jahr auswählen</value>
+  </data>
+  <data name="Schedule.Step3" xml:space="preserve">
+    <value>3. Monate auswählen</value>
+  </data>
+  <data name="Schedule.Step4" xml:space="preserve">
+    <value>4. Reguläre Öffnungstage und Zeiten</value>
+  </data>
+  <data name="Schedule.Step5" xml:space="preserve">
+    <value>5. Ausnahmen</value>
+  </data>
+  <data name="Schedule.Step6" xml:space="preserve">
+    <value>6. Speichern</value>
+  </data>
+  <data name="Schedule.Service" xml:space="preserve">
+    <value>Service</value>
+  </data>
+  <data name="Schedule.SelectService" xml:space="preserve">
+    <value>Service auswählen</value>
+  </data>
+  <data name="Schedule.Year" xml:space="preserve">
+    <value>Jahr</value>
+  </data>
+  <data name="Schedule.SelectYear" xml:space="preserve">
+    <value>Jahr auswählen</value>
+  </data>
+  <data name="Schedule.Months" xml:space="preserve">
+    <value>Monate</value>
+  </data>
+  <data name="Schedule.SelectMonths" xml:space="preserve">
+    <value>Monate auswählen</value>
+  </data>
+  <data name="Schedule.BaseInfo" xml:space="preserve">
+    <value>Basiskapazität je Slot: {0} · Zugewiesene Mitarbeiter: {1} · Slotdauer: {2} Minuten</value>
+  </data>
+  <data name="Schedule.BaseCapacity" xml:space="preserve">
+    <value>Basiskapazität je Slot für diesen Service: {0}</value>
+  </data>
+  <data name="Schedule.PlanExists" xml:space="preserve">
+    <value>Für dieses Jahr besteht bereits ein Dienstplan. Die Felder wurden mit den vorhandenen Werten gefüllt.</value>
+  </data>
+  <data name="Schedule.PlannedRange" xml:space="preserve">
+    <value>Geplanter Zeitraum: {0}</value>
+  </data>
+  <data name="Schedule.RegularDays" xml:space="preserve">
+    <value>Reguläre Öffnungstage</value>
+  </data>
+  <data name="Schedule.RegularHours" xml:space="preserve">
+    <value>Reguläre Öffnungszeiten</value>
+  </data>
+  <data name="Schedule.StartTime" xml:space="preserve">
+    <value>Startzeit</value>
+  </data>
+  <data name="Schedule.EndTime" xml:space="preserve">
+    <value>Endzeit</value>
+  </data>
+  <data name="Schedule.WeeklyOverrides" xml:space="preserve">
+    <value>Wöchentliche Ausnahmen</value>
+  </data>
+  <data name="Schedule.DateOverrides" xml:space="preserve">
+    <value>Datumsbezogene Ausnahmen</value>
+  </data>
+  <data name="Schedule.NewWeekly" xml:space="preserve">
+    <value>Neue wöchentliche Ausnahme</value>
+  </data>
+  <data name="Schedule.EditWeekly" xml:space="preserve">
+    <value>Wöchentliche Ausnahme bearbeiten</value>
+  </data>
+  <data name="Schedule.NewDate" xml:space="preserve">
+    <value>Neue datumsbezogene Ausnahme</value>
+  </data>
+  <data name="Schedule.EditDate" xml:space="preserve">
+    <value>Datumsbezogene Ausnahme bearbeiten</value>
+  </data>
+  <data name="Schedule.Weekday" xml:space="preserve">
+    <value>Wochentag</value>
+  </data>
+  <data name="Schedule.Date" xml:space="preserve">
+    <value>Datum</value>
+  </data>
+  <data name="Schedule.Closed" xml:space="preserve">
+    <value>Geschlossen</value>
+  </data>
+  <data name="Schedule.Changed" xml:space="preserve">
+    <value>Geändert</value>
+  </data>
+  <data name="Schedule.CapacityOverride" xml:space="preserve">
+    <value>Kapazität je Slot (optional)</value>
+  </data>
+  <data name="Schedule.CapacityHint" xml:space="preserve">
+    <value>Leer lassen, um die Basiskapazität zu verwenden.</value>
+  </data>
+  <data name="Schedule.CapacityBase" xml:space="preserve">
+    <value>Basis</value>
+  </data>
+  <data name="Schedule.Column.Day" xml:space="preserve">
+    <value>Tag</value>
+  </data>
+  <data name="Schedule.Column.Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Schedule.Column.Start" xml:space="preserve">
+    <value>Beginn</value>
+  </data>
+  <data name="Schedule.Column.End" xml:space="preserve">
+    <value>Ende</value>
+  </data>
+  <data name="Schedule.Column.Capacity" xml:space="preserve">
+    <value>Kapazität</value>
+  </data>
+  <data name="Schedule.Column.Action" xml:space="preserve">
+    <value>Aktion</value>
+  </data>
+  <data name="Schedule.Column.Year" xml:space="preserve">
+    <value>Jahr</value>
+  </data>
+  <data name="Schedule.Column.Months" xml:space="preserve">
+    <value>Monate</value>
+  </data>
+  <data name="Schedule.Column.Regular" xml:space="preserve">
+    <value>Regulär</value>
+  </data>
+  <data name="Schedule.Column.Weekly" xml:space="preserve">
+    <value>Wöchentlich</value>
+  </data>
+  <data name="Schedule.Column.Date" xml:space="preserve">
+    <value>Datum</value>
+  </data>
+  <data name="Schedule.Update" xml:space="preserve">
+    <value>Aktualisieren</value>
+  </data>
+  <data name="Schedule.Summary" xml:space="preserve">
+    <value>Zusammenfassung</value>
+  </data>
+  <data name="Schedule.SummaryGeneral" xml:space="preserve">
+    <value>Allgemein</value>
+  </data>
+  <data name="Schedule.SummaryRegular" xml:space="preserve">
+    <value>Regulär</value>
+  </data>
+  <data name="Schedule.SummaryDays" xml:space="preserve">
+    <value>Tage</value>
+  </data>
+  <data name="Schedule.SummaryHours" xml:space="preserve">
+    <value>Zeiten</value>
+  </data>
+  <data name="Schedule.SummaryPeriod" xml:space="preserve">
+    <value>Zeitraum</value>
+  </data>
+  <data name="Schedule.SummaryCapacity" xml:space="preserve">
+    <value>Basiskapazität</value>
+  </data>
+  <data name="Schedule.SummaryEmployees" xml:space="preserve">
+    <value>Mitarbeiter</value>
+  </data>
+  <data name="Schedule.SummarySlotDuration" xml:space="preserve">
+    <value>Slotdauer</value>
+  </data>
+  <data name="Schedule.SaveNotice" xml:space="preserve">
+    <value>Beim Speichern werden Arbeitszeitplan, Arbeitszeiten und Ausnahmen des Service neu erzeugt.</value>
+  </data>
+  <data name="Schedule.Saved" xml:space="preserve">
+    <value>Der Dienstplan wurde gespeichert.</value>
+  </data>
+  <data name="Schedule.SaveFailed" xml:space="preserve">
+    <value>Der Dienstplan konnte nicht gespeichert werden.</value>
+  </data>
+  <data name="Schedule.Overview" xml:space="preserve">
+    <value>Aktuelle Dienstplan-Übersicht</value>
+  </data>
+  <data name="Schedule.OverviewEmpty" xml:space="preserve">
+    <value>Es sind keine Pläne vorhanden.</value>
+  </data>
+  <data name="Schedule.NoYearPlans" xml:space="preserve">
+    <value>Für diesen Service gibt es noch keine Jahrespläne.</value>
+  </data>
+  <data name="Schedule.OverviewService" xml:space="preserve">
+    <value>{0} (Mitarbeiter: {1}, Basiskapazität: {2})</value>
+  </data>
+  <data name="Schedule.DeleteYearTitle" xml:space="preserve">
+    <value>Jahresplan löschen</value>
+  </data>
+  <data name="Schedule.DeleteYearMessage" xml:space="preserve">
+    <value>Soll der Jahresplan {0} für den Service {1} gelöscht werden?</value>
+  </data>
+  <data name="Schedule.YearDeleted" xml:space="preserve">
+    <value>Der Jahresplan wurde gelöscht.</value>
+  </data>
+  <data name="Schedule.YearDeleteFailed" xml:space="preserve">
+    <value>Der Jahresplan konnte nicht gelöscht werden.</value>
+  </data>
+  <data name="Schedule.None" xml:space="preserve">
+    <value>Keine</value>
+  </data>
+</root>

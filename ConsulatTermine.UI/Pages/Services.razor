@@ -1,54 +1,52 @@
 @page "/services"
 @attribute [AllowAnonymous]
 
-@using ConsulatTermine.Application.DTOs
-@using MudBlazor
 @using ConsulatTermine.Application.Interfaces
-@using ConsulatTermine.Application.Services
 @using ConsulatTermine.Domain.Entities
 @using Blazored.SessionStorage
 
 @inject IServiceService ServiceService
 @inject ISessionStorageService Session
 @inject NavigationManager Navigation
+@inject IStringLocalizer<BookingTexts> Texts
 
-
+<PageTitle>@Texts["Services.Title"]</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mx-auto mt-8">
 
-    <!-- STEPPER -->
     <BookingStepper ActiveStep="0" />
 
     <MudCard Class="pa-6" Style="border-radius:12px">
 
-        <!-- HEADER -->
-        <MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Success">
-            Termin buchen
+        <MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Success" HtmlTag="h1">
+            @Texts["Services.Title"]
         </MudText>
 
         <MudText Typo="Typo.subtitle1" Align="Align.Center" Class="mb-6">
-            Für wie viele Personen möchten Sie einen Termin buchen?
+            @Texts["Services.PersonQuestion"]
         </MudText>
 
-        <!-- PERSON COUNTER -->
+        <!-- PERSONENZAHL -->
         <MudStack Row Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="2" Class="mb-6">
-            <MudIcon Icon="@Icons.Material.Filled.Person" Color="Color.Success" />
+            <MudIcon Icon="@Icons.Material.Filled.Person" Color="Color.Success" aria-hidden="true" />
 
             <MudButton Variant="Variant.Filled"
                        Color="Color.Success"
                        Disabled="@(_personCount <= 1)"
                        OnClick="DecrementPerson"
-                       aria-label="Eine Person weniger">
+                       aria-label="@Texts["Services.PersonLess"]">
                 <MudIcon Icon="@Icons.Material.Filled.Remove" />
             </MudButton>
 
-            <MudText Typo="Typo.h6" aria-live="polite">@_personCount</MudText>
+            <MudText Typo="Typo.h6" aria-live="polite" aria-label="@Texts["Services.PersonCount", _personCount]">
+                @_personCount
+            </MudText>
 
             <MudButton Variant="Variant.Filled"
                        Color="Color.Success"
                        Disabled="@(_personCount >= ServiceSelectionCalculator.MaxPersons)"
                        OnClick="IncrementPerson"
-                       aria-label="Eine Person mehr">
+                       aria-label="@Texts["Services.PersonMore"]">
                 <MudIcon Icon="@Icons.Material.Filled.Add" />
             </MudButton>
         </MudStack>
@@ -56,57 +54,58 @@
         <MudDivider Class="mb-4" />
 
         <!-- SERVICES -->
-        <MudText Typo="Typo.subtitle1" Class="mb-1">
-            Für welche Services möchten Sie Termine buchen?
+        <MudText Typo="Typo.subtitle1" Class="mb-1" HtmlTag="h2">
+            @Texts["Services.ServiceQuestion"]
         </MudText>
 
         <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-            Zählen Sie je Service, wie viele Personen ihn benötigen.
-            Jede Person braucht mindestens einen Termin, höchstens
-            @ServiceSelectionCalculator.MaxServicesPerPerson Termine.
+            @Texts["Services.ServiceHint", ServiceSelectionCalculator.MaxServicesPerPerson]
         </MudText>
 
         @if (_loading)
         {
-            <MudProgressCircular Indeterminate aria-label="Services werden geladen" />
+            <MudProgressCircular Indeterminate aria-label="@Texts["Services.Loading"]" />
         }
         else if (_services.Count == 0)
         {
             <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Class="mb-3">
-                Zurzeit stehen keine Services zur Buchung bereit. Bitte versuchen Sie es später erneut.
+                @Texts["Services.Empty"]
             </MudAlert>
         }
         else
         {
             @foreach (var service in _services)
             {
+                var serviceName = service.NameFor(CultureInfo.CurrentUICulture.Name);
+                var serviceDescription = service.DescriptionFor(CultureInfo.CurrentUICulture.Name);
+
                 <MudCard Class="mb-3" Style="background:#f9f9f9">
                     <MudCardContent>
 
                         <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
 
-                            <!-- INFO -->
                             <MudStack Class="flex-grow-1">
-                                <MudText Typo="Typo.h6">@service.Name</MudText>
+                                <MudText Typo="Typo.h6">@serviceName</MudText>
 
-                                @if (!string.IsNullOrWhiteSpace(service.Description))
+                                @if (!string.IsNullOrWhiteSpace(serviceDescription))
                                 {
                                     <MudText Typo="Typo.body2" Color="Color.Secondary">
-                                        @service.Description
+                                        @serviceDescription
                                     </MudText>
                                 }
                             </MudStack>
 
-                            <!-- COUNTER -->
                             <MudStack Row AlignItems="AlignItems.Center" Spacing="1">
                                 <MudIconButton Icon="@Icons.Material.Filled.Remove"
                                                Color="Color.Error"
                                                Disabled="@(!ServiceSelectionCalculator.CanRemoveService(_serviceAssignments, service.Id))"
                                                OnClick="@(() => DecrementService(service.Id))"
-                                               title="@($"{service.Name}: eine Person weniger")"
-                                               aria-label="@($"{service.Name}: eine Person weniger")" />
+                                               title="@Texts["Services.DecrementAria", serviceName]"
+                                               aria-label="@Texts["Services.DecrementAria", serviceName]" />
 
-                                <MudText Typo="Typo.subtitle1" aria-live="polite">
+                                <MudText Typo="Typo.subtitle1"
+                                         aria-live="polite"
+                                         aria-label="@Texts["Services.AssignedAria", serviceName, GetAssignedCount(service.Id)]">
                                     @GetAssignedCount(service.Id)
                                 </MudText>
 
@@ -114,8 +113,8 @@
                                                Color="Color.Success"
                                                Disabled="@(!ServiceSelectionCalculator.CanAddService(_serviceAssignments, service.Id, _personCount))"
                                                OnClick="@(() => IncrementService(service.Id))"
-                                               title="@($"{service.Name}: eine Person mehr")"
-                                               aria-label="@($"{service.Name}: eine Person mehr")" />
+                                               title="@Texts["Services.IncrementAria", serviceName]"
+                                               aria-label="@Texts["Services.IncrementAria", serviceName]" />
                             </MudStack>
 
                         </MudStack>
@@ -139,20 +138,19 @@
             </MudAlert>
         }
 
-        <!-- FOOTER -->
         <MudStack Row Justify="Justify.FlexEnd" Spacing="2" Class="mt-4">
 
             <MudButton Variant="Variant.Outlined"
                        Color="Color.Success"
                        OnClick="ResetAll">
-                Zurücksetzen
+                @CommonTextsLocalizer["Action.Reset"]
             </MudButton>
 
             <MudButton Variant="Variant.Filled"
                        Color="Color.Success"
                        Disabled="@(!CanConfirm)"
                        OnClick="ConfirmSelection">
-                Bestätigen
+                @CommonTextsLocalizer["Action.Confirm"]
             </MudButton>
 
         </MudStack>
@@ -162,13 +160,15 @@
 
 @code {
 
+    [Inject] private IStringLocalizer<CommonTexts> CommonTextsLocalizer { get; set; } = default!;
+
     /* ---------- STATE ---------- */
     private int _personCount = 1;
     private bool _loading = true;
-    private List<Service> _services = new();
+    private List<Service> _services = [];
 
     // ServiceId -> Anzahl der Personen, die diesen Service benoetigen
-    private Dictionary<int, int> _serviceAssignments = new();
+    private Dictionary<int, int> _serviceAssignments = [];
 
     /* ---------- CALCULATED ---------- */
     private bool CanConfirm =>
@@ -185,14 +185,9 @@
             var total = ServiceSelectionCalculator.TotalAssigned(_serviceAssignments);
             var missing = ServiceSelectionCalculator.MissingAssignments(_serviceAssignments, _personCount);
 
-            if (missing > 0)
-            {
-                return $"{total} von mindestens {_personCount} Terminen zugeordnet. "
-                     + $"Bitte ordnen Sie noch {AppointmentLabel(missing)} zu.";
-            }
-
-            return $"{AppointmentLabel(total)} für {PersonLabel(_personCount)} zugeordnet. "
-                 + "Sie können fortfahren.";
+            return missing > 0
+                ? Texts["Services.Status.Missing", total, _personCount, missing]
+                : Texts["Services.Status.Complete"];
         }
     }
 
@@ -207,17 +202,13 @@
     private int GetAssignedCount(int serviceId)
         => ServiceSelectionCalculator.AssignedCount(_serviceAssignments, serviceId);
 
-    private static string PersonLabel(int count)
-        => count == 1 ? "1 Person" : $"{count} Personen";
-
-    private static string AppointmentLabel(int count)
-        => count == 1 ? "1 Termin" : $"{count} Termine";
-
     /* ---------- PERSON ---------- */
     private void IncrementPerson()
     {
         if (_personCount >= ServiceSelectionCalculator.MaxPersons)
+        {
             return;
+        }
 
         _personCount++;
         _serviceAssignments = ServiceSelectionCalculator.Normalize(_serviceAssignments, _personCount);
@@ -226,7 +217,9 @@
     private void DecrementPerson()
     {
         if (_personCount <= 1)
+        {
             return;
+        }
 
         _personCount--;
         _serviceAssignments = ServiceSelectionCalculator.Normalize(_serviceAssignments, _personCount);
@@ -236,7 +229,9 @@
     private void IncrementService(int serviceId)
     {
         if (!ServiceSelectionCalculator.CanAddService(_serviceAssignments, serviceId, _personCount))
+        {
             return;
+        }
 
         _serviceAssignments[serviceId] = GetAssignedCount(serviceId) + 1;
     }
@@ -244,7 +239,9 @@
     private void DecrementService(int serviceId)
     {
         if (!ServiceSelectionCalculator.CanRemoveService(_serviceAssignments, serviceId))
+        {
             return;
+        }
 
         var remaining = GetAssignedCount(serviceId) - 1;
 
@@ -261,7 +258,9 @@
     private async Task ConfirmSelection()
     {
         if (!CanConfirm)
+        {
             return;
+        }
 
         await Session.SetItemAsync(SessionKeys.PersonCount, _personCount);
         await Session.SetItemAsync(SessionKeys.ServiceAssignments, _serviceAssignments);
@@ -272,6 +271,6 @@
     private void ResetAll()
     {
         _personCount = 1;
-        _serviceAssignments = new Dictionary<int, int>();
+        _serviceAssignments = [];
     }
 }

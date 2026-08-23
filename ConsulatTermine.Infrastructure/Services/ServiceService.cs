@@ -1,6 +1,7 @@
 using ConsulatTermine.Application.DTOs;
 using ConsulatTermine.Application.Exceptions;
 using ConsulatTermine.Application.Interfaces;
+using ConsulatTermine.Application.Resources;
 using ConsulatTermine.Application.Security;
 using ConsulatTermine.Domain.Entities;
 using ConsulatTermine.Domain.Enums;
@@ -76,7 +77,11 @@ public class ServiceService : IServiceService
         var entity = new Service
         {
             Name = dto.Name,
+            NameEnglish = dto.NameEnglish,
+            NameArabic = dto.NameArabic,
             Description = dto.Description,
+            DescriptionEnglish = dto.DescriptionEnglish,
+            DescriptionArabic = dto.DescriptionArabic,
             Floor = dto.Floor,
             SlotDurationMinutes = dto.SlotDurationMinutes
         };
@@ -100,11 +105,15 @@ public class ServiceService : IServiceService
 
         if (entity == null)
         {
-            throw new BusinessRuleViolationException("Der Service wurde nicht gefunden.");
+            throw new BusinessRuleViolationException(BusinessMessages.Get("ServiceNotFound"));
         }
 
         entity.Name = dto.Name;
+        entity.NameEnglish = dto.NameEnglish;
+        entity.NameArabic = dto.NameArabic;
         entity.Description = dto.Description;
+        entity.DescriptionEnglish = dto.DescriptionEnglish;
+        entity.DescriptionArabic = dto.DescriptionArabic;
         entity.CapacityPerSlot = dto.CapacityPerSlot;
         entity.Floor = dto.Floor;
         entity.SlotDurationMinutes = dto.SlotDurationMinutes;
@@ -151,8 +160,13 @@ public class ServiceService : IServiceService
         {
             Id = service.Id,
             Name = service.Name,
+            NameEnglish = service.NameEnglish,
+            NameArabic = service.NameArabic,
             Description = service.Description,
+            DescriptionEnglish = service.DescriptionEnglish,
+            DescriptionArabic = service.DescriptionArabic,
             CapacityPerSlot = service.CapacityPerSlot,
+            Floor = service.Floor,
             SlotDurationMinutes = service.SlotDurationMinutes
         };
 

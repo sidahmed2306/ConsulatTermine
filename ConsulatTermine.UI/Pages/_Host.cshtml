@@ -1,18 +1,27 @@
-﻿@page "/"
-@using Microsoft.AspNetCore.Components.Web
+@page "/"
 @using System.Globalization
+@using ConsulatTermine.Application.Localization
+@using Microsoft.AspNetCore.Components.Web
 @namespace ConsulatTermine.UI.Pages
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@inject IStringLocalizer<CommonTexts> Texts
+
+@{
+    // Die Request-Lokalisierung hat die Kultur zu Beginn der Anfrage gesetzt.
+    // Sprache und Schreibrichtung stehen damit schon im ersten ausgelieferten
+    // HTML und nicht erst, wenn der Blazor-Kreis steht.
+    var language = SupportedLanguages.Resolve(CultureInfo.CurrentUICulture.Name);
+}
 
 <!DOCTYPE html>
-<html lang="@CultureInfo.CurrentUICulture.Name"
-      dir="@(CultureInfo.CurrentUICulture.Name == "ar" ? "rtl" : "ltr")">
+<html lang="@language.CultureCode" dir="@language.TextDirection">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="~/" />
     <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
     <link href="css/site.css" rel="stylesheet" />
+    <link href="css/localization.css" rel="stylesheet" />
     <link href="ConsulatTermine.UI.styles.css" rel="stylesheet" />
     <link rel="icon" type="image/png" href="favicon.png"/>
     <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
@@ -20,27 +29,25 @@
     <component type="typeof(HeadOutlet)" render-mode="ServerPrerendered" />
 </head>
 <body>
-  
 
     <component type="typeof(App)" render-mode="ServerPrerendered" />
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
 
+    @* Diese Meldung erscheint, wenn die Verbindung zum Server abbricht. Sie liegt
+       ausserhalb der Blazor-Anwendung und wird deshalb hier uebersetzt. *@
     <div id="blazor-error-ui">
         <environment include="Staging,Production">
-            An error has occurred. This application may no longer respond until reloaded.
+            @Texts["ErrorUi.Reconnect"]
         </environment>
         <environment include="Development">
-            An unhandled exception has occurred. See browser dev tools for details.
+            @Texts["ErrorUi.Development"]
         </environment>
-        <a href="" class="reload">Reload</a>
-        <a class="dismiss">🗙</a>
+        <a href="" class="reload">@Texts["Action.Reload"]</a>
+        <a class="dismiss" aria-label="@Texts["Action.Dismiss"]">🗙</a>
     </div>
     <script src="_framework/blazor.server.js"></script>
     <script src="~/js/sounds.js"></script>
     <script src="~/js/waiting-room.js"></script>
-    <script src="js/culture.js"></script>
-
- 
 
 </body>
 </html>

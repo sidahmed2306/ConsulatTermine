@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="App.Name" xml:space="preserve">
+    <value>Consulate of Algeria Frankfurt</value>
+  </data>
+  <data name="App.LogoAlt" xml:space="preserve">
+    <value>Coat of arms of the People's Democratic Republic of Algeria</value>
+  </data>
+  <data name="Language.Menu" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="Language.Choose" xml:space="preserve">
+    <value>Choose language</value>
+  </data>
+  <data name="Language.Current" xml:space="preserve">
+    <value>Current language: {0}</value>
+  </data>
+  <data name="Nav.Menu" xml:space="preserve">
+    <value>Employee navigation</value>
+  </data>
+  <data name="Nav.Home" xml:space="preserve">
+    <value>Home</value>
+  </data>
+  <data name="Nav.Dashboard" xml:space="preserve">
+    <value>Dashboard</value>
+  </data>
+  <data name="Nav.SwitchService" xml:space="preserve">
+    <value>Switch service</value>
+  </data>
+  <data name="Nav.Employees" xml:space="preserve">
+    <value>Employees</value>
+  </data>
+  <data name="Nav.Assignments" xml:space="preserve">
+    <value>Service assignments</value>
+  </data>
+  <data name="Nav.WorkingHours" xml:space="preserve">
+    <value>Working hours</value>
+  </data>
+  <data name="Nav.Services" xml:space="preserve">
+    <value>Services</value>
+  </data>
+  <data name="Nav.Logout" xml:space="preserve">
+    <value>Sign out</value>
+  </data>
+  <data name="Auth.Forbidden" xml:space="preserve">
+    <value>You do not have permission to access this area.</value>
+  </data>
+  <data name="Auth.Checking" xml:space="preserve">
+    <value>Checking permission</value>
+  </data>
+  <data name="NotFound.Title" xml:space="preserve">
+    <value>Page not found</value>
+  </data>
+  <data name="NotFound.Message" xml:space="preserve">
+    <value>There is no page at this address.</value>
+  </data>
+  <data name="Action.Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Action.Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Action.Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Action.Confirm" xml:space="preserve">
+    <value>Confirm</value>
+  </data>
+  <data name="Action.Reset" xml:space="preserve">
+    <value>Reset</value>
+  </data>
+  <data name="Action.Back" xml:space="preserve">
+    <value>Back</value>
+  </data>
+  <data name="Action.Continue" xml:space="preserve">
+    <value>Continue</value>
+  </data>
+  <data name="Action.Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="Action.Edit" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="Action.Add" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="Action.New" xml:space="preserve">
+    <value>New</value>
+  </data>
+  <data name="Dialog.ConfirmTitle" xml:space="preserve">
+    <value>Confirmation</value>
+  </data>
+  <data name="State.Loading" xml:space="preserve">
+    <value>Loading …</value>
+  </data>
+  <data name="State.NoData" xml:space="preserve">
+    <value>No data available.</value>
+  </data>
+  <data name="State.Saving" xml:space="preserve">
+    <value>Saving …</value>
+  </data>
+  <data name="Error.PageTitle" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="Error.Heading" xml:space="preserve">
+    <value>An error occurred</value>
+  </data>
+  <data name="Error.Message" xml:space="preserve">
+    <value>Your request could not be processed. Please try again.</value>
+  </data>
+  <data name="Error.RequestId" xml:space="preserve">
+    <value>Request ID</value>
+  </data>
+  <data name="Error.BackToStart" xml:space="preserve">
+    <value>Back to start page</value>
+  </data>
+  <data name="Status.Booked" xml:space="preserve">
+    <value>Booked</value>
+  </data>
+  <data name="Status.CheckedIn" xml:space="preserve">
+    <value>Checked in</value>
+  </data>
+  <data name="Status.InProgress" xml:space="preserve">
+    <value>Called</value>
+  </data>
+  <data name="Status.AtDesk" xml:space="preserve">
+    <value>At the desk</value>
+  </data>
+  <data name="Status.Completed" xml:space="preserve">
+    <value>Completed</value>
+  </data>
+  <data name="Status.Cancelled" xml:space="preserve">
+    <value>Cancelled</value>
+  </data>
+  <data name="ErrorUi.Reconnect" xml:space="preserve">
+    <value>An error has occurred. This application may not respond again until it is reloaded.</value>
+  </data>
+  <data name="ErrorUi.Development" xml:space="preserve">
+    <value>An unhandled exception has occurred. See the browser developer tools for details.</value>
+  </data>
+  <data name="Action.Reload" xml:space="preserve">
+    <value>Reload</value>
+  </data>
+  <data name="Action.Dismiss" xml:space="preserve">
+    <value>Dismiss message</value>
+  </data>
+</root>

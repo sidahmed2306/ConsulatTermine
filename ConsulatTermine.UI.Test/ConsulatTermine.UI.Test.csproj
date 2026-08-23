@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ConsulatTermine.UI\ConsulatTermine.UI.csproj" />
+    <ProjectReference Include="..\ConsulatTermine.Application\ConsulatTermine.Application.csproj" />
+    <ProjectReference Include="..\ConsulatTermine.Infrastructure\ConsulatTermine.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Der Provider der Request-Lokalisierung arbeitet auf HttpContext. Ohne die
+         Rahmenreferenz stuenden die Typen von ASP.NET Core im Test nicht bereit. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <!--
+      Zwei Benennungsregeln gelten für Testmethoden bewusst nicht. Die Ausnahme ist
+      auf Testprojekte begrenzt; im Anwendungscode bleiben beide Regeln in Kraft.
+      Begründung siehe ConsulatTermine.Application.Test.
+    -->
+    <NoWarn>$(NoWarn);CA1707;IDE1006</NoWarn>
+  </PropertyGroup>
+
+</Project>

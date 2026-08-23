@@ -2,13 +2,16 @@
 @page "/employee/"
 @attribute [Authorize(Policy = AuthorizationPolicies.MitarbeiterZugriff)]
 
-@using MudBlazor
 @using ConsulatTermine.Application.Interfaces
-@using ConsulatTermine.UI.Authentication
 
 @inject NavigationManager Navigation
 @inject IEmployeeAuthorization Authorization
 @inject IEmployeeService EmployeeService
+@inject ILogger<EmployeeHome> Logger
+@inject IStringLocalizer<EmployeeTexts> Texts
+@inject IStringLocalizer<CommonTexts> CommonTexts
+
+<PageTitle>@CommonTexts["Nav.Home"]</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.False"
               Class="d-flex justify-center align-center"
@@ -18,21 +21,24 @@
 
         @if (_loading)
         {
-            <MudProgressCircular Indeterminate="true" Size="Size.Large" Class="my-6" />
+            <MudProgressCircular Indeterminate="true"
+                                 Size="Size.Large"
+                                 Class="my-6"
+                                 aria-label="@Texts["Home.Loading"]" />
             <MudText Typo="Typo.subtitle1" Color="Color.Secondary">
-                Lade Mitarbeiterdaten...
+                @Texts["Home.Loading"]
             </MudText>
         }
         else if (!string.IsNullOrWhiteSpace(_error))
         {
-            <MudText Typo="Typo.h6" Color="Color.Error">
+            <MudAlert Severity="Severity.Error" role="alert">
                 @_error
-            </MudText>
+            </MudAlert>
         }
         else
         {
-            <MudText Typo="Typo.h3" Color="Color.Primary" GutterBottom="true">
-                Willkommen 👋
+            <MudText Typo="Typo.h3" Color="Color.Primary" GutterBottom="true" HtmlTag="h1">
+                @Texts["Home.Welcome"]
             </MudText>
 
             <MudText Typo="Typo.h4" Class="mb-4">
@@ -42,12 +48,19 @@
             <MudDivider Class="my-4" />
 
             <MudText Typo="Typo.subtitle1" Color="Color.Secondary">
-                Ich wünsche dir einen erfolgreichen und ruhigen Arbeitstag, @_firstName.
+                @Texts["Home.Greeting", _firstName]
             </MudText>
 
             <MudText Typo="Typo.body1" Class="mt-3">
-                Du bist heute genau richtig hier – lass uns das gemeinsam sauber durchziehen.
+                @Texts["Home.NextStep"]
             </MudText>
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Class="mt-4"
+                       OnClick="@(() => Navigation.NavigateTo("/employee/select-service"))">
+                @Texts["Home.StartWork"]
+            </MudButton>
         }
 
     </MudPaper>
@@ -57,29 +70,33 @@
 @code {
 
     private bool _loading = true;
-    private string _firstName = "";
-    private string _lastName = "";
+    private string _firstName = string.Empty;
+    private string _lastName = string.Empty;
     private string? _error;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
+            // Die Kennung stammt aus der serverseitigen Anmeldung. Der Anwendungsfall
+            // prueft zusaetzlich, dass ein Mitarbeiter nur den eigenen Datensatz liest.
             var current = await Authorization.RequireEmployeeAsync();
 
             var employee = await EmployeeService.GetEmployeeByIdAsync(current.EmployeeId);
             if (employee is null)
             {
-                _error = "Mitarbeiter nicht gefunden.";
+                _error = Texts["Home.NotFound"];
                 return;
             }
 
             _firstName = employee.FirstName;
             _lastName = employee.LastName;
         }
-        catch
+        catch (Exception ex)
         {
-            _error = "Unerwarteter Fehler beim Laden der Mitarbeiterdaten.";
+            // Die Anzeige bleibt allgemein, die Einzelheiten gehoeren ins Log.
+            _error = Texts["Home.LoadFailed"];
+            Logger.LogError(ex, "Die Mitarbeiterdaten der Startseite konnten nicht geladen werden.");
         }
         finally
         {

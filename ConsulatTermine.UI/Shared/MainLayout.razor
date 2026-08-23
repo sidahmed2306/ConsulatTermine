@@ -1,94 +1,61 @@
 @inherits LayoutComponentBase
-@using MudBlazor
+
 @using ConsulatTermine.UI.Theme
-@using ConsulatTermine.UI.Authentication
-@using Microsoft.AspNetCore.Localization
-@using Microsoft.Extensions.Localization
-@using System.Globalization
 
-
-@inject NavigationManager Navigation
-@inject IJSRuntime JS
-
+@inject IStringLocalizer<CommonTexts> Texts
 
 <MudThemeProvider Theme="AlgeriaTheme.DefaultTheme" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
+@*
+    MudRTLProvider dreht die Schreibrichtung der gesamten Komponentenbibliothek.
+    Ohne ihn bliebe die Oberflaeche auf Arabisch von links nach rechts angeordnet,
+    obwohl der Text von rechts nach links gelesen wird.
+*@
+<MudRTLProvider RightToLeft="@_language.IsRightToLeft">
+
 <MudLayout>
 
-    <!-- APP BAR -->
-  <MudAppBar Elevation="0"
-           Color="Color.Primary"
-           Class="consulate-appbar">
+    <MudAppBar Elevation="0" Color="Color.Primary" Class="consulate-appbar">
 
-    <div class="consulate-appbar-inner">
+        <div class="consulate-appbar-inner">
 
-        <!-- LEFT: LOGO + TITLE -->
-        <div class="d-flex align-center">
-            <img src="images/Alg_Logo.png"
-                 alt="Consulat Algérien"
-                 class="consulate-logo" />
+            <div class="consulate-brand">
+                <img src="images/Alg_Logo.png"
+                     alt="@Texts["App.LogoAlt"]"
+                     class="consulate-logo" />
 
-            <div class="consulate-title">
-                Algerien Konsulat Frankfurt
+                <span class="consulate-title">@Texts["App.Name"]</span>
             </div>
+
+            <LanguageSwitcher />
+
         </div>
 
-       <!-- RIGHT: LANGUAGE DROPDOWN (überall gleich) -->
-        <MudMenu AnchorOrigin="Origin.BottomRight"
-                 TransformOrigin="Origin.TopRight"
-                 Class="language-dropdown">
-            <ActivatorContent>
-                <MudButton Variant="Variant.Text"
-                           Color="Color.Inherit"
-                           EndIcon="@Icons.Material.Filled.ArrowDropDown"
-                           Class="language-trigger">
-                    <MudIcon Icon="@Icons.Material.Filled.Language" Class="mr-1" />
-                    <span class="d-none d-sm-inline">@_currentLanguageLabel</span>
-                </MudButton>
-            </ActivatorContent>
-            <ChildContent>
-                <MudMenuItem OnClick='@(() => ChangeLanguage("de-DE"))'>
-                    🇩🇪 Deutsch
-                </MudMenuItem>
-                <MudMenuItem OnClick='@(() => ChangeLanguage("en-US"))'>
-                    🇬🇧 English
-                </MudMenuItem>
-                <MudMenuItem OnClick='@(() => ChangeLanguage("ar-DZ"))'>
-                    🇩🇿 العربية
-                </MudMenuItem>
-            </ChildContent>
-        </MudMenu>
+    </MudAppBar>
 
-
-    </div>
-
-</MudAppBar>
-
-
-    <!-- EMPLOYEE NAV -->
+    @* Die Sichtbarkeit der Navigation steuert nur die Benutzerfuehrung. Jede Seite
+       prueft zusaetzlich per [Authorize], jeder Anwendungsfall serverseitig erneut. *@
     <AuthorizeView Policy="@AuthorizationPolicies.MitarbeiterZugriff">
         <Authorized>
             <MudDrawer Open="true"
                        Variant="DrawerVariant.Persistent"
-                       Anchor="Anchor.Left"
+                       Anchor="@(_language.IsRightToLeft ? Anchor.Right : Anchor.Left)"
                        Width="260px">
 
                 <NavMenu />
 
             </MudDrawer>
-        </Authorized>
-    </AuthorizeView>
 
-    <!-- CONTENT -->
-    <AuthorizeView Policy="@AuthorizationPolicies.MitarbeiterZugriff">
-        <Authorized>
-            <MudMainContent Style="margin-top:88px; margin-left:260px;">
+            @* Logische Randangabe statt margin-left: sie folgt der Schreibrichtung und
+               laesst auf Arabisch Platz fuer die dann rechts stehende Navigation. *@
+            <MudMainContent Style="margin-top:88px; margin-inline-start:260px;">
                 @Body
             </MudMainContent>
         </Authorized>
+
         <NotAuthorized>
             <MudMainContent Style="margin-top:88px;">
                 @Body
@@ -98,22 +65,15 @@
 
 </MudLayout>
 
+</MudRTLProvider>
+
 @code {
-    private string _currentLanguageLabel = "Deutsch";
+    private SupportedLanguage _language = SupportedLanguages.Default;
 
     protected override void OnInitialized()
     {
-        _currentLanguageLabel = CultureInfo.CurrentUICulture.Name switch
-        {
-            "de-DE" => "Deutsch",
-            "en-US" => "English",
-            "ar-DZ" => "العربية",
-            _ => "Deutsch"
-        };
-    }
-
-    private async Task ChangeLanguage(string culture)
-    {
-        await JS.InvokeVoidAsync("culture.set", culture);
+        // Die Kultur setzt die Request-Lokalisierung zu Beginn der Anfrage; Blazor Server
+        // uebernimmt sie fuer die Lebensdauer des Kreises.
+        _language = SupportedLanguages.Resolve(CultureInfo.CurrentUICulture.Name);
     }
 }

@@ -1,6 +1,7 @@
 using ConsulatTermine.Application.DTOs;
 using ConsulatTermine.Application.Exceptions;
 using ConsulatTermine.Application.Interfaces;
+using ConsulatTermine.Application.Resources;
 using ConsulatTermine.Application.Security;
 using ConsulatTermine.Domain.Entities;
 using ConsulatTermine.Domain.Enums;
@@ -37,17 +38,17 @@ public class WorkingScheduleService : IWorkingScheduleService
         // -------------------------------------------------
         if (request.Months.Count == 0)
         {
-            throw new BusinessRuleViolationException("Es müssen Monate ausgewählt sein.");
+            throw new BusinessRuleViolationException(BusinessMessages.Get("MonthsRequired"));
         }
 
         if (!request.StartTime.HasValue || !request.EndTime.HasValue)
         {
-            throw new BusinessRuleViolationException("Start- und Endzeit müssen gesetzt sein.");
+            throw new BusinessRuleViolationException(BusinessMessages.Get("StartAndEndRequired"));
         }
 
         if (request.StartTime >= request.EndTime)
         {
-            throw new BusinessRuleViolationException("Startzeit muss vor Endzeit liegen.");
+            throw new BusinessRuleViolationException(BusinessMessages.Get("StartBeforeEnd"));
         }
 
         // -------------------------------------------------
