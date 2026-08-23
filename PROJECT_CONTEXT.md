@@ -11,7 +11,7 @@ Stand: 2026-08-23
 | Name | ConsulatTermine |
 | Kurzbeschreibung | Terminbuchungssystem des Konsulats Algerien in Frankfurt: oeffentliche Terminbuchung fuer Buergerinnen und Buerger, interner Mitarbeiterbereich mit Wartezimmer-Aufruf und Verwaltung. |
 | Projekttyp | Web-Anwendung mit oeffentlichem Buergerbereich und internem Mitarbeiterbereich |
-| Dokumentations- und UI-Sprache | Deutsch (UI zusaetzlich Englisch und Arabisch) |
+| Dokumentations- und UI-Sprache | Dokumentation und Quelltext Deutsch. Die Oberflaeche wird in Deutsch (`de-DE`), Englisch (`en-US`) und Arabisch (`ar-DZ`) ausgeliefert; `de-DE` ist Standard und Rueckfallebene. Siehe `specs/E2 Mehrsprachigkeit`. |
 | Öffentlicher Bereich vorhanden | ja |
 | Interner Mitarbeiterbereich vorhanden | ja |
 
@@ -21,7 +21,7 @@ Stand: 2026-08-23
 |---|---|
 | Stack-Profil | dotnet-blazor |
 | Sprache und Framework | C# 14 / ASP.NET Core 10 / Blazor Server (net10.0) |
-| Zusätzliche Sprachen | JavaScript ausschliesslich fuer Browser-Aufgaben via JS Interop (Kulturumschaltung, Audio-Wiedergabe im Wartezimmer) |
+| Zusätzliche Sprachen | JavaScript ausschliesslich fuer Browser-Aufgaben via JS Interop (Audio-Wiedergabe und Hervorhebung im Wartezimmer) |
 | Datenhaltung | SQL Server über EF Core 10, Code-First mit Migrationen |
 | Testframework | xUnit v3, Testdatenbank SQLite in-memory |
 | Komponentenbibliothek | MudBlazor 8.15 |
@@ -33,6 +33,11 @@ Die verbindliche Ordner- und Modulstruktur steht in `harness/profile.md`.
 Dieses Projekt behält seine gewachsene Vier-Schichten-Struktur statt der
 Zwei-Projekt-Aufteilung des Profils. Die Zuordnung steht in `harness/profile.md`
 Abschnitt 3, die Begründung in `docs/adr/0002-bestehende-schichtstruktur-beibehalten.md`.
+
+Zur Projektmappe kam `ConsulatTermine.UI.Test` hinzu. Es deckt die Teile der
+UI-Schicht ab, die pruefbare Logik ohne Rendering enthalten: die Zuordnung der
+Browsersprache, die Pruefung der Ruecksprungadresse der Sprachumschaltung und die
+Vollstaendigkeit aller Ressourcensaetze.
 
 Weitere Abweichungen:
 
@@ -136,6 +141,8 @@ gibt kein führendes Fremdsystem.
 | Datenart | Master | Schreiber | Leser | Verteilung |
 |---|---|---|---|---|
 | Termine (`Appointments`) | diese Anwendung | Bürger über die Buchung, Mitarbeiter über das Dashboard | Mitarbeiter, Wartezimmer-Anzeige | SignalR an `DisplayHub` und `EmployeeHub` |
+| Sprache einer Buchung (`Appointments.Language`) | diese Anwendung | wird bei der Buchung aus der gewählten Oberflächensprache gesetzt | `SmtpEmailService` | — |
+| Übersetzungen der Services (`Services.NameEnglish`, `NameArabic`, `DescriptionEnglish`, `DescriptionArabic`) | diese Anwendung | Admin | alle | — |
 | Mitarbeiter (`Employees`) | diese Anwendung | ServiceChef und Admin | Mitarbeiter (nur eigener Datensatz), ServiceChef, Admin | — |
 | Services (`Services`) | diese Anwendung | Admin | alle | — |
 | Arbeitszeiten und Pläne | diese Anwendung | ServiceChef und Admin | alle | — |
@@ -166,3 +173,5 @@ in `Appointments` sind noch nicht geklärt, siehe `OPEN_DECISIONS.md` Nummer 14.
 | Arbeitszeitplan | `WorkingSchedulePlan`: Gültigkeitszeitraum, unter dem Arbeitszeiten und Overrides eines Service hängen. Je Service ist höchstens einer aktiv |
 | Wartezimmer | Öffentliche Anzeigetafel, die aufgerufene Bürger zeigt |
 | Mitarbeiterkennung | Systemseitig vergebene Kennung im Format `CDZ-001` |
+| Ressourcensatz | Eine `.resx`-Gruppe mit einem Anker im Quelltext. Die Datei ohne Sprachkuerzel ist Deutsch und zugleich Rueckfallebene, `.en.resx` und `.ar.resx` ergaenzen Englisch und Arabisch |
+| Sprache einer Buchung | Kulturname im Feld `Appointments.Language`. Bestimmt die Sprache jedes Schreibens zu diesem Termin, unabhaengig von der Sprache der ausloesenden Sitzung |
