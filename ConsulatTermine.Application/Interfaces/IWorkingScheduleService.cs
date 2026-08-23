@@ -1,10 +1,8 @@
-using System.Threading.Tasks;
 using ConsulatTermine.Application.DTOs;
 
-namespace ConsulatTermine.Application.Interfaces
+namespace ConsulatTermine.Application.Interfaces;
+
+public interface IWorkingScheduleService
 {
-    public interface IWorkingScheduleService
-    {
-        Task<bool> GenerateScheduleAsync(WorkingScheduleRequestDto request);
-    }
+    Task<bool> GenerateScheduleAsync(WorkingScheduleRequestDto request);
 }

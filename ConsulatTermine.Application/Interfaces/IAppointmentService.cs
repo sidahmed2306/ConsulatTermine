@@ -13,18 +13,18 @@ public interface IAppointmentService
     // --- Ablauf im Konsulat ---
     Task<bool> CheckInAsync(int appointmentId);
     Task<bool> StartProcessingAsync(int appointmentId, int employeeId);
-Task<bool> CompleteAsync(int appointmentId, int employeeId);
-        // Fertig verarbeitet
+    Task<bool> CompleteAsync(int appointmentId, int employeeId);
+    // Fertig verarbeitet
 
     Task<List<Appointment>> BookGroupAsync(GroupBookingDto dto);
 
     Task<List<Appointment>> GetByBookingReferenceAsync(string bookingReference);
 
-  
 
-Task<List<Appointment>> GetAppointmentsForServiceOnDateAsync(
-    int serviceId,
-    DateTime date);
+
+    Task<List<Appointment>> GetAppointmentsForServiceOnDateAsync(
+        int serviceId,
+        DateTime date);
 
     Task<bool> HideFromWaitingRoomAsync(int appointmentId, int employeeId);
 

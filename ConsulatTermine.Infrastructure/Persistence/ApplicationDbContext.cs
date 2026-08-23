@@ -45,11 +45,11 @@ public class ApplicationDbContext : DbContext
             .HasForeignKey(x => x.ServiceId)
             .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<Appointment>()
-    .HasOne(a => a.CurrentEmployee)
-    .WithMany()
-    .HasForeignKey(a => a.CurrentEmployeeId)
-    .OnDelete(DeleteBehavior.SetNull);
+        modelBuilder.Entity<Appointment>()
+.HasOne(a => a.CurrentEmployee)
+.WithMany()
+.HasForeignKey(a => a.CurrentEmployeeId)
+.OnDelete(DeleteBehavior.SetNull);
 
 
 
@@ -89,7 +89,7 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<WorkingHours>()
     .HasOne(w => w.Service)
-    .WithMany(s=>s.WorkingHours)
+    .WithMany(s => s.WorkingHours)
     .HasForeignKey(w => w.ServiceId)
     .OnDelete(DeleteBehavior.Restrict); // ⬅️ WICHTIG
 
@@ -100,11 +100,11 @@ public class ApplicationDbContext : DbContext
         // ====================================================
 
         // 1️⃣ Override -> Service  (NO CASCADE ❗)
-       modelBuilder.Entity<ServiceDayOverride>()
-    .HasOne(o => o.Service)
-    .WithMany(s => s.DayOverrides) // 👈 explizite Navigation
-    .HasForeignKey(o => o.ServiceId)
-    .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<ServiceDayOverride>()
+     .HasOne(o => o.Service)
+     .WithMany(s => s.DayOverrides) // 👈 explizite Navigation
+     .HasForeignKey(o => o.ServiceId)
+     .OnDelete(DeleteBehavior.Restrict);
 
 
         // 2️⃣ Override -> Plan (CASCADE ✅)

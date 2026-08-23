@@ -59,7 +59,9 @@ public class EmployeeAuthService : IEmployeeAuthService
     {
         var employee = await _context.Employees.FindAsync(employeeId);
         if (employee == null)
+        {
             return false;
+        }
 
         employee.TemporaryPassword = newPassword; // später: Hash
         employee.MustChangePassword = false;
@@ -84,13 +86,17 @@ public class EmployeeAuthService : IEmployeeAuthService
     public async Task<bool> RequestPasswordResetAsync(string email)
     {
         if (string.IsNullOrWhiteSpace(email))
+        {
             return true; // Aus Sicherheitsgründen immer Erfolg melden
+        }
 
         var employee = await _context.Employees
             .FirstOrDefaultAsync(e => e.Email == email.Trim() && e.IsActive);
 
         if (employee == null)
+        {
             return true; // Keine Hinweise geben, ob E-Mail existiert
+        }
 
         var token = Guid.NewGuid().ToString("N");
         employee.PasswordResetToken = token;
@@ -112,7 +118,9 @@ public class EmployeeAuthService : IEmployeeAuthService
     public async Task<bool> ResetPasswordWithTokenAsync(string token, string newPassword)
     {
         if (string.IsNullOrWhiteSpace(token) || string.IsNullOrWhiteSpace(newPassword))
+        {
             return false;
+        }
 
         var employee = await _context.Employees
             .FirstOrDefaultAsync(e => e.PasswordResetToken == token);

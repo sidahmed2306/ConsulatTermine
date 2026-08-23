@@ -1,6 +1,6 @@
-namespace ConsulatTermine.Application.DTOs
-{
-  public class ServiceDayOverrideDto
+namespace ConsulatTermine.Application.DTOs;
+
+public class ServiceDayOverrideDto
 {
     public int ServiceId { get; set; }
     public DateTime? Date { get; set; }
@@ -9,6 +9,4 @@ namespace ConsulatTermine.Application.DTOs
     public bool IsClosed { get; set; } = false;
     public DayOfWeek? WeeklyDay { get; set; }
     public int? CapacityPerSlotOverride { get; set; }
-}
-
 }

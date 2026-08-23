@@ -80,7 +80,9 @@ public class EmployeeSessionService
                 await _session.GetItemAsync<int>(EmployeeSessionKeys.EmployeeRole);
 
             if (roleValue > 0)
+            {
                 CurrentRole = (EmployeeRole)roleValue;
+            }
         }
 
         await TouchAsync();

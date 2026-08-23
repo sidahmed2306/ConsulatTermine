@@ -97,7 +97,9 @@ public class WorkingSchedulePlanService : IWorkingSchedulePlanService
     {
         var entity = await _db.WorkingSchedulePlans.FindAsync(id);
         if (entity == null)
+        {
             return false;
+        }
 
         _db.WorkingSchedulePlans.Remove(entity);
         await _db.SaveChangesAsync();
@@ -111,7 +113,9 @@ public class WorkingSchedulePlanService : IWorkingSchedulePlanService
     {
         var entity = await _db.WorkingSchedulePlans.FindAsync(id);
         if (entity == null)
+        {
             return false;
+        }
 
         entity.IsActive = true;
         entity.UpdatedAt = DateTime.UtcNow;

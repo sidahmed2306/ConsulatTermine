@@ -1,5 +1,3 @@
-using ConsulatTermine.Application.DTOs.Booking;
-
 namespace ConsulatTermine.Application.DTOs.Booking;
 
 public class CreateBookingRequestDto

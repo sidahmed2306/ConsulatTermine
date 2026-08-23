@@ -1,4 +1,4 @@
-﻿namespace ConsulatTermine.Application;
+namespace ConsulatTermine.Application;
 
 public class Class1
 {

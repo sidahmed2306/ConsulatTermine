@@ -56,10 +56,10 @@ public class Appointment
     public string BookingReference { get; set; } = string.Empty;
 
     // ---------------------------------------------------------------------
-// Wartezimmer / Display (Version 1)
-// ---------------------------------------------------------------------
-// true = im Wartezimmer-TV sichtbar (aufgerufen), false = ausblenden (ist da)
-public bool IsVisibleInWaitingRoom { get; set; } = false;
+    // Wartezimmer / Display (Version 1)
+    // ---------------------------------------------------------------------
+    // true = im Wartezimmer-TV sichtbar (aufgerufen), false = ausblenden (ist da)
+    public bool IsVisibleInWaitingRoom { get; set; } = false;
 
 
     /// <summary>
@@ -75,31 +75,31 @@ public bool IsVisibleInWaitingRoom { get; set; } = false;
     public bool IsMainPerson { get; set; } = false;
 
     /// <summary>
-/// Telefonnummer der Person (aus Formular).
-/// </summary>
-public string PhoneNumber { get; set; } = string.Empty;
+    /// Telefonnummer der Person (aus Formular).
+    /// </summary>
+    public string PhoneNumber { get; set; } = string.Empty;
 
-/// <summary>
-/// Geburtsdatum der Person (aus Formular).
-/// </summary>
-public DateTime? DateOfBirth { get; set; }
+    /// <summary>
+    /// Geburtsdatum der Person (aus Formular).
+    /// </summary>
+    public DateTime? DateOfBirth { get; set; }
 
-/// <summary>
-/// Sicherheits-Token für die Terminabsage über E-Mail-Link.
-/// </summary>
-public string? CancelToken { get; set; }
+    /// <summary>
+    /// Sicherheits-Token für die Terminabsage über E-Mail-Link.
+    /// </summary>
+    public string? CancelToken { get; set; }
 
-/// <summary>
-/// Ablaufdatum des Cancel-Links.
-/// Nach diesem Zeitpunkt ist eine Absage über den Link nicht mehr möglich.
-/// </summary>
-public DateTime? CancelTokenExpiresAt { get; set; }
+    /// <summary>
+    /// Ablaufdatum des Cancel-Links.
+    /// Nach diesem Zeitpunkt ist eine Absage über den Link nicht mehr möglich.
+    /// </summary>
+    public DateTime? CancelTokenExpiresAt { get; set; }
 
-// ---------------------------------------------------------------------
-// Mitarbeiter-Zuordnung für "Next"-Ablauf (wer bearbeitet den Termin)
-// ---------------------------------------------------------------------
-public int? CurrentEmployeeId { get; set; }
-public Employee? CurrentEmployee { get; set; }
+    // ---------------------------------------------------------------------
+    // Mitarbeiter-Zuordnung für "Next"-Ablauf (wer bearbeitet den Termin)
+    // ---------------------------------------------------------------------
+    public int? CurrentEmployeeId { get; set; }
+    public Employee? CurrentEmployee { get; set; }
 
 
 

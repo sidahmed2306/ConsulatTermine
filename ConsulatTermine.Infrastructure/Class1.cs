@@ -1,4 +1,4 @@
-﻿namespace ConsulatTermine.Infrastructure;
+namespace ConsulatTermine.Infrastructure;
 
 public class Class1
 {

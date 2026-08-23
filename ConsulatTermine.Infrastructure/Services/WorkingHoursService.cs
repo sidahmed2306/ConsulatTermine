@@ -1,4 +1,3 @@
-using ConsulatTermine.Application.Interfaces;
 using ConsulatTermine.Domain.Entities;
 using ConsulatTermine.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -40,7 +39,10 @@ public class WorkingHoursService : IWorkingHoursService
     public async Task<WorkingHours> UpdateAsync(int id, WorkingHours model)
     {
         var entity = await _db.WorkingHours.FindAsync(id);
-        if (entity == null) throw new Exception("WorkingHours not found.");
+        if (entity == null)
+        {
+            throw new Exception("WorkingHours not found.");
+        }
 
         entity.ServiceId = model.ServiceId;
         entity.Day = model.Day;
@@ -54,7 +56,10 @@ public class WorkingHoursService : IWorkingHoursService
     public async Task<bool> DeleteAsync(int id)
     {
         var entity = await _db.WorkingHours.FindAsync(id);
-        if (entity == null) return false;
+        if (entity == null)
+        {
+            return false;
+        }
 
         _db.WorkingHours.Remove(entity);
         await _db.SaveChangesAsync();

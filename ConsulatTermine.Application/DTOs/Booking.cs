@@ -19,14 +19,14 @@ public class BookingPersonDto
     public string? Email { get; set; }
 
     /// <summary>
-/// Telefonnummer der Person (aus dem Formular).
-/// </summary>
-public string? PhoneNumber { get; set; }
+    /// Telefonnummer der Person (aus dem Formular).
+    /// </summary>
+    public string? PhoneNumber { get; set; }
 
-/// <summary>
-/// Geburtsdatum der Person (aus dem Formular).
-/// </summary>
-public DateTime? DateOfBirth { get; set; }
+    /// <summary>
+    /// Geburtsdatum der Person (aus dem Formular).
+    /// </summary>
+    public DateTime? DateOfBirth { get; set; }
 
 
     /// <summary>

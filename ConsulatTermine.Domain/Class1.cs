@@ -1,4 +1,4 @@
-﻿namespace ConsulatTermine.Domain;
+namespace ConsulatTermine.Domain;
 
 public class Class1
 {

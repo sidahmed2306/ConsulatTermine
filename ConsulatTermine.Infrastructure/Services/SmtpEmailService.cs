@@ -1,176 +1,190 @@
 using System.Net;
 using System.Net.Mail;
-using Microsoft.Extensions.Configuration;
-using ConsulatTermine.Application.Interfaces;
 using ConsulatTermine.Application.DTOs.Booking;
+using ConsulatTermine.Application.Interfaces;
+using Microsoft.Extensions.Configuration;
 
-namespace ConsulatTermine.Infrastructure.Services
+namespace ConsulatTermine.Infrastructure.Services;
+
+public class SmtpEmailService : IEmailService
 {
-    public class SmtpEmailService : IEmailService
+    private readonly IConfiguration _configuration;
+
+    public SmtpEmailService(IConfiguration configuration)
     {
-        private readonly IConfiguration _configuration;
+        _configuration = configuration;
+    }
 
-        public SmtpEmailService(IConfiguration configuration)
+    // =============================================================
+    // TERMINBESTÄTIGUNG (ERWEITERT – MIT SERVICE / DATUM / UHRZEIT)
+    // =============================================================
+    public async Task SendBookingConfirmationAsync(
+        string toEmail,
+        string fullName,
+        string bookingReference,
+        string cancelToken,
+        IReadOnlyList<BookingEmailAppointmentDto> appointments)
+    {
+        if (!TryGetEmailConfig(out var email))
         {
-            _configuration = configuration;
+            return;
         }
 
-        // =============================================================
-        // TERMINBESTÄTIGUNG (ERWEITERT – MIT SERVICE / DATUM / UHRZEIT)
-        // =============================================================
-        public async Task SendBookingConfirmationAsync(
-            string toEmail,
-            string fullName,
-            string bookingReference,
-            string cancelToken,
-            IReadOnlyList<BookingEmailAppointmentDto> appointments)
+        var cancelUrl =
+            $"http://localhost:5262/appointment-cancel?ref={bookingReference}&token={cancelToken}";
+
+        var servicesHtml = BuildServicesOverviewHtml(appointments);
+
+        using var smtpClient = CreateSmtpClient(email);
+
+        using var mailMessage = new MailMessage
         {
-            if (!TryGetEmailConfig(out var email))
-                return;
+            From = new MailAddress(email.FromEmail, email.FromName),
+            Subject = "Terminbestätigung – Konsulat",
+            Body = BuildHtmlMailBody(
+                fullName,
+                bookingReference,
+                cancelUrl,
+                servicesHtml),
+            IsBodyHtml = true
+        };
 
-            var cancelUrl =
-                $"http://localhost:5262/appointment-cancel?ref={bookingReference}&token={cancelToken}";
+        mailMessage.To.Add(toEmail);
+        await smtpClient.SendMailAsync(mailMessage);
+    }
 
-            var servicesHtml = BuildServicesOverviewHtml(appointments);
-
-            using var smtpClient = CreateSmtpClient(email);
-
-            using var mailMessage = new MailMessage
-            {
-                From = new MailAddress(email.FromEmail, email.FromName),
-                Subject = "Terminbestätigung – Konsulat",
-                Body = BuildHtmlMailBody(
-                    fullName,
-                    bookingReference,
-                    cancelUrl,
-                    servicesHtml),
-                IsBodyHtml = true
-            };
-
-            mailMessage.To.Add(toEmail);
-            await smtpClient.SendMailAsync(mailMessage);
+    // =============================================================
+    // TEIL-ABSAGE
+    // =============================================================
+    public async Task SendPartialCancellationAsync(
+        string toEmail,
+        string fullName,
+        string serviceName,
+        DateTime date)
+    {
+        if (!TryGetEmailConfig(out var email))
+        {
+            return;
         }
 
-        // =============================================================
-        // TEIL-ABSAGE
-        // =============================================================
-        public async Task SendPartialCancellationAsync(
-            string toEmail,
-            string fullName,
-            string serviceName,
-            DateTime date)
+        using var smtpClient = CreateSmtpClient(email);
+
+        using var mailMessage = new MailMessage
         {
-            if (!TryGetEmailConfig(out var email))
-                return;
-            using var smtpClient = CreateSmtpClient(email);
+            From = new MailAddress(email.FromEmail, email.FromName),
+            Subject = "Termin teilweise abgesagt – Konsulat",
+            Body = BuildPartialCancellationHtmlMailBody(
+                fullName,
+                serviceName,
+                date),
+            IsBodyHtml = true
+        };
 
-            using var mailMessage = new MailMessage
-            {
-                From = new MailAddress(email.FromEmail, email.FromName),
-                Subject = "Termin teilweise abgesagt – Konsulat",
-                Body = BuildPartialCancellationHtmlMailBody(
-                    fullName,
-                    serviceName,
-                    date),
-                IsBodyHtml = true
-            };
+        mailMessage.To.Add(toEmail);
+        await smtpClient.SendMailAsync(mailMessage);
+    }
 
-            mailMessage.To.Add(toEmail);
-            await smtpClient.SendMailAsync(mailMessage);
+    // =============================================================
+    // VOLLSTÄNDIGE ABSAGE
+    // =============================================================
+    public async Task SendCancellationConfirmationAsync(
+        string toEmail,
+        string fullName,
+        string bookingReference)
+    {
+        if (!TryGetEmailConfig(out var email))
+        {
+            return;
         }
 
-        // =============================================================
-        // VOLLSTÄNDIGE ABSAGE
-        // =============================================================
-        public async Task SendCancellationConfirmationAsync(
-            string toEmail,
-            string fullName,
-            string bookingReference)
+        using var smtpClient = CreateSmtpClient(email);
+
+        using var mailMessage = new MailMessage
         {
-            if (!TryGetEmailConfig(out var email))
-                return;
-            using var smtpClient = CreateSmtpClient(email);
+            From = new MailAddress(email.FromEmail, email.FromName),
+            Subject = "Alle Termine abgesagt – Konsulat",
+            Body = BuildCancellationHtmlMailBody(
+                fullName,
+                bookingReference),
+            IsBodyHtml = true
+        };
 
-            using var mailMessage = new MailMessage
-            {
-                From = new MailAddress(email.FromEmail, email.FromName),
-                Subject = "Alle Termine abgesagt – Konsulat",
-                Body = BuildCancellationHtmlMailBody(
-                    fullName,
-                    bookingReference),
-                IsBodyHtml = true
-            };
+        mailMessage.To.Add(toEmail);
+        await smtpClient.SendMailAsync(mailMessage);
+    }
 
-            mailMessage.To.Add(toEmail);
-            await smtpClient.SendMailAsync(mailMessage);
+    // =============================================================
+    // MITARBEITER – WILLKOMMEN
+    // =============================================================
+    public async Task SendEmployeeWelcomeEmailAsync(
+        string toEmail,
+        string fullName,
+        string employeeCode,
+        string temporaryPassword,
+        string changePasswordLink)
+    {
+        if (!TryGetEmailConfig(out var email))
+        {
+            return;
         }
 
-        // =============================================================
-        // MITARBEITER – WILLKOMMEN
-        // =============================================================
-        public async Task SendEmployeeWelcomeEmailAsync(
-            string toEmail,
-            string fullName,
-            string employeeCode,
-            string temporaryPassword,
-            string changePasswordLink)
+        using var smtpClient = CreateSmtpClient(email);
+
+        using var mailMessage = new MailMessage
         {
-            if (!TryGetEmailConfig(out var email))
-                return;
-            using var smtpClient = CreateSmtpClient(email);
+            From = new MailAddress(email.FromEmail, email.FromName),
+            Subject = "Willkommen – Mitarbeiterzugang Konsulat",
+            Body = BuildEmployeeWelcomeHtmlMailBody(
+                fullName,
+                employeeCode,
+                temporaryPassword,
+                changePasswordLink),
+            IsBodyHtml = true
+        };
 
-            using var mailMessage = new MailMessage
-            {
-                From = new MailAddress(email.FromEmail, email.FromName),
-                Subject = "Willkommen – Mitarbeiterzugang Konsulat",
-                Body = BuildEmployeeWelcomeHtmlMailBody(
-                    fullName,
-                    employeeCode,
-                    temporaryPassword,
-                    changePasswordLink),
-                IsBodyHtml = true
-            };
+        mailMessage.To.Add(toEmail);
+        await smtpClient.SendMailAsync(mailMessage);
+    }
 
-            mailMessage.To.Add(toEmail);
-            await smtpClient.SendMailAsync(mailMessage);
+    // =============================================================
+    // MITARBEITER – PASSWORT GEÄNDERT
+    // =============================================================
+    public async Task SendEmployeePasswordChangedConfirmationEmailAsync(
+        string toEmail,
+        string fullName,
+        string loginLink)
+    {
+        if (!TryGetEmailConfig(out var email))
+        {
+            return;
         }
 
-        // =============================================================
-        // MITARBEITER – PASSWORT GEÄNDERT
-        // =============================================================
-        public async Task SendEmployeePasswordChangedConfirmationEmailAsync(
-            string toEmail,
-            string fullName,
-            string loginLink)
+        using var smtpClient = CreateSmtpClient(email);
+
+        using var mailMessage = new MailMessage
         {
-            if (!TryGetEmailConfig(out var email))
-                return;
-            using var smtpClient = CreateSmtpClient(email);
+            From = new MailAddress(email.FromEmail, email.FromName),
+            Subject = "Passwort erfolgreich geändert – Konsulat",
+            Body = BuildEmployeePasswordChangedHtmlMailBody(
+                fullName,
+                loginLink),
+            IsBodyHtml = true
+        };
 
-            using var mailMessage = new MailMessage
-            {
-                From = new MailAddress(email.FromEmail, email.FromName),
-                Subject = "Passwort erfolgreich geändert – Konsulat",
-                Body = BuildEmployeePasswordChangedHtmlMailBody(
-                    fullName,
-                    loginLink),
-                IsBodyHtml = true
-            };
+        mailMessage.To.Add(toEmail);
+        await smtpClient.SendMailAsync(mailMessage);
+    }
 
-            mailMessage.To.Add(toEmail);
-            await smtpClient.SendMailAsync(mailMessage);
-        }
-
-        // =============================================================
-        // HTML – TERMINBESTÄTIGUNG (HAUPT-TEMPLATE)
-        // =============================================================
-        private static string BuildHtmlMailBody(
-            string fullName,
-            string bookingReference,
-            string manageUrl,
-            string servicesOverviewHtml)
-        {
-            return $@"
+    // =============================================================
+    // HTML – TERMINBESTÄTIGUNG (HAUPT-TEMPLATE)
+    // =============================================================
+    private static string BuildHtmlMailBody(
+        string fullName,
+        string bookingReference,
+        string manageUrl,
+        string servicesOverviewHtml)
+    {
+        return $@"
 <!DOCTYPE html>
 <html lang=""de"">
 <body style=""font-family: Arial; background:#f5f5f5; padding:20px"">
@@ -219,53 +233,53 @@ Dies ist eine automatisch generierte E-Mail.
 </div>
 </body>
 </html>";
+    }
+
+    // =============================================================
+    // HTML – SERVICES-ÜBERSICHT (NEU)
+    // =============================================================
+    private static string BuildServicesOverviewHtml(
+        IReadOnlyList<BookingEmailAppointmentDto> appointments)
+    {
+        if (appointments == null || appointments.Count == 0)
+        {
+            return "<p><em>Keine Termindetails verfügbar.</em></p>";
         }
 
-        // =============================================================
-        // HTML – SERVICES-ÜBERSICHT (NEU)
-        // =============================================================
-        private static string BuildServicesOverviewHtml(
-            IReadOnlyList<BookingEmailAppointmentDto> appointments)
+        var grouped = appointments
+            .OrderBy(a => a.DateTime)
+            .GroupBy(a => a.PersonFullName);
+
+        var html = "<h3>Gebuchte Termine</h3>";
+
+        foreach (var personGroup in grouped)
         {
-            if (appointments == null || appointments.Count == 0)
+            html += $"<p><strong>{personGroup.Key}</strong></p><ul>";
+
+            foreach (var a in personGroup)
             {
-                return "<p><em>Keine Termindetails verfügbar.</em></p>";
-            }
-
-            var grouped = appointments
-                .OrderBy(a => a.DateTime)
-                .GroupBy(a => a.PersonFullName);
-
-            var html = "<h3>Gebuchte Termine</h3>";
-
-            foreach (var personGroup in grouped)
-            {
-                html += $"<p><strong>{personGroup.Key}</strong></p><ul>";
-
-                foreach (var a in personGroup)
-                {
-                    html += $@"
+                html += $@"
 <li>
 <strong>{a.ServiceName}</strong><br/>
 {a.DateTime:dd.MM.yyyy} – {a.DateTime:HH:mm} Uhr
 </li>";
-                }
-
-                html += "</ul>";
             }
 
-            return html;
+            html += "</ul>";
         }
 
-        // =============================================================
-        // HTML – TEILABSAGE
-        // =============================================================
-        private static string BuildPartialCancellationHtmlMailBody(
-            string fullName,
-            string serviceName,
-            DateTime date)
-        {
-            return $@"
+        return html;
+    }
+
+    // =============================================================
+    // HTML – TEILABSAGE
+    // =============================================================
+    private static string BuildPartialCancellationHtmlMailBody(
+        string fullName,
+        string serviceName,
+        DateTime date)
+    {
+        return $@"
 <!DOCTYPE html>
 <html lang=""de"">
 <body style=""font-family: Arial; background:#f5f5f5; padding:20px"">
@@ -292,16 +306,16 @@ Mit freundlichen Grüßen<br/>
 </div>
 </body>
 </html>";
-        }
+    }
 
-        // =============================================================
-        // HTML – VOLLSTÄNDIGE ABSAGE
-        // =============================================================
-        private static string BuildCancellationHtmlMailBody(
-            string fullName,
-            string bookingReference)
-        {
-            return $@"
+    // =============================================================
+    // HTML – VOLLSTÄNDIGE ABSAGE
+    // =============================================================
+    private static string BuildCancellationHtmlMailBody(
+        string fullName,
+        string bookingReference)
+    {
+        return $@"
 <!DOCTYPE html>
 <html lang=""de"">
 <body style=""font-family: Arial; background:#f5f5f5; padding:20px"">
@@ -326,18 +340,18 @@ Mit freundlichen Grüßen<br/>
 </div>
 </body>
 </html>";
-        }
+    }
 
-        // =============================================================
-        // HTML – MITARBEITER
-        // =============================================================
-        private static string BuildEmployeeWelcomeHtmlMailBody(
-            string fullName,
-            string employeeCode,
-            string temporaryPassword,
-            string changePasswordLink)
-        {
-            return $@"
+    // =============================================================
+    // HTML – MITARBEITER
+    // =============================================================
+    private static string BuildEmployeeWelcomeHtmlMailBody(
+        string fullName,
+        string employeeCode,
+        string temporaryPassword,
+        string changePasswordLink)
+    {
+        return $@"
 <!DOCTYPE html>
 <html lang=""de"">
 <body style=""font-family: Arial; background:#f5f5f5; padding:20px"">
@@ -362,34 +376,37 @@ Passwort ändern
 </div>
 </body>
 </html>";
+    }
+
+    public async Task SendEmployeePasswordResetEmailAsync(
+        string toEmail,
+        string fullName,
+        string resetLink)
+    {
+        if (!TryGetEmailConfig(out var email))
+        {
+            return;
         }
 
-        public async Task SendEmployeePasswordResetEmailAsync(
-            string toEmail,
-            string fullName,
-            string resetLink)
+        using var smtpClient = CreateSmtpClient(email);
+
+        using var mailMessage = new MailMessage
         {
-            if (!TryGetEmailConfig(out var email))
-                return;
-            using var smtpClient = CreateSmtpClient(email);
+            From = new MailAddress(email.FromEmail, email.FromName),
+            Subject = "Passwort zurücksetzen – Konsulat",
+            Body = BuildEmployeePasswordResetHtmlMailBody(fullName, resetLink),
+            IsBodyHtml = true
+        };
 
-            using var mailMessage = new MailMessage
-            {
-                From = new MailAddress(email.FromEmail, email.FromName),
-                Subject = "Passwort zurücksetzen – Konsulat",
-                Body = BuildEmployeePasswordResetHtmlMailBody(fullName, resetLink),
-                IsBodyHtml = true
-            };
+        mailMessage.To.Add(toEmail);
+        await smtpClient.SendMailAsync(mailMessage);
+    }
 
-            mailMessage.To.Add(toEmail);
-            await smtpClient.SendMailAsync(mailMessage);
-        }
-
-        private static string BuildEmployeePasswordResetHtmlMailBody(
-            string fullName,
-            string resetLink)
-        {
-            return $@"
+    private static string BuildEmployeePasswordResetHtmlMailBody(
+        string fullName,
+        string resetLink)
+    {
+        return $@"
 <!DOCTYPE html>
 <html lang=""de"">
 <body style=""font-family: Arial; background:#f5f5f5; padding:20px"">
@@ -421,13 +438,13 @@ Mit freundlichen Grüßen<br/>
 </div>
 </body>
 </html>";
-        }
+    }
 
-        private static string BuildEmployeePasswordChangedHtmlMailBody(
-            string fullName,
-            string loginLink)
-        {
-            return $@"
+    private static string BuildEmployeePasswordChangedHtmlMailBody(
+        string fullName,
+        string loginLink)
+    {
+        return $@"
 <!DOCTYPE html>
 <html lang=""de"">
 <body style=""font-family: Arial; background:#f5f5f5; padding:20px"">
@@ -448,50 +465,49 @@ Zum Login
 </div>
 </body>
 </html>";
-        }
+    }
 
-        // =============================================================
-        // HELPER
-        // =============================================================
-        /// <summary>Liest E-Mail-Konfiguration. Gibt false zurück, wenn SMTP nicht konfiguriert (z. B. leere User Secrets).</summary>
-        private bool TryGetEmailConfig(
-            out (string SmtpServer, int Port, bool UseSsl,
-                 string Username, string Password,
-                 string FromEmail, string FromName) config)
-        {
-            var c = _configuration.GetSection("Email");
-            var smtpServer = c["SmtpServer"] ?? string.Empty;
-
-            if (string.IsNullOrWhiteSpace(smtpServer))
-            {
-                config = default;
-                return false;
-            }
-
-            config = (
-                smtpServer,
-                int.TryParse(c["Port"], out var port) ? port : 587,
-                bool.TryParse(c["UseSsl"], out var useSsl) && useSsl,
-                c["Username"] ?? string.Empty,
-                c["Password"] ?? string.Empty,
-                c["FromEmail"] ?? string.Empty,
-                c["FromName"] ?? "Konsulat – Terminservice"
-            );
-            return true;
-        }
-
-        private static SmtpClient CreateSmtpClient(
-            (string SmtpServer, int Port, bool UseSsl,
+    // =============================================================
+    // HELPER
+    // =============================================================
+    /// <summary>Liest E-Mail-Konfiguration. Gibt false zurück, wenn SMTP nicht konfiguriert (z. B. leere User Secrets).</summary>
+    private bool TryGetEmailConfig(
+        out (string SmtpServer, int Port, bool UseSsl,
              string Username, string Password,
-             string FromEmail, string FromName) e)
+             string FromEmail, string FromName) config)
+    {
+        var c = _configuration.GetSection("Email");
+        var smtpServer = c["SmtpServer"] ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(smtpServer))
         {
-            return new SmtpClient
-            {
-                Host = e.SmtpServer,
-                Port = e.Port,
-                EnableSsl = e.UseSsl,
-                Credentials = new NetworkCredential(e.Username, e.Password)
-            };
+            config = default;
+            return false;
         }
+
+        config = (
+            smtpServer,
+            int.TryParse(c["Port"], out var port) ? port : 587,
+            bool.TryParse(c["UseSsl"], out var useSsl) && useSsl,
+            c["Username"] ?? string.Empty,
+            c["Password"] ?? string.Empty,
+            c["FromEmail"] ?? string.Empty,
+            c["FromName"] ?? "Konsulat – Terminservice"
+        );
+        return true;
+    }
+
+    private static SmtpClient CreateSmtpClient(
+        (string SmtpServer, int Port, bool UseSsl,
+         string Username, string Password,
+         string FromEmail, string FromName) e)
+    {
+        return new SmtpClient
+        {
+            Host = e.SmtpServer,
+            Port = e.Port,
+            EnableSsl = e.UseSsl,
+            Credentials = new NetworkCredential(e.Username, e.Password)
+        };
     }
 }

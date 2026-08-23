@@ -22,10 +22,14 @@ public static class AppointmentCalculator
         if (dateOverride != null)
         {
             if (dateOverride.IsClosed)
+            {
                 return slots;
+            }
 
             if (!dateOverride.StartTime.HasValue || !dateOverride.EndTime.HasValue)
+            {
                 return slots;
+            }
 
             return BuildSlots(
                 dateOverride.StartTime.Value,
@@ -42,10 +46,14 @@ public static class AppointmentCalculator
         if (weeklyOverride != null)
         {
             if (weeklyOverride.IsClosed)
+            {
                 return slots;
+            }
 
             if (!weeklyOverride.StartTime.HasValue || !weeklyOverride.EndTime.HasValue)
+            {
                 return slots;
+            }
 
             return BuildSlots(
                 weeklyOverride.StartTime.Value,
@@ -57,7 +65,9 @@ public static class AppointmentCalculator
         // 3️⃣ Reguläre Öffnungszeiten
         var work = workingHours.FirstOrDefault(w => w.Day == date.DayOfWeek);
         if (work == null)
+        {
             return slots;
+        }
 
         return BuildSlots(
             work.StartTime,
@@ -74,7 +84,9 @@ public static class AppointmentCalculator
         var slots = new List<(TimeSpan Start, TimeSpan End)>();
 
         if (start >= end)
+        {
             return slots;
+        }
 
         var duration = TimeSpan.FromMinutes(slotDurationMinutes);
         var current = start;
@@ -107,7 +119,9 @@ public static class AppointmentCalculator
         var result = new Dictionary<(TimeSpan Start, TimeSpan End), int>();
 
         if (!slots.Any())
+        {
             return result;
+        }
 
         int capacity = GetEffectiveCapacity(service);
 
@@ -153,7 +167,9 @@ public static class AppointmentCalculator
 
             // Wenn weder vorher noch nachher → Kollision
             if (!endsBefore && !startsAfter)
+            {
                 return false;
+            }
         }
 
         return true;

@@ -1,31 +1,31 @@
 using ConsulatTermine.Application.DTOs.Booking;
 
-namespace ConsulatTermine.Application.Interfaces
+namespace ConsulatTermine.Application.Interfaces;
+
+/// <summary>
+/// Service für den Versand von E-Mails.
+/// Wird z. B. für Terminbestätigungen verwendet.
+/// </summary>
+public interface IEmailService
 {
     /// <summary>
-    /// Service für den Versand von E-Mails.
-    /// Wird z. B. für Terminbestätigungen verwendet.
+    /// Sendet eine Terminbestätigung an die Hauptperson.
     /// </summary>
-    public interface IEmailService
-    {
-        /// <summary>
-        /// Sendet eine Terminbestätigung an die Hauptperson.
-        /// </summary>
-        /// <param name="toEmail">Empfänger (Hauptperson)</param>
-        /// <param name="fullName">Vollständiger Name</param>
-        /// <param name="bookingReference">Buchungsnummer</param>
-      Task SendBookingConfirmationAsync(
-    string toEmail,
-    string fullName,
-    string bookingReference,
-    string cancelToken,
-    IReadOnlyList<BookingEmailAppointmentDto> appointments);
+    /// <param name="toEmail">Empfänger (Hauptperson)</param>
+    /// <param name="fullName">Vollständiger Name</param>
+    /// <param name="bookingReference">Buchungsnummer</param>
+    Task SendBookingConfirmationAsync(
+  string toEmail,
+  string fullName,
+  string bookingReference,
+  string cancelToken,
+  IReadOnlyList<BookingEmailAppointmentDto> appointments);
 
 
-            Task SendCancellationConfirmationAsync(
-    string toEmail,
-    string fullName,
-    string bookingReference);
+    Task SendCancellationConfirmationAsync(
+string toEmail,
+string fullName,
+string bookingReference);
 
     Task SendPartialCancellationAsync(
     string toEmail,
@@ -40,17 +40,14 @@ namespace ConsulatTermine.Application.Interfaces
     string temporaryPassword,
     string changePasswordLink);
 
-Task SendEmployeePasswordChangedConfirmationEmailAsync(
-    string toEmail,
-    string fullName,
-    string loginLink);
+    Task SendEmployeePasswordChangedConfirmationEmailAsync(
+        string toEmail,
+        string fullName,
+        string loginLink);
 
     Task SendEmployeePasswordResetEmailAsync(
         string toEmail,
         string fullName,
         string resetLink);
 
-    }
-
-    
 }

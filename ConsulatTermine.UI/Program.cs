@@ -1,16 +1,16 @@
-using Microsoft.EntityFrameworkCore;
-using ConsulatTermine.Infrastructure.Persistence;
-using Infrastructure.SignalR;
-using MudBlazor.Services;
-using ConsulatTermine.Application.Interfaces;
-using ConsulatTermine.Infrastructure.Services;
-using Blazored.SessionStorage;
-using ConsulatTermine.Application.Interfaces.Booking;
-using ConsulatTermine.Infrastructure.Services.Booking;
-using ConsulatTermine.UI.Authentication;
-using ConsulatTermine.Infrastructure.SignalR;
 using System.Globalization;
+using Blazored.SessionStorage;
+using ConsulatTermine.Application.Interfaces;
+using ConsulatTermine.Application.Interfaces.Booking;
+using ConsulatTermine.Infrastructure.Persistence;
+using ConsulatTermine.Infrastructure.Services;
+using ConsulatTermine.Infrastructure.Services.Booking;
+using ConsulatTermine.Infrastructure.SignalR;
+using ConsulatTermine.UI.Authentication;
+using Infrastructure.SignalR;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.EntityFrameworkCore;
+using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,7 +19,9 @@ var builder = WebApplication.CreateBuilder(args);
 // =====================
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 if (string.IsNullOrWhiteSpace(connectionString))
+{
     throw new InvalidOperationException("ConnectionStrings:DefaultConnection ist in appsettings.json nicht gesetzt.");
+}
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));

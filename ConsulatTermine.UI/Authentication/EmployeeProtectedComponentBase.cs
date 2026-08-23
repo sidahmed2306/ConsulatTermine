@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Components;
-using ConsulatTermine.UI.Authentication;
 
 namespace ConsulatTermine.UI.Authentication;
 
@@ -19,7 +18,9 @@ public abstract class EmployeeProtectedComponentBase : ComponentBase
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender || _checked)
+        {
             return;
+        }
 
         _checked = true;
 

@@ -1,162 +1,47 @@
 using ConsulatTermine.Application.DTOs.Booking;
 using ConsulatTermine.Application.Interfaces.Booking;
-using ConsulatTermine.Domain.Entities;
 using ConsulatTermine.Domain.Enums;
 using ConsulatTermine.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace ConsulatTermine.Infrastructure.Services.Booking
+namespace ConsulatTermine.Infrastructure.Services.Booking;
+
+public class SlotAvailabilityService : ISlotAvailabilityService
 {
-    public class SlotAvailabilityService : ISlotAvailabilityService
+    private readonly ApplicationDbContext _db;
+
+    public SlotAvailabilityService(ApplicationDbContext db)
     {
-        private readonly ApplicationDbContext _db;
+        _db = db;
+    }
 
-        public SlotAvailabilityService(ApplicationDbContext db)
-        {
-            _db = db;
-        }
+    public async Task ValidateSlotCapacitiesAsync(CreateBookingRequestDto request)
+    {
+        var allPersons = GetAllPersons(request);
 
-        public async Task ValidateSlotCapacitiesAsync(CreateBookingRequestDto request)
-        {
-            var allPersons = GetAllPersons(request);
-
-            var grouped = allPersons
-                .SelectMany(p => p.ServiceSlots.Select(s => new
-                {
-                    ServiceId = s.ServiceId,
-                    Date = s.SlotTime.Date,
-                    Time = s.SlotTime
-                }))
-                .GroupBy(x => new { x.ServiceId, x.Date });
-
-            foreach (var group in grouped)
+        var grouped = allPersons
+            .SelectMany(p => p.ServiceSlots.Select(s => new
             {
-                int serviceId = group.Key.ServiceId;
-                DateTime date = group.Key.Date;
+                ServiceId = s.ServiceId,
+                Date = s.SlotTime.Date,
+                Time = s.SlotTime
+            }))
+            .GroupBy(x => new { x.ServiceId, x.Date });
 
-                // 1) Service laden (nur Basis + Employees für Kapazität)
-                var service = await _db.Services
-                    .Include(s => s.AssignedEmployees)
-                    .FirstOrDefaultAsync(s => s.Id == serviceId);
-
-                if (service == null)
-                    throw new Exception($"Service {serviceId} not found.");
-
-                // 2) Aktiven Plan laden
-                var plan = await _db.WorkingSchedulePlans
-                    .Where(p => p.ServiceId == serviceId && p.IsActive)
-                    .OrderByDescending(p => p.ValidFromDate)
-                    .FirstOrDefaultAsync();
-
-                if (plan == null)
-                    throw new Exception($"No active WorkingSchedulePlan found for service {serviceId}.");
-
-                // 3) Datum muss im Plan-Zeitraum liegen
-                var planFrom = plan.ValidFromDate.ToDateTime(TimeOnly.MinValue);
-                var planTo = plan.ValidToDate.ToDateTime(TimeOnly.MaxValue);
-
-                if (date < planFrom || date > planTo)
-                    throw new Exception($"Requested date {date:yyyy-MM-dd} is outside active plan range for service {serviceId}.");
-
-                // 4) Plan-bezogene WorkingHours / Overrides laden
-                var workingHours = await _db.WorkingHours
-                    .Where(w =>
-                        w.ServiceId == serviceId &&
-                        w.WorkingSchedulePlanId == plan.Id)
-                    .ToListAsync();
-
-                var overrides = await _db.ServiceDayOverrides
-                    .Where(o =>
-                        o.ServiceId == serviceId &&
-                        o.WorkingSchedulePlanId == plan.Id)
-                    .ToListAsync();
-
-                // 5) Existierende Termine für diesen Tag laden
-                var existingAppointments = await _db.Appointments
-    .Where(a =>
-        a.ServiceId == serviceId &&
-        a.Date.Date == date.Date &&
-        a.Status == AppointmentStatus.Booked)
-    .ToListAsync();
-
-
-                // 6) Verfügbare Slots berechnen (NEUE Signatur)
-                var freeSlotsDict = AppointmentCalculator.GetAvailableSlots(
-                    service,
-                    date,
-                    workingHours,
-                    overrides,
-                    existingAppointments);
-
-                // 7) Bedarf pro Slot zählen
-                var requestedSlotsGrouped = group
-                    .GroupBy(x => x.Time)
-                    .ToList();
-
-                var now = DateTime.Now;
-                var minSlotTime = now.AddMinutes(30);
-
-                foreach (var slotGroup in requestedSlotsGrouped)
-                {
-                    DateTime slotTime = slotGroup.Key;
-                    var localSlot = slotTime.Kind == DateTimeKind.Utc ? slotTime.ToLocalTime() : slotTime;
-
-                    // Regel wie in der UI: Slot muss mindestens „heute + 30 Min“ sein (nicht in der Vergangenheit / zu nah an „jetzt“)
-                    if (localSlot < minSlotTime)
-                    {
-                        throw new Exception(
-                            "Der gewählte Termin liegt in der Vergangenheit oder in weniger als 30 Minuten. " +
-                            "Bitte wählen Sie einen anderen Slot.");
-                    }
-
-                    // Zeit auf Slot-Granularität runden (z. B. 30 Min), damit kleine Abweichungen nicht zu „not a valid slot“ führen
-                    var timeOfDay = localSlot.TimeOfDay;
-                    var stepMinutes = service.SlotDurationMinutes;
-                    var totalMinutes = (int)timeOfDay.TotalMinutes;
-                    var roundedMinutes = (int)Math.Round((double)totalMinutes / stepMinutes) * stepMinutes;
-                    var timeOfDayRounded = TimeSpan.FromMinutes(roundedMinutes);
-
-                    // Slot-Grenzen aus der DB können minimale Abweichungen haben (z. B. 09:00:00.001) – beim Matching ebenfalls runden, damit der erste Slot (09:00) trifft
-                    var matchingKey = freeSlotsDict.Keys
-                        .FirstOrDefault(k =>
-                        {
-                            var startRounded = RoundTimeToSlotMinutes(k.Start, stepMinutes);
-                            var endRounded = RoundTimeToSlotMinutes(k.End, stepMinutes);
-                            return timeOfDayRounded >= startRounded && timeOfDayRounded < endRounded;
-                        });
-
-                    if (matchingKey.Start == default && matchingKey.End == default)
-                    {
-                        throw new Exception(
-                            $"Requested slot {slotTime:yyyy-MM-dd HH:mm} is not a valid slot for service {serviceId}.");
-                    }
-
-                    int free = freeSlotsDict[matchingKey];
-                    int needed = slotGroup.Count();
-
-                    if (needed > free)
-                    {
-                        throw new Exception(
-                            $"Not enough capacity for service {serviceId} at {slotTime:yyyy-MM-dd HH:mm}. " +
-                            $"Requested: {needed}, Free: {free}");
-                    }
-                }
-            }
-        }
-
-        public async Task<bool> IsSlotAvailableAsync(int serviceId, DateTime slotTime)
+        foreach (var group in grouped)
         {
-            var localSlot = slotTime.Kind == DateTimeKind.Utc ? slotTime.ToLocalTime() : slotTime;
-            var date = localSlot.Date;
-            var timeOfDay = localSlot.TimeOfDay;
+            int serviceId = group.Key.ServiceId;
+            DateTime date = group.Key.Date;
 
-            // 1) Service laden
+            // 1) Service laden (nur Basis + Employees für Kapazität)
             var service = await _db.Services
                 .Include(s => s.AssignedEmployees)
                 .FirstOrDefaultAsync(s => s.Id == serviceId);
 
             if (service == null)
+            {
                 throw new Exception($"Service {serviceId} not found.");
+            }
 
             // 2) Aktiven Plan laden
             var plan = await _db.WorkingSchedulePlans
@@ -165,14 +50,18 @@ namespace ConsulatTermine.Infrastructure.Services.Booking
                 .FirstOrDefaultAsync();
 
             if (plan == null)
+            {
                 throw new Exception($"No active WorkingSchedulePlan found for service {serviceId}.");
+            }
 
-            // 3) Range Check
+            // 3) Datum muss im Plan-Zeitraum liegen
             var planFrom = plan.ValidFromDate.ToDateTime(TimeOnly.MinValue);
             var planTo = plan.ValidToDate.ToDateTime(TimeOnly.MaxValue);
 
             if (date < planFrom || date > planTo)
-                return false;
+            {
+                throw new Exception($"Requested date {date:yyyy-MM-dd} is outside active plan range for service {serviceId}.");
+            }
 
             // 4) Plan-bezogene WorkingHours / Overrides laden
             var workingHours = await _db.WorkingHours
@@ -187,16 +76,16 @@ namespace ConsulatTermine.Infrastructure.Services.Booking
                     o.WorkingSchedulePlanId == plan.Id)
                 .ToListAsync();
 
-            // 5) Existierende Appointments laden
+            // 5) Existierende Termine für diesen Tag laden
             var existingAppointments = await _db.Appointments
-    .Where(a =>
-        a.ServiceId == serviceId &&
-        a.Date.Date == date &&
-        a.Status == AppointmentStatus.Booked)
-    .ToListAsync();
+.Where(a =>
+    a.ServiceId == serviceId &&
+    a.Date.Date == date.Date &&
+    a.Status == AppointmentStatus.Booked)
+.ToListAsync();
 
 
-            // 6) Slots berechnen (NEUE Signatur)
+            // 6) Verfügbare Slots berechnen (NEUE Signatur)
             var freeSlotsDict = AppointmentCalculator.GetAvailableSlots(
                 service,
                 date,
@@ -204,38 +93,165 @@ namespace ConsulatTermine.Infrastructure.Services.Booking
                 overrides,
                 existingAppointments);
 
-            var stepMinutes = service.SlotDurationMinutes;
-            var totalMinutes = (int)timeOfDay.TotalMinutes;
-            var timeOfDayRounded = TimeSpan.FromMinutes((int)Math.Round((double)totalMinutes / stepMinutes) * stepMinutes);
+            // 7) Bedarf pro Slot zählen
+            var requestedSlotsGrouped = group
+                .GroupBy(x => x.Time)
+                .ToList();
 
-            var matchingKey = freeSlotsDict.Keys
-                .FirstOrDefault(k =>
+            var now = DateTime.Now;
+            var minSlotTime = now.AddMinutes(30);
+
+            foreach (var slotGroup in requestedSlotsGrouped)
+            {
+                DateTime slotTime = slotGroup.Key;
+                var localSlot = slotTime.Kind == DateTimeKind.Utc ? slotTime.ToLocalTime() : slotTime;
+
+                // Regel wie in der UI: Slot muss mindestens „heute + 30 Min“ sein (nicht in der Vergangenheit / zu nah an „jetzt“)
+                if (localSlot < minSlotTime)
                 {
-                    var startRounded = RoundTimeToSlotMinutes(k.Start, stepMinutes);
-                    var endRounded = RoundTimeToSlotMinutes(k.End, stepMinutes);
-                    return timeOfDayRounded >= startRounded && timeOfDayRounded < endRounded;
-                });
+                    throw new Exception(
+                        "Der gewählte Termin liegt in der Vergangenheit oder in weniger als 30 Minuten. " +
+                        "Bitte wählen Sie einen anderen Slot.");
+                }
 
-            if (matchingKey.Start == default && matchingKey.End == default)
-                return false;
+                // Zeit auf Slot-Granularität runden (z. B. 30 Min), damit kleine Abweichungen nicht zu „not a valid slot“ führen
+                var timeOfDay = localSlot.TimeOfDay;
+                var stepMinutes = service.SlotDurationMinutes;
+                var totalMinutes = (int)timeOfDay.TotalMinutes;
+                var roundedMinutes = (int)Math.Round((double)totalMinutes / stepMinutes) * stepMinutes;
+                var timeOfDayRounded = TimeSpan.FromMinutes(roundedMinutes);
 
-            return freeSlotsDict[matchingKey] > 0;
+                // Slot-Grenzen aus der DB können minimale Abweichungen haben (z. B. 09:00:00.001) – beim Matching ebenfalls runden, damit der erste Slot (09:00) trifft
+                var matchingKey = freeSlotsDict.Keys
+                    .FirstOrDefault(k =>
+                    {
+                        var startRounded = RoundTimeToSlotMinutes(k.Start, stepMinutes);
+                        var endRounded = RoundTimeToSlotMinutes(k.End, stepMinutes);
+                        return timeOfDayRounded >= startRounded && timeOfDayRounded < endRounded;
+                    });
+
+                if (matchingKey.Start == default && matchingKey.End == default)
+                {
+                    throw new Exception(
+                        $"Requested slot {slotTime:yyyy-MM-dd HH:mm} is not a valid slot for service {serviceId}.");
+                }
+
+                int free = freeSlotsDict[matchingKey];
+                int needed = slotGroup.Count();
+
+                if (needed > free)
+                {
+                    throw new Exception(
+                        $"Not enough capacity for service {serviceId} at {slotTime:yyyy-MM-dd HH:mm}. " +
+                        $"Requested: {needed}, Free: {free}");
+                }
+            }
         }
-
-        private static TimeSpan RoundTimeToSlotMinutes(TimeSpan time, int stepMinutes)
-        {
-            var totalMinutes = (int)time.TotalMinutes;
-            var rounded = (int)Math.Round((double)totalMinutes / stepMinutes) * stepMinutes;
-            if (rounded < 0) rounded = 0;
-            return TimeSpan.FromMinutes(rounded);
-        }
-
-        private static List<BookingPersonDto> GetAllPersons(CreateBookingRequestDto request)
-        {
-            var list = new List<BookingPersonDto> { request.MainPerson };
-            list.AddRange(request.AccompanyingPersons);
-            return list;
-        }
-
     }
+
+    public async Task<bool> IsSlotAvailableAsync(int serviceId, DateTime slotTime)
+    {
+        var localSlot = slotTime.Kind == DateTimeKind.Utc ? slotTime.ToLocalTime() : slotTime;
+        var date = localSlot.Date;
+        var timeOfDay = localSlot.TimeOfDay;
+
+        // 1) Service laden
+        var service = await _db.Services
+            .Include(s => s.AssignedEmployees)
+            .FirstOrDefaultAsync(s => s.Id == serviceId);
+
+        if (service == null)
+        {
+            throw new Exception($"Service {serviceId} not found.");
+        }
+
+        // 2) Aktiven Plan laden
+        var plan = await _db.WorkingSchedulePlans
+            .Where(p => p.ServiceId == serviceId && p.IsActive)
+            .OrderByDescending(p => p.ValidFromDate)
+            .FirstOrDefaultAsync();
+
+        if (plan == null)
+        {
+            throw new Exception($"No active WorkingSchedulePlan found for service {serviceId}.");
+        }
+
+        // 3) Range Check
+        var planFrom = plan.ValidFromDate.ToDateTime(TimeOnly.MinValue);
+        var planTo = plan.ValidToDate.ToDateTime(TimeOnly.MaxValue);
+
+        if (date < planFrom || date > planTo)
+        {
+            return false;
+        }
+
+        // 4) Plan-bezogene WorkingHours / Overrides laden
+        var workingHours = await _db.WorkingHours
+            .Where(w =>
+                w.ServiceId == serviceId &&
+                w.WorkingSchedulePlanId == plan.Id)
+            .ToListAsync();
+
+        var overrides = await _db.ServiceDayOverrides
+            .Where(o =>
+                o.ServiceId == serviceId &&
+                o.WorkingSchedulePlanId == plan.Id)
+            .ToListAsync();
+
+        // 5) Existierende Appointments laden
+        var existingAppointments = await _db.Appointments
+.Where(a =>
+    a.ServiceId == serviceId &&
+    a.Date.Date == date &&
+    a.Status == AppointmentStatus.Booked)
+.ToListAsync();
+
+
+        // 6) Slots berechnen (NEUE Signatur)
+        var freeSlotsDict = AppointmentCalculator.GetAvailableSlots(
+            service,
+            date,
+            workingHours,
+            overrides,
+            existingAppointments);
+
+        var stepMinutes = service.SlotDurationMinutes;
+        var totalMinutes = (int)timeOfDay.TotalMinutes;
+        var timeOfDayRounded = TimeSpan.FromMinutes((int)Math.Round((double)totalMinutes / stepMinutes) * stepMinutes);
+
+        var matchingKey = freeSlotsDict.Keys
+            .FirstOrDefault(k =>
+            {
+                var startRounded = RoundTimeToSlotMinutes(k.Start, stepMinutes);
+                var endRounded = RoundTimeToSlotMinutes(k.End, stepMinutes);
+                return timeOfDayRounded >= startRounded && timeOfDayRounded < endRounded;
+            });
+
+        if (matchingKey.Start == default && matchingKey.End == default)
+        {
+            return false;
+        }
+
+        return freeSlotsDict[matchingKey] > 0;
+    }
+
+    private static TimeSpan RoundTimeToSlotMinutes(TimeSpan time, int stepMinutes)
+    {
+        var totalMinutes = (int)time.TotalMinutes;
+        var rounded = (int)Math.Round((double)totalMinutes / stepMinutes) * stepMinutes;
+        if (rounded < 0)
+        {
+            rounded = 0;
+        }
+
+        return TimeSpan.FromMinutes(rounded);
+    }
+
+    private static List<BookingPersonDto> GetAllPersons(CreateBookingRequestDto request)
+    {
+        var list = new List<BookingPersonDto> { request.MainPerson };
+        list.AddRange(request.AccompanyingPersons);
+        return list;
+    }
+
 }
