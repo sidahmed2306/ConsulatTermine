@@ -19,11 +19,17 @@
 
   <PropertyGroup>
     <!--
-      CA1707 verbietet Unterstriche in Membernamen. Testnamen folgen bewusst dem
-      Schema Ausgangslage_Aktion_Ergebnis, das harness/profile.md Abschnitt 13
-      ausdrücklich vorgibt. Die Ausnahme gilt nur für Testprojekte.
+      Zwei Benennungsregeln gelten für Testmethoden bewusst nicht. Die Ausnahme ist
+      auf Testprojekte begrenzt; im Anwendungscode bleiben beide Regeln in Kraft.
+
+      CA1707 verbietet Unterstriche in Membernamen. IDE1006 verlangt für asynchrone
+      Methoden das Suffix "Async". Testnamen folgen stattdessen dem Schema
+      Ausgangslage_Aktion_Ergebnis, das harness/profile.md Abschnitt 13 ausdrücklich
+      vorgibt und dessen eigenes Beispiel ebenfalls nicht auf "Async" endet. Ein
+      erzwungenes Suffix würde jeden Testnamen unleserlich machen, ohne dass es einen
+      Aufrufer gäbe, dem es hülfe.
     -->
-    <NoWarn>$(NoWarn);CA1707</NoWarn>
+    <NoWarn>$(NoWarn);CA1707;IDE1006</NoWarn>
   </PropertyGroup>
 
 </Project>
