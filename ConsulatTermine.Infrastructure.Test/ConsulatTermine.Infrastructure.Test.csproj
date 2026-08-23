@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ConsulatTermine.Infrastructure\ConsulatTermine.Infrastructure.csproj" />
+    <ProjectReference Include="..\ConsulatTermine.Application\ConsulatTermine.Application.csproj" />
+    <ProjectReference Include="..\ConsulatTermine.Domain\ConsulatTermine.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+    <!-- SQLite in-memory statt des nicht relationalen InMemory-Providers:
+         harness/profile.md Abschnitt 13 verlangt eine relationale Testdatenbank,
+         damit Fremdschlüssel, eindeutige Indizes und Längen tatsächlich greifen. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+  </ItemGroup>
+
+
+  <PropertyGroup>
+    <!--
+      CA1707 verbietet Unterstriche in Membernamen. Testnamen folgen bewusst dem
+      Schema Ausgangslage_Aktion_Ergebnis, das harness/profile.md Abschnitt 13
+      ausdrücklich vorgibt. Die Ausnahme gilt nur für Testprojekte.
+    -->
+    <NoWarn>$(NoWarn);CA1707</NoWarn>
+  </PropertyGroup>
+
+</Project>

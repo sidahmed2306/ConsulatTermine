@@ -7,7 +7,7 @@ namespace ConsulatTermine.Infrastructure.Services.Booking;
 public class BookingValidationService : IBookingValidationService
 {
     // Mindestpuffer zwischen zwei Services derselben Person (30 Minuten)
-    private static readonly TimeSpan ServiceGap = TimeSpan.FromMinutes(30);
+    private static readonly TimeSpan _serviceGap = TimeSpan.FromMinutes(30);
 
     public async Task ValidateBookingRequestAsync(CreateBookingRequestDto request)
     {
@@ -16,8 +16,6 @@ public class BookingValidationService : IBookingValidationService
         ValidatePersonsBasicRules(request);
 
         ValidateServiceSlotCounts(request);
-
-        ValidateNoSlotOverlapForSinglePerson(request);
 
         ValidateMultiPersonSlotConsistency(request);
 
@@ -88,62 +86,28 @@ public class BookingValidationService : IBookingValidationService
 
         foreach (var group in groupedByService)
         {
-            int serviceId = group.Key;
+            var totalSlots = group.Count();
 
-            int totalSlots = group.Count();
-            int totalPersonsUsingService = group.Select(x => x.p).Count();
+            // Distinct auf der Person: ohne das zaehlte der Ausdruck die Eintraege der
+            // Gruppe und war damit immer gleich totalSlots, die Pruefung lief also leer.
+            // Fachlich waehlt jede Person einen Service hoechstens einmal.
+            var personsUsingService = group.Select(x => x.p).Distinct().Count();
 
-            if (totalSlots != totalPersonsUsingService)
+            if (totalSlots != personsUsingService)
             {
                 throw new BusinessRuleViolationException(
-                    $"Service {serviceId} has {totalSlots} slots but {totalPersonsUsingService} persons selected it.");
+                    "Für einen Service wurden mehr Termine gewählt als Personen daran teilnehmen.");
             }
+
         }
     }
 
     // ------------------------------------------------------------
-    // 4) Einzelperson → mehrere Services:
-    //    Die Slots dürfen sich nicht überschneiden (Startzeit),
-    //    und sie müssen durch mindestens 30 Minuten getrennt sein.
+    // 4) Jede Person darf ihre Services nur mit Mindestabstand belegen.
     //
-    // Beispiel:
-    // Pass 08:45 → dauert 20–30 Minuten
-    // Visa frühestens ab 09:15 / 09:30
-    // ------------------------------------------------------------
-    private static void ValidateNoSlotOverlapForSinglePerson(CreateBookingRequestDto request)
-    {
-        var persons = GetAllPersons(request);
-        if (persons.Count != 1)
-        {
-            return;
-        }
-
-        var single = persons.First();
-
-        var slots = single.ServiceSlots
-            .OrderBy(s => s.SlotTime)
-            .ToList();
-
-        for (int i = 0; i < slots.Count - 1; i++)
-        {
-            var current = slots[i];
-            var next = slots[i + 1];
-
-            if (next.SlotTime < current.SlotTime + ServiceGap)
-            {
-                throw new BusinessRuleViolationException(
-                    $"Service slots for the same person must be at least {ServiceGap.TotalMinutes} minutes apart.");
-            }
-        }
-    }
-
-    // ------------------------------------------------------------
-    // 5) Mehrere Personen → mehrere Services:
-    //    Prüfen, dass jede Person pro Service genau 1 Slot hat
-    //    (dies wurde oben geprüft), aber zusätzlich:
-    //
-    //    A) SLOTS DÜRFEN SICH NICHT ZWISCHEN SERVICES FÜR DIE GLEICHE PERSON ÜBERLAPPEN
-    //    B) ZEITLÜCKE WIRD EINGEHALTEN
+    //    Gemessen wird von Startzeit zu Startzeit: der Abstand deckt damit die Dauer
+    //    des vorangehenden Termins und die Wegezeit zwischen zwei Schaltern ab.
+    //    Beispiel: Pass 08:45, Visa fruehestens 09:15.
     //
     // ------------------------------------------------------------
     private static void ValidateMultiPersonSlotConsistency(CreateBookingRequestDto request)
@@ -161,10 +125,11 @@ public class BookingValidationService : IBookingValidationService
                 var current = slots[i];
                 var next = slots[i + 1];
 
-                if (next.SlotTime < current.SlotTime + ServiceGap)
+                if (next.SlotTime < current.SlotTime + _serviceGap)
                 {
                     throw new BusinessRuleViolationException(
-                        $"Person '{p.FullName}' has overlapping or too-close service slots.");
+                        $"Zwischen zwei Terminen von {p.FullName} müssen mindestens "
+                        + $"{_serviceGap.TotalMinutes:0} Minuten liegen.");
                 }
             }
         }

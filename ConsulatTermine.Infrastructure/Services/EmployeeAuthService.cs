@@ -69,7 +69,7 @@ public sealed class EmployeeAuthService : IEmployeeAuthService
             // Kein fruehes Return ohne Aufwand: der Vergleich laeuft trotzdem gegen einen
             // Dummy-Hash, damit die Antwortzeit keinen Rueckschluss auf die Existenz des
             // Kontos erlaubt.
-            _passwordHasher.VerifyHashedPassword(new Employee(), DummyHash, password ?? string.Empty);
+            _passwordHasher.VerifyHashedPassword(new Employee(), _dummyHash, password ?? string.Empty);
             ServiceLog.LoginRejectedUnknownAccount(_logger);
             return Failed();
         }
@@ -284,6 +284,6 @@ public sealed class EmployeeAuthService : IEmployeeAuthService
     /// Gueltiger Hash eines Zufallswertes. Dient nur dazu, bei unbekannter Kennung dieselbe
     /// Rechenzeit aufzuwenden wie bei einer bekannten.
     /// </summary>
-    private static readonly string DummyHash =
+    private static readonly string _dummyHash =
         new PasswordHasher<Employee>().HashPassword(new Employee(), "nicht-verwendetes-passwort");
 }
