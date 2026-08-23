@@ -1,3 +1,4 @@
+using ConsulatTermine.Application.Exceptions;
 using ConsulatTermine.Application.Interfaces;
 using ConsulatTermine.Domain.Entities;
 using ConsulatTermine.Infrastructure.Persistence;
@@ -55,7 +56,7 @@ public class EmployeeAssignmentService : IEmployeeAssignmentService
 
         if (service == null)
         {
-            throw new Exception("Service nicht gefunden");
+            throw new BusinessRuleViolationException("Service nicht gefunden");
         }
 
         // EINZIGE Stelle, die CapacityPerSlot ändert
@@ -85,7 +86,7 @@ public class EmployeeAssignmentService : IEmployeeAssignmentService
 
         if (service == null)
         {
-            throw new Exception("Service nicht gefunden");
+            throw new BusinessRuleViolationException("Service nicht gefunden");
         }
 
         service.CapacityPerSlot = Math.Max(0, service.AssignedEmployees.Count - 1);

@@ -1,6 +1,7 @@
-using ConsulatTermine.Application.Services;
 using ConsulatTermine.Application.DTOs.Booking;
+using ConsulatTermine.Application.Exceptions;
 using ConsulatTermine.Application.Interfaces.Booking;
+using ConsulatTermine.Application.Services;
 using ConsulatTermine.Domain.Enums;
 using ConsulatTermine.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -42,7 +43,7 @@ public class SlotAvailabilityService : ISlotAvailabilityService
 
             if (service == null)
             {
-                throw new Exception($"Service {serviceId} not found.");
+                throw new BusinessRuleViolationException("Der Service wurde nicht gefunden.");
             }
 
             // 2) Aktiven Plan laden
@@ -53,7 +54,7 @@ public class SlotAvailabilityService : ISlotAvailabilityService
 
             if (plan == null)
             {
-                throw new Exception($"No active WorkingSchedulePlan found for service {serviceId}.");
+                throw new BusinessRuleViolationException("Für diesen Service ist derzeit kein Arbeitszeitplan hinterlegt.");
             }
 
             // 3) Datum muss im Plan-Zeitraum liegen
@@ -62,7 +63,7 @@ public class SlotAvailabilityService : ISlotAvailabilityService
 
             if (date < planFrom || date > planTo)
             {
-                throw new Exception($"Requested date {date:yyyy-MM-dd} is outside active plan range for service {serviceId}.");
+                throw new BusinessRuleViolationException($"Für den {date:dd.MM.yyyy} können keine Termine vergeben werden.");
             }
 
             // 4) Plan-bezogene WorkingHours / Overrides laden
@@ -111,7 +112,7 @@ public class SlotAvailabilityService : ISlotAvailabilityService
                 // Regel wie in der UI: Slot muss mindestens „heute + 30 Min“ sein (nicht in der Vergangenheit / zu nah an „jetzt“)
                 if (localSlot < minSlotTime)
                 {
-                    throw new Exception(
+                    throw new BusinessRuleViolationException(
                         "Der gewählte Termin liegt in der Vergangenheit oder in weniger als 30 Minuten. " +
                         "Bitte wählen Sie einen anderen Slot.");
                 }
@@ -134,7 +135,7 @@ public class SlotAvailabilityService : ISlotAvailabilityService
 
                 if (matchingKey.Start == default && matchingKey.End == default)
                 {
-                    throw new Exception(
+                    throw new BusinessRuleViolationException(
                         $"Requested slot {slotTime:yyyy-MM-dd HH:mm} is not a valid slot for service {serviceId}.");
                 }
 
@@ -143,7 +144,7 @@ public class SlotAvailabilityService : ISlotAvailabilityService
 
                 if (needed > free)
                 {
-                    throw new Exception(
+                    throw new BusinessRuleViolationException(
                         $"Not enough capacity for service {serviceId} at {slotTime:yyyy-MM-dd HH:mm}. " +
                         $"Requested: {needed}, Free: {free}");
                 }
@@ -165,7 +166,7 @@ public class SlotAvailabilityService : ISlotAvailabilityService
 
         if (service == null)
         {
-            throw new Exception($"Service {serviceId} not found.");
+            throw new BusinessRuleViolationException("Der Service wurde nicht gefunden.");
         }
 
         // 2) Aktiven Plan laden
@@ -176,7 +177,7 @@ public class SlotAvailabilityService : ISlotAvailabilityService
 
         if (plan == null)
         {
-            throw new Exception($"No active WorkingSchedulePlan found for service {serviceId}.");
+            throw new BusinessRuleViolationException("Für diesen Service ist derzeit kein Arbeitszeitplan hinterlegt.");
         }
 
         // 3) Range Check

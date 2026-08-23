@@ -1,4 +1,5 @@
 using ConsulatTermine.Application.DTOs;
+using ConsulatTermine.Application.Exceptions;
 using ConsulatTermine.Application.Interfaces;
 using ConsulatTermine.Domain.Entities;
 using ConsulatTermine.Infrastructure.Persistence;
@@ -85,7 +86,7 @@ public class ServiceService : IServiceService
 
         if (entity == null)
         {
-            throw new Exception("Service not found");
+            throw new BusinessRuleViolationException("Der Service wurde nicht gefunden.");
         }
 
         entity.Name = dto.Name;

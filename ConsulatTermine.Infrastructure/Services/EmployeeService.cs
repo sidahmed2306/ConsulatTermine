@@ -143,17 +143,14 @@ public sealed class EmployeeService : IEmployeeService
         context.Employees.Add(employee);
         await context.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation(
-            "Mitarbeiter {EmployeeId} mit Kennung {EmployeeCode} angelegt.",
-            employee.Id,
-            employee.EmployeeCode);
+        ServiceLog.EmployeeCreated(_logger, employee.Id, employee.EmployeeCode);
 
         await _emailService.SendEmployeeWelcomeEmailAsync(
             toEmail: employee.Email,
             fullName: FullNameOf(employee),
             employeeCode: employee.EmployeeCode,
             temporaryPassword: initialPassword,
-            changePasswordLink: BuildLink($"employee/change-password/{employee.Id}"));
+            changePasswordLink: BuildLink("employee/login"));
 
         return employee;
     }
@@ -188,7 +185,7 @@ public sealed class EmployeeService : IEmployeeService
         // Die Kennung ist systemseitig vergeben und bleibt unveraendert.
         await context.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Mitarbeiter {EmployeeId} geaendert.", employee.Id);
+        ServiceLog.EmployeeUpdated(_logger, employee.Id);
         return employee;
     }
 
@@ -227,7 +224,7 @@ public sealed class EmployeeService : IEmployeeService
         context.Employees.Remove(employee);
         await context.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Mitarbeiter {EmployeeId} geloescht.", id);
+        ServiceLog.EmployeeDeleted(_logger, id);
         return true;
     }
 
@@ -271,19 +268,14 @@ public sealed class EmployeeService : IEmployeeService
         context.Employees.Add(admin);
         await context.SaveChangesAsync(cancellationToken);
 
-        _logger.LogWarning(
-            "Kein Administrator vorhanden. Konto {EmployeeCode} wurde angelegt; das "
-            + "Initialpasswort wurde per E-Mail an {Email} versendet und muss beim ersten "
-            + "Login geaendert werden.",
-            admin.EmployeeCode,
-            admin.Email);
+        ServiceLog.InitialAdminCreated(_logger, admin.EmployeeCode);
 
         await _emailService.SendEmployeeWelcomeEmailAsync(
             toEmail: admin.Email,
             fullName: FullNameOf(admin),
             employeeCode: admin.EmployeeCode,
             temporaryPassword: initialPassword,
-            changePasswordLink: BuildLink($"employee/change-password/{admin.Id}"));
+            changePasswordLink: BuildLink("employee/login"));
     }
 
     /// <summary>

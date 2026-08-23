@@ -15,13 +15,16 @@
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
 
-    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- Notwendig, damit IDE0005 (unnötige using-Direktiven) im Build greift.
+         Die Pflicht zu XML-Kommentaren auf jedem Member (CS1591) bleibt
+         über NoWarn aus: dokumentiert wird, was nicht trivial ist. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <InvariantGlobalization>false</InvariantGlobalization>
   </PropertyGroup>
 
   <!-- Generierter Code wird nicht wie Anwendungscode gepflegt: harness/code.md Abschnitt 3. -->
   <PropertyGroup>
-    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <NoWarn>$(NoWarn);CS1591;CS1573</NoWarn>
   </PropertyGroup>
 
 </Project>

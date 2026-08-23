@@ -168,9 +168,7 @@ static async Task EnsureInitialAdminAsync(WebApplication app)
     var adminEmail = app.Configuration["Application:InitialAdminEmail"];
     if (string.IsNullOrWhiteSpace(adminEmail))
     {
-        app.Logger.LogInformation(
-            "Application:InitialAdminEmail ist nicht gesetzt. Es wird kein "
-            + "Administrator angelegt.");
+        UiLog.InitialAdminEmailMissing(app.Logger);
         return;
     }
 

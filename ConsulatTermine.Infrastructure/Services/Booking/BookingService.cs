@@ -1,10 +1,11 @@
-using Microsoft.EntityFrameworkCore;
 using ConsulatTermine.Application.DTOs.Booking;
 using ConsulatTermine.Application.Interfaces;
 using ConsulatTermine.Application.Interfaces.Booking;
 using ConsulatTermine.Domain.Entities;
 using ConsulatTermine.Domain.Enums;
 using ConsulatTermine.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace ConsulatTermine.Infrastructure.Services.Booking;
 
@@ -15,19 +16,22 @@ public class BookingService : IBookingService
     private readonly ISlotAvailabilityService _slotService;
     private readonly IBookingReferenceGenerator _referenceGenerator;
     private readonly IEmailService _emailService;
+    private readonly ILogger<BookingService> _logger;
 
     public BookingService(
         IDbContextFactory<ApplicationDbContext> contextFactory,
         IBookingValidationService validationService,
         ISlotAvailabilityService slotService,
         IBookingReferenceGenerator referenceGenerator,
-        IEmailService emailService)
+        IEmailService emailService,
+        ILogger<BookingService> logger)
     {
         _contextFactory = contextFactory;
         _validationService = validationService;
         _slotService = slotService;
         _referenceGenerator = referenceGenerator;
         _emailService = emailService;
+        _logger = logger;
     }
 
     // --------------------------------------------------------------------
@@ -106,8 +110,9 @@ public class BookingService : IBookingService
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("EMAIL ERROR (ignored):");
-                    Console.WriteLine(ex.ToString());
+                    // Die Buchung ist gespeichert und bleibt gültig, auch wenn die
+                    // Bestätigungsmail scheitert. Der Fehler wird protokolliert.
+                    ServiceLog.ConfirmationMailFailed(_logger, ex, bookingRef);
                 }
             });
         }

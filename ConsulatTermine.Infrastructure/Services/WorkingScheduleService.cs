@@ -1,5 +1,6 @@
 using ConsulatTermine.Application.DTOs;
 using ConsulatTermine.Application.DTOs.WorkingSchedulePlan;
+using ConsulatTermine.Application.Exceptions;
 using ConsulatTermine.Application.Interfaces;
 using ConsulatTermine.Domain.Entities;
 using ConsulatTermine.Infrastructure.Persistence;
@@ -26,19 +27,19 @@ public class WorkingScheduleService : IWorkingScheduleService
         // -------------------------------------------------
         // 0) VALIDIERUNG
         // -------------------------------------------------
-        if (!request.Months.Any())
+        if (request.Months.Count == 0)
         {
-            throw new Exception("Es müssen Monate ausgewählt sein.");
+            throw new BusinessRuleViolationException("Es müssen Monate ausgewählt sein.");
         }
 
         if (!request.StartTime.HasValue || !request.EndTime.HasValue)
         {
-            throw new Exception("Start- und Endzeit müssen gesetzt sein.");
+            throw new BusinessRuleViolationException("Start- und Endzeit müssen gesetzt sein.");
         }
 
         if (request.StartTime >= request.EndTime)
         {
-            throw new Exception("Startzeit muss vor Endzeit liegen.");
+            throw new BusinessRuleViolationException("Startzeit muss vor Endzeit liegen.");
         }
 
         // -------------------------------------------------
@@ -86,7 +87,7 @@ public class WorkingScheduleService : IWorkingScheduleService
                 o.Date <= validTo)
             .ToList();
 
-        if (overridesToDelete.Any())
+        if (overridesToDelete.Count > 0)
         {
             db.ServiceDayOverrides.RemoveRange(overridesToDelete);
         }
@@ -167,7 +168,7 @@ public class WorkingScheduleService : IWorkingScheduleService
                     o.Date == date)
                 .ToList();
 
-            if (existing.Any())
+            if (existing.Count > 0)
             {
                 db.ServiceDayOverrides.RemoveRange(existing);
             }

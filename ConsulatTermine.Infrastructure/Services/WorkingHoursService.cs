@@ -1,3 +1,4 @@
+using ConsulatTermine.Application.Exceptions;
 using ConsulatTermine.Application.Interfaces;
 using ConsulatTermine.Domain.Entities;
 using ConsulatTermine.Infrastructure.Persistence;
@@ -49,7 +50,7 @@ public class WorkingHoursService : IWorkingHoursService
         var entity = await db.WorkingHours.FindAsync(id);
         if (entity == null)
         {
-            throw new Exception("WorkingHours not found.");
+            throw new BusinessRuleViolationException("Die Arbeitszeit wurde nicht gefunden.");
         }
 
         entity.ServiceId = model.ServiceId;

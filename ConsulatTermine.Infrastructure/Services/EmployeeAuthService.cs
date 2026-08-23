@@ -70,16 +70,13 @@ public sealed class EmployeeAuthService : IEmployeeAuthService
             // Dummy-Hash, damit die Antwortzeit keinen Rueckschluss auf die Existenz des
             // Kontos erlaubt.
             _passwordHasher.VerifyHashedPassword(new Employee(), DummyHash, password ?? string.Empty);
-            _logger.LogInformation("Anmeldung fehlgeschlagen: unbekannte oder inaktive Kennung.");
+            ServiceLog.LoginRejectedUnknownAccount(_logger);
             return Failed();
         }
 
         if (employee.LockoutEndsAt is { } lockoutEnd && lockoutEnd > now)
         {
-            _logger.LogWarning(
-                "Anmeldung abgelehnt: Konto {EmployeeId} ist bis {LockoutEnd} gesperrt.",
-                employee.Id,
-                lockoutEnd);
+            ServiceLog.LoginRejectedLockedOut(_logger, employee.Id, lockoutEnd);
             return Failed();
         }
 
@@ -105,7 +102,7 @@ public sealed class EmployeeAuthService : IEmployeeAuthService
         employee.LockoutEndsAt = null;
         await context.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Mitarbeiter {EmployeeId} hat sich angemeldet.", employee.Id);
+        ServiceLog.LoginSucceeded(_logger, employee.Id);
 
         return new EmployeeLoginResultDto
         {
@@ -133,7 +130,7 @@ public sealed class EmployeeAuthService : IEmployeeAuthService
         ApplyNewPassword(employee, newPassword);
         await context.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Mitarbeiter {EmployeeId} hat das Passwort geaendert.", employee.Id);
+        ServiceLog.PasswordChanged(_logger, employee.Id);
 
         await SendPasswordChangedMailAsync(employee);
         return true;
@@ -159,7 +156,7 @@ public sealed class EmployeeAuthService : IEmployeeAuthService
 
         if (employee is null)
         {
-            _logger.LogInformation("Passwort-Reset fuer unbekannte Adresse angefordert.");
+            ServiceLog.PasswordResetRequestedForUnknownAddress(_logger);
             return true;
         }
 
@@ -178,7 +175,7 @@ public sealed class EmployeeAuthService : IEmployeeAuthService
             FullNameOf(employee),
             resetLink);
 
-        _logger.LogInformation("Passwort-Reset fuer Mitarbeiter {EmployeeId} angefordert.", employee.Id);
+        ServiceLog.PasswordResetRequested(_logger, employee.Id);
         return true;
     }
 
@@ -206,14 +203,14 @@ public sealed class EmployeeAuthService : IEmployeeAuthService
 
         if (employee is null)
         {
-            _logger.LogWarning("Passwort-Reset mit ungueltigem oder abgelaufenem Token abgelehnt.");
+            ServiceLog.PasswordResetTokenRejected(_logger);
             return false;
         }
 
         ApplyNewPassword(employee, newPassword);
         await context.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Passwort von Mitarbeiter {EmployeeId} wurde zurueckgesetzt.", employee.Id);
+        ServiceLog.PasswordReset(_logger, employee.Id);
 
         await SendPasswordChangedMailAsync(employee);
         return true;
@@ -246,18 +243,11 @@ public sealed class EmployeeAuthService : IEmployeeAuthService
             employee.LockoutEndsAt = now + _loginOptions.LockoutDuration;
             employee.FailedLoginAttempts = 0;
 
-            _logger.LogWarning(
-                "Konto {EmployeeId} nach zu vielen Fehlversuchen bis {LockoutEnd} gesperrt.",
-                employee.Id,
-                employee.LockoutEndsAt);
+            ServiceLog.AccountLockedOut(_logger, employee.Id, employee.LockoutEndsAt);
         }
         else
         {
-            _logger.LogInformation(
-                "Fehlversuch {Attempt} von {Max} fuer Mitarbeiter {EmployeeId}.",
-                employee.FailedLoginAttempts,
-                _loginOptions.MaxFailedAttempts,
-                employee.Id);
+            ServiceLog.LoginAttemptFailed(_logger, employee.FailedLoginAttempts, _loginOptions.MaxFailedAttempts, employee.Id);
         }
 
         await context.SaveChangesAsync(cancellationToken);

@@ -6,7 +6,7 @@ public class ServiceDayOverrideDto
     public DateTime? Date { get; set; }
     public TimeSpan? StartTime { get; set; }
     public TimeSpan? EndTime { get; set; }
-    public bool IsClosed { get; set; } = false;
+    public bool IsClosed { get; set; }
     public DayOfWeek? WeeklyDay { get; set; }
     public int? CapacityPerSlotOverride { get; set; }
 }

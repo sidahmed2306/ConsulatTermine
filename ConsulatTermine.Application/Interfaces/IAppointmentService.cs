@@ -6,7 +6,7 @@ namespace ConsulatTermine.Application.Interfaces;
 public interface IAppointmentService
 {
     // --- Buchung & freie Slots ---
-    Task<List<AvailableSlotDto>> GetAvailableSlotDtosAsync(int serviceId, DateTime date);
+    Task<List<AvailableSlotDto>> GetAvailableSlotDtosAsync(int serviceId, DateTime appointmentDate);
     Task<Appointment> BookAsync(int serviceId, DateTime slotStart, string fullName, string email);
     Task<bool> CancelAsync(int appointmentId);
 
@@ -24,7 +24,7 @@ public interface IAppointmentService
 
     Task<List<Appointment>> GetAppointmentsForServiceOnDateAsync(
         int serviceId,
-        DateTime date);
+        DateTime appointmentDate);
 
     Task<bool> HideFromWaitingRoomAsync(int appointmentId, int employeeId);
 

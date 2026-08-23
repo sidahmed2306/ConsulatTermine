@@ -120,7 +120,7 @@ public static class AppointmentCalculator
         var slots = GetDailySlots(service, date, workingHours, overrides);
         var result = new Dictionary<(TimeSpan Start, TimeSpan End), int>();
 
-        if (!slots.Any())
+        if (slots.Count == 0)
         {
             return result;
         }

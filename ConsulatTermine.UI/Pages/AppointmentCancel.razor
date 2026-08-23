@@ -9,6 +9,7 @@
 @inject ConsulatTermine.Application.Interfaces.IAppointmentService AppointmentService
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject ILogger<AppointmentCancel> Logger
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mx-auto mt-8">
 
@@ -140,8 +141,10 @@
         }
         catch (Exception ex)
         {
+            // Die Anzeige bleibt allgemein: der Details gehören in das geschützte Log,
+            // nicht auf eine öffentlich erreichbare Seite.
             ErrorMessage = "Fehler beim Laden des Termins.";
-            Console.WriteLine(ex);
+            Logger.LogError(ex, "Termin zur Buchung {BookingReference} konnte nicht geladen werden.", BookingReference);
         }
         finally
         {
@@ -173,7 +176,7 @@ if (Appointments.All(a => a.Status == AppointmentStatus.Cancelled))
         catch (Exception ex)
         {
             Snackbar.Add("Fehler beim Absagen des Termins.", Severity.Error);
-            Console.WriteLine(ex);
+            Logger.LogError(ex, "Termin {AppointmentId} konnte nicht abgesagt werden.", appointmentId);
         }
         finally
         {

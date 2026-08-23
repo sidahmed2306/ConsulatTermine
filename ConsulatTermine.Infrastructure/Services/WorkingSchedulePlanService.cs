@@ -1,4 +1,5 @@
 using ConsulatTermine.Application.DTOs.WorkingSchedulePlan;
+using ConsulatTermine.Application.Exceptions;
 using ConsulatTermine.Application.Interfaces;
 using ConsulatTermine.Domain.Entities;
 using ConsulatTermine.Infrastructure.Persistence;
@@ -43,7 +44,7 @@ public class WorkingSchedulePlanService : IWorkingSchedulePlanService
             // UPDATE
             entity = await db.WorkingSchedulePlans
                 .FirstOrDefaultAsync(x => x.Id == dto.Id)
-                ?? throw new Exception("WorkingSchedulePlan not found.");
+                ?? throw new BusinessRuleViolationException("Der Arbeitszeitplan wurde nicht gefunden.");
 
             entity.ValidFromDate = dto.ValidFromDate;
             entity.ValidToDate = dto.ValidToDate;

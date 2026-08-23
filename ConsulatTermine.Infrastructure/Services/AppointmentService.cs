@@ -1,14 +1,14 @@
-using ConsulatTermine.Application.Services;
 using ConsulatTermine.Application.DTOs;
+using ConsulatTermine.Application.Exceptions;
 using ConsulatTermine.Application.Interfaces;
+using ConsulatTermine.Application.Services;
 using ConsulatTermine.Domain.Entities;
 using ConsulatTermine.Domain.Enums;
 using ConsulatTermine.Infrastructure.Persistence;
 using ConsulatTermine.Infrastructure.SignalR;
-
 using Microsoft.AspNetCore.SignalR;
-
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace ConsulatTermine.Infrastructure.Services;
 
@@ -20,6 +20,7 @@ public class AppointmentService : IAppointmentService
     private readonly IWaitingRoomNotifier _waitingRoomNotifier;
 
     private readonly IEmailService _emailService;
+    private readonly ILogger<AppointmentService> _logger;
 
 
 
@@ -28,12 +29,14 @@ public class AppointmentService : IAppointmentService
   IHubContext<DisplayHub, IDisplayClient> displayHub,
   IHubContext<EmployeeHub, IEmployeeClient> employeeHub,
   IEmailService emailService,
-  IWaitingRoomNotifier waitingRoomNotifier)
+  IWaitingRoomNotifier waitingRoomNotifier,
+  ILogger<AppointmentService> logger)
     {
         _contextFactory = contextFactory;
         _displayHub = displayHub;
         _employeeHub = employeeHub;
         _emailService = emailService;
+        _logger = logger;
         _waitingRoomNotifier = waitingRoomNotifier;
     }
 
@@ -42,7 +45,7 @@ public class AppointmentService : IAppointmentService
     // -------------------------------------------------------------
     // FREIE SLOTS ALS DTOs (für UI)
     // -------------------------------------------------------------
-    public async Task<List<AvailableSlotDto>> GetAvailableSlotDtosAsync(int serviceId, DateTime date)
+    public async Task<List<AvailableSlotDto>> GetAvailableSlotDtosAsync(int serviceId, DateTime appointmentDate)
     {
         await using var db = await _contextFactory.CreateDbContextAsync();
         // Service laden (Kapazität über AssignedEmployees)
@@ -52,7 +55,7 @@ public class AppointmentService : IAppointmentService
 
         if (service == null)
         {
-            throw new Exception("Service not found.");
+            throw new BusinessRuleViolationException("Der Service wurde nicht gefunden.");
         }
 
         // Aktiven Plan laden
@@ -63,7 +66,7 @@ public class AppointmentService : IAppointmentService
         }
 
         // Datum muss im Plan-Zeitraum liegen (sonst KEINE Slots)
-        if (!IsInsidePlan(plan, date))
+        if (!IsInsidePlan(plan, appointmentDate))
         {
             return new List<AvailableSlotDto>();
         }
@@ -79,13 +82,13 @@ public class AppointmentService : IAppointmentService
 
         // Existierende Termine an dem Tag
         var appointments = await db.Appointments
-            .Where(a => a.ServiceId == serviceId && a.Date.Date == date.Date)
+            .Where(a => a.ServiceId == serviceId && a.Date.Date == appointmentDate.Date)
             .ToListAsync();
 
         // NEUE Signatur
         var slots = AppointmentCalculator.GetAvailableSlots(
             service,
-            date,
+            appointmentDate,
             workingHours,
             overrides,
             appointments
@@ -95,7 +98,7 @@ public class AppointmentService : IAppointmentService
         return slots
             .Select(kv => new AvailableSlotDto
             {
-                SlotStart = date.Date + kv.Key.Start,
+                SlotStart = appointmentDate.Date + kv.Key.Start,
                 FreeCapacity = kv.Value
             })
             .OrderBy(x => x.SlotStart)
@@ -112,21 +115,21 @@ public class AppointmentService : IAppointmentService
         string email)
     {
         await using var db = await _contextFactory.CreateDbContextAsync();
-        var date = slotStart.Date;
+        var appointmentDate = slotStart.Date;
 
         // Freie Slots für diesen Tag holen (plan-basiert)
-        var available = await GetAvailableSlotDtosAsync(serviceId, date);
+        var available = await GetAvailableSlotDtosAsync(serviceId, appointmentDate);
 
         // Passenden Slot finden
         var slotDto = available.SingleOrDefault(s => s.SlotStart == slotStart);
         if (slotDto == null)
         {
-            throw new Exception("Invalid slot.");
+            throw new BusinessRuleViolationException("Der gewählte Termin ist ungültig.");
         }
 
         if (!slotDto.IsAvailable)
         {
-            throw new Exception("Slot is fully booked.");
+            throw new BusinessRuleViolationException("Der gewählte Termin ist bereits ausgebucht.");
         }
 
         var appointment = new Appointment
@@ -218,9 +221,10 @@ public class AppointmentService : IAppointmentService
         }
         catch (Exception ex)
         {
-            // Mail-Fehler dürfen Cancel NICHT verhindern
-            Console.WriteLine("EMAIL ERROR (ignored):");
-            Console.WriteLine(ex);
+            // Der Versand der Absage-Mail darf die Stornierung nicht verhindern:
+            // der Termin ist bereits abgesagt. Der Fehler wird protokolliert, damit
+            // er im Betrieb sichtbar ist, statt stillschweigend zu verschwinden.
+            ServiceLog.CancellationMailFailed(_logger, ex, appointmentId);
         }
 
         return true;
@@ -395,40 +399,40 @@ public class AppointmentService : IAppointmentService
 
         if (service == null)
         {
-            throw new Exception("Service not found.");
+            throw new BusinessRuleViolationException("Der Service wurde nicht gefunden.");
         }
 
         // Gruppengröße prüfen
         if (dto.TotalPersons < 1 || dto.TotalPersons > 5)
         {
-            throw new Exception("Gruppengröße muss zwischen 1 und 5 liegen.");
+            throw new BusinessRuleViolationException("Gruppengröße muss zwischen 1 und 5 liegen.");
         }
 
         if (dto.Persons.Count != dto.TotalPersons)
         {
-            throw new Exception("Anzahl der Personen stimmt nicht mit TotalPersons überein.");
+            throw new BusinessRuleViolationException("Anzahl der Personen stimmt nicht mit TotalPersons überein.");
         }
 
         var allSlotStarts = dto.Persons.Select(p => p.SlotStart).ToList();
 
         // Alle Slots müssen am selben Tag liegen
-        var date = allSlotStarts.First().Date;
-        if (allSlotStarts.Any(s => s.Date != date.Date))
+        var appointmentDate = allSlotStarts.First().Date;
+        if (allSlotStarts.Any(s => s.Date != appointmentDate.Date))
         {
-            throw new Exception("Alle Slots müssen am selben Tag liegen.");
+            throw new BusinessRuleViolationException("Alle Slots müssen am selben Tag liegen.");
         }
 
         // Aktiven Plan laden
         var plan = await GetActivePlanAsync(dto.ServiceId);
         if (plan == null)
         {
-            throw new Exception($"Kein aktiver Dienstplan für Service {dto.ServiceId} gefunden.");
+            throw new BusinessRuleViolationException("Für diesen Service ist derzeit kein Arbeitszeitplan hinterlegt.");
         }
 
         // Datum muss im Plan-Zeitraum liegen
-        if (!IsInsidePlan(plan, date))
+        if (!IsInsidePlan(plan, appointmentDate))
         {
-            throw new Exception("Datum liegt außerhalb des aktiven Plan-Zeitraums.");
+            throw new BusinessRuleViolationException("Datum liegt außerhalb des aktiven Plan-Zeitraums.");
         }
 
         // Plan-gebundene WorkingHours/Overrides laden
@@ -442,13 +446,13 @@ public class AppointmentService : IAppointmentService
 
         // Existierende Termine für diesen Tag
         var existing = await db.Appointments
-            .Where(a => a.ServiceId == dto.ServiceId && a.Date.Date == date.Date)
+            .Where(a => a.ServiceId == dto.ServiceId && a.Date.Date == appointmentDate.Date)
             .ToListAsync();
 
         // Slots berechnen (NEUE Signatur)
         var freeSlots = AppointmentCalculator.GetAvailableSlots(
             service,
-            date,
+            appointmentDate,
             workingHours,
             overrides,
             existing
@@ -462,7 +466,7 @@ public class AppointmentService : IAppointmentService
             var slot = freeSlots.Keys.FirstOrDefault(k => k.Start == slotStart);
             if (slot.Start == default)
             {
-                throw new Exception($"Ungültiger Slot: {slotStart}");
+                throw new BusinessRuleViolationException($"Der Termin um {slotStart:HH:mm} Uhr ist ungültig.");
             }
 
             int free = freeSlots[slot];
@@ -470,7 +474,7 @@ public class AppointmentService : IAppointmentService
 
             if (needed > free)
             {
-                throw new Exception($"Slot {slotStart} hat nicht genug freie Plätze. Frei: {free}, benötigt: {needed}");
+                throw new BusinessRuleViolationException($"Für {slotStart:HH:mm} Uhr sind nur noch {free} von {needed} benötigten Plätzen frei.");
             }
         }
 
@@ -509,10 +513,10 @@ public class AppointmentService : IAppointmentService
 
     public async Task<List<Appointment>> GetAppointmentsForServiceOnDateAsync(
 int serviceId,
-DateTime date)
+DateTime appointmentDate)
     {
         await using var db = await _contextFactory.CreateDbContextAsync();
-        var targetDate = date.Date;
+        var targetDate = appointmentDate.Date;
         return await db.Appointments
             .AsNoTracking() // 🔴 WICHTIG
             .Where(a =>
@@ -540,11 +544,11 @@ DateTime date)
             .FirstOrDefaultAsync();
     }
 
-    private static bool IsInsidePlan(WorkingSchedulePlan plan, DateTime date)
+    private static bool IsInsidePlan(WorkingSchedulePlan plan, DateTime appointmentDate)
     {
         var from = plan.ValidFromDate.ToDateTime(TimeOnly.MinValue);
         var to = plan.ValidToDate.ToDateTime(TimeOnly.MaxValue);
-        return date >= from && date <= to;
+        return appointmentDate >= from && appointmentDate <= to;
     }
 
     public async Task<List<Appointment>> GetActiveWaitingRoomAppointmentsAsync()

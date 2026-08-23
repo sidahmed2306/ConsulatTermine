@@ -4,7 +4,7 @@ namespace ConsulatTermine.UI.Theme;
 
 public static class AlgeriaTheme
 {
-    public static MudTheme DefaultTheme = new MudTheme()
+    public static readonly MudTheme DefaultTheme = new()
     {
         PaletteLight = new PaletteLight
         {

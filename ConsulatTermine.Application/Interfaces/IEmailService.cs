@@ -31,7 +31,7 @@ string bookingReference);
     string toEmail,
     string fullName,
     string serviceName,
-    DateTime date);
+    DateTime appointmentDate);
 
     Task SendEmployeeWelcomeEmailAsync(
     string toEmail,

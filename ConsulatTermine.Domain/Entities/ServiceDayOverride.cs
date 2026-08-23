@@ -21,14 +21,14 @@ public class ServiceDayOverride
     /// <summary>
     /// Wenn true → an diesem Tag geschlossen, egal ob Zeiten gesetzt sind
     /// </summary>
-    public bool IsClosed { get; set; } = false;
+    public bool IsClosed { get; set; }
 
     /// <summary>
     /// Optional: abweichende Kapazität pro Slot an diesem Tag
     /// </summary>
     public int? CapacityPerSlotOverride { get; set; }
 
-    public bool IsWeeklyOverride { get; set; } = false;
+    public bool IsWeeklyOverride { get; set; }
 
     public DayOfWeek? WeeklyDay { get; set; }
 

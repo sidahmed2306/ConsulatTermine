@@ -102,7 +102,7 @@ public sealed class LoginModel : PageModel
                 ExpiresUtc = DateTimeOffset.UtcNow + _loginOptions.SessionTimeout
             });
 
-        _logger.LogInformation("Anmeldung von Mitarbeiter {EmployeeId} erfolgreich.", result.EmployeeId);
+        UiLog.LoginSucceeded(_logger, result.EmployeeId.Value);
 
         return result.MustChangePassword
             ? Redirect("/employee/change-password")

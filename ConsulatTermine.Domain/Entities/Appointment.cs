@@ -59,7 +59,7 @@ public class Appointment
     // Wartezimmer / Display (Version 1)
     // ---------------------------------------------------------------------
     // true = im Wartezimmer-TV sichtbar (aufgerufen), false = ausblenden (ist da)
-    public bool IsVisibleInWaitingRoom { get; set; } = false;
+    public bool IsVisibleInWaitingRoom { get; set; }
 
 
     /// <summary>
@@ -72,7 +72,7 @@ public class Appointment
     /// Kennzeichnet, ob diese Person der Hauptkontakt ist
     /// (Empfänger der Bestätigungs-E-Mails usw.).
     /// </summary>
-    public bool IsMainPerson { get; set; } = false;
+    public bool IsMainPerson { get; set; }
 
     /// <summary>
     /// Telefonnummer der Person (aus Formular).

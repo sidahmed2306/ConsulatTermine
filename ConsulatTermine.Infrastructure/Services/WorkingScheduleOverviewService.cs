@@ -113,7 +113,7 @@ public class WorkingScheduleOverviewService : IWorkingScheduleOverviewService
                 p.ValidFromDate.Year == year)
             .ToListAsync();
 
-        if (!plans.Any())
+        if (plans.Count == 0)
         {
             return true;
         }
@@ -130,7 +130,7 @@ public class WorkingScheduleOverviewService : IWorkingScheduleOverviewService
     // --------------------------------------------------------------------
     // Kern: vollständige Übersicht für einen Service erzeugen
     // --------------------------------------------------------------------
-    private WorkingScheduleOverviewItem BuildOverviewForService(
+    private static WorkingScheduleOverviewItem BuildOverviewForService(
         Service service,
         List<WorkingSchedulePlan> allPlans,
         List<WorkingHours> allWorkingHours,
@@ -163,7 +163,7 @@ public class WorkingScheduleOverviewService : IWorkingScheduleOverviewService
     // --------------------------------------------------------------------
     // NEU: YearPlans basierend auf WorkingSchedulePlan (nicht Overrides!)
     // --------------------------------------------------------------------
-    private List<WorkingScheduleYearPlan> BuildYearPlansFromPlans(
+    private static List<WorkingScheduleYearPlan> BuildYearPlansFromPlans(
         Service service,
         List<WorkingSchedulePlan> plans,
         List<WorkingHours> allWorkingHours,

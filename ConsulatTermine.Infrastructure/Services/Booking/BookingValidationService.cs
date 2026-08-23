@@ -1,4 +1,5 @@
 using ConsulatTermine.Application.DTOs.Booking;
+using ConsulatTermine.Application.Exceptions;
 using ConsulatTermine.Application.Interfaces.Booking;
 
 namespace ConsulatTermine.Infrastructure.Services.Booking;
@@ -26,46 +27,46 @@ public class BookingValidationService : IBookingValidationService
     // ------------------------------------------------------------
     // 1) Hauptbucher validieren
     // ------------------------------------------------------------
-    private void ValidateMainPerson(CreateBookingRequestDto request)
+    private static void ValidateMainPerson(CreateBookingRequestDto request)
     {
         if (request.MainPerson == null)
         {
-            throw new Exception("MainPerson is required.");
+            throw new BusinessRuleViolationException("Es muss eine Hauptperson angegeben werden.");
         }
 
         if (string.IsNullOrWhiteSpace(request.MainPerson.FullName))
         {
-            throw new Exception("MainPerson.FullName is required.");
+            throw new BusinessRuleViolationException("Der Name der Hauptperson ist erforderlich.");
         }
 
         if (string.IsNullOrWhiteSpace(request.MainPerson.Email))
         {
-            throw new Exception("MainPerson.Email is required.");
+            throw new BusinessRuleViolationException("Die E-Mail-Adresse der Hauptperson ist erforderlich.");
         }
     }
 
     // ------------------------------------------------------------
     // 2) Allgemeine Personenregeln prüfen
     // ------------------------------------------------------------
-    private void ValidatePersonsBasicRules(CreateBookingRequestDto request)
+    private static void ValidatePersonsBasicRules(CreateBookingRequestDto request)
     {
         var persons = GetAllPersons(request);
 
-        if (!persons.Any())
+        if (persons.Count == 0)
         {
-            throw new Exception("Booking must contain at least one person.");
+            throw new BusinessRuleViolationException("Eine Buchung muss mindestens eine Person enthalten.");
         }
 
         foreach (var p in persons)
         {
             if (string.IsNullOrWhiteSpace(p.FullName))
             {
-                throw new Exception("Every person must have a valid FullName.");
+                throw new BusinessRuleViolationException("Für jede Person ist ein Name erforderlich.");
             }
 
-            if (!p.ServiceSlots.Any())
+            if (p.ServiceSlots.Count == 0)
             {
-                throw new Exception($"Person {p.FullName} must select at least one service slot.");
+                throw new BusinessRuleViolationException($"Für {p.FullName} muss mindestens ein Termin gewählt werden.");
             }
         }
     }
@@ -77,7 +78,7 @@ public class BookingValidationService : IBookingValidationService
     // 3 Personen/1 Service → genau 3 Slots
     // 4 Personen/2 Services → Summe der Slots = 4 pro Service
     // ------------------------------------------------------------
-    private void ValidateServiceSlotCounts(CreateBookingRequestDto request)
+    private static void ValidateServiceSlotCounts(CreateBookingRequestDto request)
     {
         var persons = GetAllPersons(request);
 
@@ -94,7 +95,7 @@ public class BookingValidationService : IBookingValidationService
 
             if (totalSlots != totalPersonsUsingService)
             {
-                throw new Exception(
+                throw new BusinessRuleViolationException(
                     $"Service {serviceId} has {totalSlots} slots but {totalPersonsUsingService} persons selected it.");
             }
         }
@@ -109,7 +110,7 @@ public class BookingValidationService : IBookingValidationService
     // Pass 08:45 → dauert 20–30 Minuten
     // Visa frühestens ab 09:15 / 09:30
     // ------------------------------------------------------------
-    private void ValidateNoSlotOverlapForSinglePerson(CreateBookingRequestDto request)
+    private static void ValidateNoSlotOverlapForSinglePerson(CreateBookingRequestDto request)
     {
         var persons = GetAllPersons(request);
         if (persons.Count != 1)
@@ -130,7 +131,7 @@ public class BookingValidationService : IBookingValidationService
 
             if (next.SlotTime < current.SlotTime + ServiceGap)
             {
-                throw new Exception(
+                throw new BusinessRuleViolationException(
                     $"Service slots for the same person must be at least {ServiceGap.TotalMinutes} minutes apart.");
             }
         }
@@ -145,7 +146,7 @@ public class BookingValidationService : IBookingValidationService
     //    B) ZEITLÜCKE WIRD EINGEHALTEN
     //
     // ------------------------------------------------------------
-    private void ValidateMultiPersonSlotConsistency(CreateBookingRequestDto request)
+    private static void ValidateMultiPersonSlotConsistency(CreateBookingRequestDto request)
     {
         var persons = GetAllPersons(request);
 
@@ -162,7 +163,7 @@ public class BookingValidationService : IBookingValidationService
 
                 if (next.SlotTime < current.SlotTime + ServiceGap)
                 {
-                    throw new Exception(
+                    throw new BusinessRuleViolationException(
                         $"Person '{p.FullName}' has overlapping or too-close service slots.");
                 }
             }
@@ -172,7 +173,7 @@ public class BookingValidationService : IBookingValidationService
     // ------------------------------------------------------------
     // Helper
     // ------------------------------------------------------------
-    private List<BookingPersonDto> GetAllPersons(CreateBookingRequestDto request)
+    private static List<BookingPersonDto> GetAllPersons(CreateBookingRequestDto request)
     {
         var list = new List<BookingPersonDto> { request.MainPerson };
         list.AddRange(request.AccompanyingPersons);

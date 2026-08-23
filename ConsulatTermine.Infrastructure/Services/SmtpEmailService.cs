@@ -1,18 +1,27 @@
 using System.Net;
 using System.Net.Mail;
+using ConsulatTermine.Application.Configuration;
 using ConsulatTermine.Application.DTOs.Booking;
 using ConsulatTermine.Application.Interfaces;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace ConsulatTermine.Infrastructure.Services;
 
 public class SmtpEmailService : IEmailService
 {
-    private readonly IConfiguration _configuration;
+    private readonly EmailOptions _emailOptions;
+    private readonly ApplicationOptions _applicationOptions;
+    private readonly ILogger<SmtpEmailService> _logger;
 
-    public SmtpEmailService(IConfiguration configuration)
+    public SmtpEmailService(
+        IOptions<EmailOptions> emailOptions,
+        IOptions<ApplicationOptions> applicationOptions,
+        ILogger<SmtpEmailService> logger)
     {
-        _configuration = configuration;
+        _emailOptions = emailOptions.Value;
+        _applicationOptions = applicationOptions.Value;
+        _logger = logger;
     }
 
     // =============================================================
@@ -31,7 +40,9 @@ public class SmtpEmailService : IEmailService
         }
 
         var cancelUrl =
-            $"http://localhost:5262/appointment-cancel?ref={bookingReference}&token={cancelToken}";
+            $"{_applicationOptions.BaseUrl.TrimEnd('/')}/appointment-cancel"
+            + $"?ref={Uri.EscapeDataString(bookingReference)}"
+            + $"&token={Uri.EscapeDataString(cancelToken)}";
 
         var servicesHtml = BuildServicesOverviewHtml(appointments);
 
@@ -60,7 +71,7 @@ public class SmtpEmailService : IEmailService
         string toEmail,
         string fullName,
         string serviceName,
-        DateTime date)
+        DateTime appointmentDate)
     {
         if (!TryGetEmailConfig(out var email))
         {
@@ -76,7 +87,7 @@ public class SmtpEmailService : IEmailService
             Body = BuildPartialCancellationHtmlMailBody(
                 fullName,
                 serviceName,
-                date),
+                appointmentDate),
             IsBodyHtml = true
         };
 
@@ -277,7 +288,7 @@ Dies ist eine automatisch generierte E-Mail.
     private static string BuildPartialCancellationHtmlMailBody(
         string fullName,
         string serviceName,
-        DateTime date)
+        DateTime appointmentDate)
     {
         return $@"
 <!DOCTYPE html>
@@ -292,8 +303,8 @@ Dies ist eine automatisch generierte E-Mail.
 <ul>
 <li><strong>Name:</strong> {fullName}</li>
 <li><strong>Service:</strong> {serviceName}</li>
-<li><strong>Datum:</strong> {date:dd.MM.yyyy}</li>
-<li><strong>Uhrzeit:</strong> {date:HH:mm} Uhr</li>
+<li><strong>Datum:</strong> {appointmentDate:dd.MM.yyyy}</li>
+<li><strong>Uhrzeit:</strong> {appointmentDate:HH:mm} Uhr</li>
 </ul>
 
 <p>Andere gebuchte Termine bleiben bestehen.</p>
@@ -470,37 +481,24 @@ Zum Login
     // =============================================================
     // HELPER
     // =============================================================
-    /// <summary>Liest E-Mail-Konfiguration. Gibt false zurück, wenn SMTP nicht konfiguriert (z. B. leere User Secrets).</summary>
-    private bool TryGetEmailConfig(
-        out (string SmtpServer, int Port, bool UseSsl,
-             string Username, string Password,
-             string FromEmail, string FromName) config)
+    /// <summary>
+    /// Prueft, ob ein Postausgang konfiguriert ist. Ohne SMTP-Server wird kein Versand
+    /// versucht: lokal laeuft die Anwendung so ohne hinterlegte Zugangsdaten.
+    /// </summary>
+    private bool TryGetEmailConfig(out EmailOptions config)
     {
-        var c = _configuration.GetSection("Email");
-        var smtpServer = c["SmtpServer"] ?? string.Empty;
+        config = _emailOptions;
 
-        if (string.IsNullOrWhiteSpace(smtpServer))
+        if (!string.IsNullOrWhiteSpace(_emailOptions.SmtpServer))
         {
-            config = default;
-            return false;
+            return true;
         }
 
-        config = (
-            smtpServer,
-            int.TryParse(c["Port"], out var port) ? port : 587,
-            bool.TryParse(c["UseSsl"], out var useSsl) && useSsl,
-            c["Username"] ?? string.Empty,
-            c["Password"] ?? string.Empty,
-            c["FromEmail"] ?? string.Empty,
-            c["FromName"] ?? "Konsulat – Terminservice"
-        );
-        return true;
+        ServiceLog.SmtpNotConfigured(_logger);
+        return false;
     }
 
-    private static SmtpClient CreateSmtpClient(
-        (string SmtpServer, int Port, bool UseSsl,
-         string Username, string Password,
-         string FromEmail, string FromName) e)
+    private static SmtpClient CreateSmtpClient(EmailOptions e)
     {
         return new SmtpClient
         {
