@@ -34,6 +34,5 @@ public class ServiceDayOverride
 
     public int WorkingSchedulePlanId { get; set; }
     public WorkingSchedulePlan WorkingSchedulePlan { get; set; } = null!;
-    public List<ServiceDayOverride> DayOverrides { get; set; } = new();
 
 }
