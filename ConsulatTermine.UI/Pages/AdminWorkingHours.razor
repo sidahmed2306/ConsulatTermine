@@ -27,7 +27,7 @@
         Die Kapazität pro Slot wird als Basis aus dem Service angezeigt (und kann optional pro Ausnahme überschrieben werden).
     </MudText>
 
-    <MudExpansionPanels Multiple="false" Elevation="0">
+    <MudExpansionPanels MultiExpansion="false" Elevation="0">
 
         <!-- STEP 1 -->
         <MudExpansionPanel Text="1. Service auswählen" Expanded="@(_activeStep == 0)">
@@ -38,7 +38,6 @@
                            Placeholder="Service auswählen"
                            Value="_selectedServiceId"
                            ValueChanged="@(async (int? value) => { _selectedServiceId = value; await OnServiceChanged(value ?? 0); })"
-                           ValueExpression="@(() => _selectedServiceId)"
                            Required="true"
                            FullWidth="true">
                     @foreach (var s in _services)
@@ -56,7 +55,7 @@
                     </MudAlert>
                 }
 
-                <MudStack Direction="Row" Justify="Justify.FlexEnd">
+                <MudStack Row="true" Justify="Justify.FlexEnd">
                     <MudButton Variant="Variant.Filled"
                                Color="Color.Primary"
                                Disabled="@(!IsStep1Valid)"
@@ -76,7 +75,6 @@
                            Placeholder="Jahr auswählen"
                            Value="_selectedYear"
                            ValueChanged="@(async (int? y) => { _selectedYear = y; await OnYearChanged(y ?? 0); })"
-                           ValueExpression="@(() => _selectedYear)"
                            Required="true"
                            FullWidth="true">
                     @foreach (var y in _years)
@@ -92,7 +90,7 @@
                     </MudAlert>
                 }
 
-                <MudStack Direction="Row" Justify="Justify.SpaceBetween">
+                <MudStack Row="true" Justify="Justify.SpaceBetween">
                     <MudButton Variant="Variant.Text" OnClick="@(() => GoToStep(0))">Zurück</MudButton>
                     <MudButton Variant="Variant.Filled"
                                Color="Color.Primary"
@@ -131,7 +129,7 @@
                     </MudAlert>
                 }
 
-                <MudStack Direction="Row" Justify="Justify.SpaceBetween">
+                <MudStack Row="true" Justify="Justify.SpaceBetween">
                     <MudButton Variant="Variant.Text" OnClick="@(() => GoToStep(1))">Zurück</MudButton>
                     <MudButton Variant="Variant.Filled"
                                Color="Color.Primary"
@@ -166,12 +164,12 @@
                 <MudDivider Class="my-2" />
 
                 <MudText Typo="Typo.subtitle2">Reguläre Öffnungszeiten</MudText>
-                <MudStack Direction="Row" Spacing="2" AlignItems="AlignItems.Center">
+                <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
                     <MudTimePicker Label="Startzeit" @bind-Time="_model.StartTime" AmPm="false" />
                     <MudTimePicker Label="Endzeit" @bind-Time="_model.EndTime" AmPm="false" />
                 </MudStack>
 
-                <MudStack Direction="Row" Justify="Justify.SpaceBetween">
+                <MudStack Row="true" Justify="Justify.SpaceBetween">
                     <MudButton Variant="Variant.Text" OnClick="@(() => GoToStep(2))">Zurück</MudButton>
                     <MudButton Variant="Variant.Filled"
                                Color="Color.Primary"
@@ -218,7 +216,7 @@
                     </MudTable>
 
                     <MudPaper Class="pa-3">
-                        <MudStack Direction="Row" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
                             <MudText Typo="Typo.subtitle2">
                                 @(_isEditingWeekly ? "Wöchentliche Ausnahme bearbeiten" : "Neue wöchentliche Ausnahme")
                             </MudText>
@@ -254,7 +252,6 @@
                             <MudCheckBox T="bool"
                                          Value="_newWeekly.IsClosed"
                                          ValueChanged="OnWeeklyClosedChanged"
-                                         ValueExpression="@(() => _newWeekly.IsClosed)"
                                          Label="Geschlossen" />
 
                             @if (!_newWeekly.IsClosed)
@@ -312,7 +309,7 @@
                     </MudTable>
 
                     <MudPaper Class="pa-3">
-                        <MudStack Direction="Row" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
                             <MudText Typo="Typo.subtitle2">
                                 @(_isEditingDate ? "Datums-Ausnahme bearbeiten" : "Neue Datums-Ausnahme")
                             </MudText>
@@ -339,7 +336,6 @@
                             <MudCheckBox T="bool"
                                          Value="_newDate.IsClosed"
                                          ValueChanged="OnDateClosedChanged"
-                                         ValueExpression="@(() => _newDate.IsClosed)"
                                          Label="Geschlossen" />
 
                             @if (!_newDate.IsClosed)
@@ -364,7 +360,7 @@
                     </MudPaper>
                 </MudStack>
 
-                <MudStack Direction="Row" Justify="Justify.SpaceBetween">
+                <MudStack Row="true" Justify="Justify.SpaceBetween">
                     <MudButton Variant="Variant.Text" OnClick="@(() => GoToStep(3))">Zurück</MudButton>
                     <MudButton Variant="Variant.Filled"
                                Color="Color.Primary"
@@ -501,10 +497,10 @@
                     Beim Speichern werden WorkingSchedulePlan, WorkingHours und ServiceDayOverrides generiert.
                 </MudAlert>
 
-                <MudStack Direction="Row" Justify="Justify.SpaceBetween" Spacing="2">
+                <MudStack Row="true" Justify="Justify.SpaceBetween" Spacing="2">
                     <MudButton Variant="Variant.Text" OnClick="@(() => GoToStep(4))">Zurück</MudButton>
 
-                    <MudStack Direction="Row" Spacing="2">
+                    <MudStack Row="true" Spacing="2">
                         <MudButton Variant="Variant.Outlined" OnClick="@ResetForm">Zurücksetzen</MudButton>
 
                         <MudButton Variant="Variant.Filled"
@@ -541,7 +537,7 @@
         }
         else
         {
-            <MudExpansionPanels Multiple="true" Elevation="0">
+            <MudExpansionPanels MultiExpansion="true" Elevation="0">
                 @foreach (var item in _overview)
                 {
                     <MudExpansionPanel Text="@($"{item.ServiceName} (Mitarbeiter: {item.EmployeeCount}, Basis-Kapazität: {item.DefaultCapacityPerSlot})")">
