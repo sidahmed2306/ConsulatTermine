@@ -6,11 +6,11 @@ namespace ConsulatTermine.Infrastructure.Services;
 
 public class AppointmentCalendarQueryService : IAppointmentCalendarQueryService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
 
-    public AppointmentCalendarQueryService(ApplicationDbContext context)
+    public AppointmentCalendarQueryService(IDbContextFactory<ApplicationDbContext> contextFactory)
     {
-        _context = context;
+        _contextFactory = contextFactory;
     }
 
     public async Task<Dictionary<DateOnly, bool>> GetBookableDaysAsync(
@@ -18,10 +18,11 @@ public class AppointmentCalendarQueryService : IAppointmentCalendarQueryService
         int year,
         int month)
     {
+        await using var db = await _contextFactory.CreateDbContextAsync();
         var result = new Dictionary<DateOnly, bool>();
 
         // 1️⃣ Aktiven Plan laden
-        var plan = await _context.WorkingSchedulePlans
+        var plan = await db.WorkingSchedulePlans
             .AsNoTracking()
             .FirstOrDefaultAsync(p =>
                 p.ServiceId == serviceId &&
@@ -45,14 +46,14 @@ public class AppointmentCalendarQueryService : IAppointmentCalendarQueryService
         }
 
         // 3️⃣ Plan-gebundene Öffnungszeiten & Overrides laden
-        var workingHours = await _context.WorkingHours
+        var workingHours = await db.WorkingHours
             .AsNoTracking()
             .Where(w =>
                 w.ServiceId == serviceId &&
                 w.WorkingSchedulePlanId == plan.Id)
             .ToListAsync();
 
-        var overrides = await _context.ServiceDayOverrides
+        var overrides = await db.ServiceDayOverrides
             .AsNoTracking()
             .Where(o =>
                 o.ServiceId == serviceId &&

@@ -1,79 +1,118 @@
 using System.Globalization;
 using Blazored.SessionStorage;
+using ConsulatTermine.Application.Configuration;
 using ConsulatTermine.Application.Interfaces;
-using ConsulatTermine.Application.Interfaces.Booking;
-using ConsulatTermine.Infrastructure.Persistence;
-using ConsulatTermine.Infrastructure.Services;
-using ConsulatTermine.Infrastructure.Services.Booking;
+using ConsulatTermine.Application.Security;
+using ConsulatTermine.Domain.Enums;
+using ConsulatTermine.Infrastructure;
 using ConsulatTermine.Infrastructure.SignalR;
 using ConsulatTermine.UI.Authentication;
-using Infrastructure.SignalR;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Localization;
-using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// =====================
-// DATABASE
-// =====================
+// =====================================================================
+// KONFIGURATION
+// Fehlende kritische Werte fuehren beim Start zu einem klaren Fehler,
+// nicht zu spaetem undefiniertem Verhalten. Siehe harness/design.md Abschnitt 9.
+// =====================================================================
+builder.Services.AddOptions<ApplicationOptions>()
+    .Bind(builder.Configuration.GetSection(ApplicationOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
+builder.Services.AddOptions<EmailOptions>()
+    .Bind(builder.Configuration.GetSection(EmailOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
+builder.Services.AddOptions<EmployeeLoginOptions>()
+    .Bind(builder.Configuration.GetSection(EmployeeLoginOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 if (string.IsNullOrWhiteSpace(connectionString))
 {
-    throw new InvalidOperationException("ConnectionStrings:DefaultConnection ist in appsettings.json nicht gesetzt.");
+    throw new InvalidOperationException(
+        "ConnectionStrings:DefaultConnection ist nicht gesetzt. Lokal wird der Wert ueber "
+        + "dotnet user-secrets hinterlegt, in Staging und Production ueber den Secret Store "
+        + "der Umgebung. Siehe ConsulatTermine.UI/appsettings.Example.json.");
 }
 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
+// =====================================================================
+// INFRASTRUKTUR
+// =====================================================================
+builder.Services.AddInfrastructure(connectionString);
 
-// =====================
-// BASIC SERVICES
-// =====================
-builder.Services.AddBlazoredSessionStorage();
+// =====================================================================
+// AUTHENTIFIZIERUNG UND AUTORISIERUNG
+// Die Identitaet liegt in einem serverseitig signierten Cookie. Der Browser-
+// Speicher wird dafuer nicht verwendet: er ist vom Benutzer frei veraenderbar
+// und damit keine Sicherheitsgrenze. Siehe harness/security.md Abschnitt 1.
+// =====================================================================
+builder.Services
+    .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.Cookie.Name = "ConsulatTermine.Auth";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Strict;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+
+        options.LoginPath = "/employee/login";
+        options.LogoutPath = "/employee/logout";
+        options.AccessDeniedPath = "/employee/kein-zugriff";
+
+        // Gleitendes Ablaufdatum: aktive Benutzer bleiben angemeldet, inaktive
+        // werden nach Ablauf der Leerlaufzeit abgemeldet.
+        options.SlidingExpiration = true;
+        options.ExpireTimeSpan = builder.Configuration
+            .GetSection(EmployeeLoginOptions.SectionName)
+            .GetValue<TimeSpan?>(nameof(EmployeeLoginOptions.SessionTimeout))
+            ?? TimeSpan.FromMinutes(120);
+    });
+
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy(AuthorizationPolicies.MitarbeiterZugriff, policy =>
+        policy.RequireAuthenticatedUser()
+              .RequireRole(
+                  nameof(EmployeeRole.Employee),
+                  nameof(EmployeeRole.ServiceChef),
+                  nameof(EmployeeRole.Admin)))
+    .AddPolicy(AuthorizationPolicies.DienstplanVerwalten, policy =>
+        policy.RequireAuthenticatedUser()
+              .RequireRole(
+                  nameof(EmployeeRole.ServiceChef),
+                  nameof(EmployeeRole.Admin)))
+    .AddPolicy(AuthorizationPolicies.AdministrationVerwalten, policy =>
+        policy.RequireAuthenticatedUser()
+              .RequireRole(nameof(EmployeeRole.Admin)));
+
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddScoped<IEmployeeAuthorization, ClaimsEmployeeAuthorization>();
+
+// =====================================================================
+// BLAZOR UND UI
+// =====================================================================
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddSignalR();
-
-// =====================
-// LOCALIZATION (WICHTIG)
-// =====================
-builder.Services.AddLocalization(options =>
-{
-    options.ResourcesPath = "Resources";
-});
-
-// =====================
-// APPLICATION SERVICES
-// =====================
-builder.Services.AddScoped<IServiceDayOverrideService, ServiceDayOverrideService>();
-builder.Services.AddScoped<IServiceService, ServiceService>();
-builder.Services.AddScoped<IEmployeeService, EmployeeService>();
-builder.Services.AddScoped<IAppointmentService, AppointmentService>();
-builder.Services.AddScoped<IEmployeeAssignmentService, EmployeeAssignmentService>();
-builder.Services.AddScoped<IWorkingHoursService, WorkingHoursService>();
-builder.Services.AddScoped<IWorkingScheduleService, WorkingScheduleService>();
-builder.Services.AddScoped<IWorkingScheduleOverviewService, WorkingScheduleOverviewService>();
-builder.Services.AddScoped<IBookingReferenceGenerator, BookingReferenceGenerator>();
-builder.Services.AddScoped<IBookingValidationService, BookingValidationService>();
-builder.Services.AddScoped<ISlotAvailabilityService, SlotAvailabilityService>();
-builder.Services.AddScoped<IBookingService, BookingService>();
-builder.Services.AddScoped<IWorkingSchedulePlanService, WorkingSchedulePlanService>();
-builder.Services.AddScoped<IAppointmentCalendarQueryService, AppointmentCalendarQueryService>();
-builder.Services.AddScoped<IEmailService, SmtpEmailService>();
-builder.Services.AddScoped<IEmployeeAuthService, EmployeeAuthService>();
-builder.Services.AddScoped<EmployeeSessionService>();
-builder.Services.AddSingleton<IWaitingRoomNotifier, WaitingRoomNotifier>();
-
-// =====================
-// UI
-// =====================
 builder.Services.AddMudServices();
+
+// Traegt den mehrstufigen Buchungs-Wizard ueber Seitenwechsel hinweg.
+// Ausdruecklich kein Sicherheitsmechanismus.
+builder.Services.AddBlazoredSessionStorage();
+
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 
 var app = builder.Build();
 
-// =====================
-// REQUEST LOCALIZATION
-// =====================
+// =====================================================================
+// LOKALISIERUNG
+// =====================================================================
 var supportedCultures = new[]
 {
     new CultureInfo("de-DE"),
@@ -81,18 +120,16 @@ var supportedCultures = new[]
     new CultureInfo("ar-DZ")
 };
 
-var localizationOptions = new RequestLocalizationOptions
+app.UseRequestLocalization(new RequestLocalizationOptions
 {
     DefaultRequestCulture = new RequestCulture("de-DE"),
     SupportedCultures = supportedCultures,
     SupportedUICultures = supportedCultures
-};
+});
 
-app.UseRequestLocalization(localizationOptions);
-
-// =====================
-// MIDDLEWARE PIPELINE
-// =====================
+// =====================================================================
+// PIPELINE
+// =====================================================================
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
@@ -102,6 +139,14 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
+app.UseRouting();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.UseAntiforgery();
+
+app.MapRazorPages();
 app.MapBlazorHub();
 
 app.MapHub<DisplayHub>("/hubs/display");
@@ -109,4 +154,27 @@ app.MapHub<EmployeeHub>("/hubs/employee");
 
 app.MapFallbackToPage("/_Host");
 
-app.Run();
+// =====================================================================
+// ERSTSTART
+// Ohne Administrator waere die Anwendung nicht verwaltbar. Die Adresse stammt
+// aus der Konfiguration und ist nicht im Code hinterlegt.
+// =====================================================================
+await EnsureInitialAdminAsync(app);
+
+await app.RunAsync();
+
+static async Task EnsureInitialAdminAsync(WebApplication app)
+{
+    var adminEmail = app.Configuration["Application:InitialAdminEmail"];
+    if (string.IsNullOrWhiteSpace(adminEmail))
+    {
+        app.Logger.LogInformation(
+            "Application:InitialAdminEmail ist nicht gesetzt. Es wird kein "
+            + "Administrator angelegt.");
+        return;
+    }
+
+    await using var scope = app.Services.CreateAsyncScope();
+    var employeeService = scope.ServiceProvider.GetRequiredService<IEmployeeService>();
+    await employeeService.EnsureInitialAdminAsync(adminEmail);
+}

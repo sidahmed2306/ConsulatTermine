@@ -1,0 +1,47 @@
+@page "/employee/login"
+@model ConsulatTermine.UI.Pages.Account.LoginModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Mitarbeiter-Login";
+}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mitarbeiter-Login – Konsulat</title>
+    <link href="~/css/site.css" rel="stylesheet" />
+    <link href="~/css/login.css" rel="stylesheet" />
+    <link rel="icon" type="image/png" href="~/favicon.png" />
+</head>
+<body class="login-page">
+    <main class="login-card">
+        <h1 class="login-title">Mitarbeiter-Login</h1>
+
+        <form method="post">
+            @* Antiforgery-Token wird vom Tag Helper automatisch eingefuegt. *@
+            <div asp-validation-summary="ModelOnly" class="login-error" role="alert"></div>
+
+            <label class="login-label" asp-for="Input.EmployeeCode">Mitarbeiter-Kennung</label>
+            <input class="login-input"
+                   asp-for="Input.EmployeeCode"
+                   autocomplete="username"
+                   autofocus
+                   required />
+            <span asp-validation-for="Input.EmployeeCode" class="login-error"></span>
+
+            <label class="login-label" asp-for="Input.Password">Passwort</label>
+            <input class="login-input"
+                   asp-for="Input.Password"
+                   type="password"
+                   autocomplete="current-password"
+                   required />
+            <span asp-validation-for="Input.Password" class="login-error"></span>
+
+            <button class="login-button" type="submit">Anmelden</button>
+        </form>
+
+        <a class="login-link" href="/employee/forgot-password">Passwort vergessen?</a>
+    </main>
+</body>
+</html>

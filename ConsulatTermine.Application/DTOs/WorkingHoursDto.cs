@@ -1,3 +1,5 @@
+namespace ConsulatTermine.Application.DTOs;
+
 public class WorkingHoursDto
 {
     public int ServiceId { get; set; }

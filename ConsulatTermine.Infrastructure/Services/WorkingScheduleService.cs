@@ -9,19 +9,20 @@ namespace ConsulatTermine.Infrastructure.Services;
 
 public class WorkingScheduleService : IWorkingScheduleService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
     private readonly IWorkingSchedulePlanService _planService;
 
     public WorkingScheduleService(
-        ApplicationDbContext context,
+        IDbContextFactory<ApplicationDbContext> contextFactory,
         IWorkingSchedulePlanService planService)
     {
-        _context = context;
+        _contextFactory = contextFactory;
         _planService = planService;
     }
 
     public async Task<bool> GenerateScheduleAsync(WorkingScheduleRequestDto request)
     {
+        await using var db = await _contextFactory.CreateDbContextAsync();
         // -------------------------------------------------
         // 0) VALIDIERUNG
         // -------------------------------------------------
@@ -43,7 +44,7 @@ public class WorkingScheduleService : IWorkingScheduleService
         // -------------------------------------------------
         // 1) SERVICE LADEN
         // -------------------------------------------------
-        var service = await _context.Services
+        var service = await db.Services
             .Include(s => s.WorkingHours)
             .Include(s => s.DayOverrides)
             .FirstOrDefaultAsync(s => s.Id == request.ServiceId);
@@ -87,18 +88,18 @@ public class WorkingScheduleService : IWorkingScheduleService
 
         if (overridesToDelete.Any())
         {
-            _context.ServiceDayOverrides.RemoveRange(overridesToDelete);
+            db.ServiceDayOverrides.RemoveRange(overridesToDelete);
         }
 
         // -------------------------------------------------
         // 4) REGULÄRE ÖFFNUNGSZEITEN (WOCHENTAGSBASIERT)
         // -------------------------------------------------
         // ⚠️ bewusst global – keine Jahresbindung
-        _context.WorkingHours.RemoveRange(service.WorkingHours);
+        db.WorkingHours.RemoveRange(service.WorkingHours);
 
         foreach (var day in request.RegularDays)
         {
-            _context.WorkingHours.Add(new WorkingHours
+            db.WorkingHours.Add(new WorkingHours
             {
                 ServiceId = request.ServiceId,
                 Day = day,
@@ -126,7 +127,7 @@ public class WorkingScheduleService : IWorkingScheduleService
                         continue;
                     }
 
-                    _context.ServiceDayOverrides.Add(new ServiceDayOverride
+                    db.ServiceDayOverrides.Add(new ServiceDayOverride
                     {
                         ServiceId = request.ServiceId,
                         Date = date,
@@ -160,7 +161,7 @@ public class WorkingScheduleService : IWorkingScheduleService
                 continue;
             }
 
-            var existing = _context.ServiceDayOverrides
+            var existing = db.ServiceDayOverrides
                 .Where(o =>
                     o.ServiceId == request.ServiceId &&
                     o.Date == date)
@@ -168,10 +169,10 @@ public class WorkingScheduleService : IWorkingScheduleService
 
             if (existing.Any())
             {
-                _context.ServiceDayOverrides.RemoveRange(existing);
+                db.ServiceDayOverrides.RemoveRange(existing);
             }
 
-            _context.ServiceDayOverrides.Add(new ServiceDayOverride
+            db.ServiceDayOverrides.Add(new ServiceDayOverride
             {
                 ServiceId = request.ServiceId,
                 Date = date,
@@ -187,7 +188,7 @@ public class WorkingScheduleService : IWorkingScheduleService
         // -------------------------------------------------
         // 7) SPEICHERN
         // -------------------------------------------------
-        await _context.SaveChangesAsync();
+        await db.SaveChangesAsync();
         return true;
     }
 }

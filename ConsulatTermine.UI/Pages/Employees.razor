@@ -1,4 +1,5 @@
 @page "/admin/employees"
+@attribute [Authorize(Policy = AuthorizationPolicies.DienstplanVerwalten)]
 
 @using MudBlazor
 @using ConsulatTermine.Application.Interfaces
@@ -14,7 +15,6 @@
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 
-@inject EmployeeSessionService EmployeeSession
 @inject NavigationManager Navigation
 
 
@@ -99,26 +99,6 @@
     // -------------------------------------------------
     // LOGIN-GUARD (Admin Employees)
     // -------------------------------------------------
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (!firstRender)
-            return;
-
-        var auth = await EmployeeSession.EnsureAuthenticatedAsync();
-        if (!auth.IsAuthenticated)
-        {
-            Navigation.NavigateTo("/employee/login", true);
-            return;
-        }
-
-        var role = EmployeeSession.CurrentRole;
-        if (role != EmployeeRole.ServiceChef && role != EmployeeRole.Admin)
-        {
-            Navigation.NavigateTo("/employee/home", true);
-            return;
-        }
-    }
-
     protected override async Task OnInitializedAsync()
     {
         _employees = await EmployeeService.GetAllEmployeesAsync();

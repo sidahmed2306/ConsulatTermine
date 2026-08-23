@@ -6,23 +6,25 @@ namespace ConsulatTermine.Infrastructure.Persistence;
 
 public class ServiceDayOverrideService : IServiceDayOverrideService
 {
-    private readonly ApplicationDbContext _db;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
 
-    public ServiceDayOverrideService(ApplicationDbContext db)
+    public ServiceDayOverrideService(IDbContextFactory<ApplicationDbContext> contextFactory)
     {
-        _db = db;
+        _contextFactory = contextFactory;
     }
 
     public async Task<List<ServiceDayOverride>> GetAllAsync()
     {
-        return await _db.ServiceDayOverrides
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        return await db.ServiceDayOverrides
                         .Include(o => o.Service)
                         .ToListAsync();
     }
 
     public async Task<List<ServiceDayOverride>> GetByServiceAsync(int serviceId)
     {
-        return await _db.ServiceDayOverrides
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        return await db.ServiceDayOverrides
                         .Where(o => o.ServiceId == serviceId)
                         .Include(o => o.Service)
                         .ToListAsync();
@@ -30,19 +32,22 @@ public class ServiceDayOverrideService : IServiceDayOverrideService
 
     public async Task<ServiceDayOverride?> GetByIdAsync(int id)
     {
-        return await _db.ServiceDayOverrides.FindAsync(id);
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        return await db.ServiceDayOverrides.FindAsync(id);
     }
 
     public async Task<ServiceDayOverride> CreateAsync(ServiceDayOverride model)
     {
-        _db.ServiceDayOverrides.Add(model);
-        await _db.SaveChangesAsync();
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        db.ServiceDayOverrides.Add(model);
+        await db.SaveChangesAsync();
         return model;
     }
 
     public async Task<ServiceDayOverride> UpdateAsync(int id, ServiceDayOverride model)
     {
-        var existing = await _db.ServiceDayOverrides.FindAsync(id);
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        var existing = await db.ServiceDayOverrides.FindAsync(id);
         if (existing == null)
         {
             throw new Exception("Override nicht gefunden.");
@@ -54,20 +59,21 @@ public class ServiceDayOverrideService : IServiceDayOverrideService
         existing.CapacityPerSlotOverride = model.CapacityPerSlotOverride;
         existing.ServiceId = model.ServiceId;
 
-        await _db.SaveChangesAsync();
+        await db.SaveChangesAsync();
         return existing;
     }
 
     public async Task<bool> DeleteAsync(int id)
     {
-        var existing = await _db.ServiceDayOverrides.FindAsync(id);
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        var existing = await db.ServiceDayOverrides.FindAsync(id);
         if (existing == null)
         {
             return false;
         }
 
-        _db.ServiceDayOverrides.Remove(existing);
-        await _db.SaveChangesAsync();
+        db.ServiceDayOverrides.Remove(existing);
+        await db.SaveChangesAsync();
         return true;
     }
 }

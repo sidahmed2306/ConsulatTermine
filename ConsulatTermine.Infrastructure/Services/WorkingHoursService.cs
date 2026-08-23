@@ -1,24 +1,29 @@
+using ConsulatTermine.Application.Interfaces;
 using ConsulatTermine.Domain.Entities;
 using ConsulatTermine.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
+namespace ConsulatTermine.Infrastructure.Services;
+
 public class WorkingHoursService : IWorkingHoursService
 {
-    private readonly ApplicationDbContext _db;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
 
-    public WorkingHoursService(ApplicationDbContext db)
+    public WorkingHoursService(IDbContextFactory<ApplicationDbContext> contextFactory)
     {
-        _db = db;
+        _contextFactory = contextFactory;
     }
 
     public async Task<List<WorkingHours>> GetAllAsync()
     {
-        return await _db.WorkingHours.Include(w => w.Service).ToListAsync();
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        return await db.WorkingHours.Include(w => w.Service).ToListAsync();
     }
 
     public async Task<List<WorkingHours>> GetByServiceAsync(int serviceId)
     {
-        return await _db.WorkingHours
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        return await db.WorkingHours
             .Where(w => w.ServiceId == serviceId)
             .Include(w => w.Service)
             .ToListAsync();
@@ -26,19 +31,22 @@ public class WorkingHoursService : IWorkingHoursService
 
     public async Task<WorkingHours?> GetByIdAsync(int id)
     {
-        return await _db.WorkingHours.FindAsync(id);
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        return await db.WorkingHours.FindAsync(id);
     }
 
     public async Task<WorkingHours> CreateAsync(WorkingHours model)
     {
-        _db.WorkingHours.Add(model);
-        await _db.SaveChangesAsync();
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        db.WorkingHours.Add(model);
+        await db.SaveChangesAsync();
         return model;
     }
 
     public async Task<WorkingHours> UpdateAsync(int id, WorkingHours model)
     {
-        var entity = await _db.WorkingHours.FindAsync(id);
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        var entity = await db.WorkingHours.FindAsync(id);
         if (entity == null)
         {
             throw new Exception("WorkingHours not found.");
@@ -49,20 +57,21 @@ public class WorkingHoursService : IWorkingHoursService
         entity.StartTime = model.StartTime;
         entity.EndTime = model.EndTime;
 
-        await _db.SaveChangesAsync();
+        await db.SaveChangesAsync();
         return entity;
     }
 
     public async Task<bool> DeleteAsync(int id)
     {
-        var entity = await _db.WorkingHours.FindAsync(id);
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        var entity = await db.WorkingHours.FindAsync(id);
         if (entity == null)
         {
             return false;
         }
 
-        _db.WorkingHours.Remove(entity);
-        await _db.SaveChangesAsync();
+        db.WorkingHours.Remove(entity);
+        await db.SaveChangesAsync();
         return true;
     }
 }

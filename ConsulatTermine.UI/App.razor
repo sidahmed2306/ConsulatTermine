@@ -1,12 +1,42 @@
-﻿<Router AppAssembly="@typeof(App).Assembly">
+@using ConsulatTermine.UI.Shared
+
+<Router AppAssembly="@typeof(App).Assembly">
     <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+        @* AuthorizeRouteView wertet [Authorize] auf den Seiten aus. Ohne diese
+           Komponente waeren die Attribute wirkungslos. *@
+        <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
+            <NotAuthorized>
+                @if (context.User.Identity?.IsAuthenticated != true)
+                {
+                    <RedirectToLogin />
+                }
+                else
+                {
+                    <LayoutView Layout="@typeof(MainLayout)">
+                        <MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
+                            <MudAlert Severity="Severity.Warning">
+                                Für diesen Bereich fehlt Ihnen die Berechtigung.
+                            </MudAlert>
+                        </MudContainer>
+                    </LayoutView>
+                }
+            </NotAuthorized>
+            <Authorizing>
+                <LayoutView Layout="@typeof(MainLayout)">
+                    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+                </LayoutView>
+            </Authorizing>
+        </AuthorizeRouteView>
         <FocusOnNavigate RouteData="@routeData" Selector="h1" />
     </Found>
     <NotFound>
-        <PageTitle>Not found</PageTitle>
+        <PageTitle>Seite nicht gefunden</PageTitle>
         <LayoutView Layout="@typeof(MainLayout)">
-            <p role="alert">Sorry, there's nothing at this address.</p>
+            <MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
+                <MudAlert Severity="Severity.Info" role="alert">
+                    Unter dieser Adresse gibt es keine Seite.
+                </MudAlert>
+            </MudContainer>
         </LayoutView>
     </NotFound>
 </Router>

@@ -1,250 +1,324 @@
+using ConsulatTermine.Application.Configuration;
 using ConsulatTermine.Application.DTOs;
+using ConsulatTermine.Application.Exceptions;
 using ConsulatTermine.Application.Interfaces;
+using ConsulatTermine.Application.Security;
 using ConsulatTermine.Domain.Entities;
 using ConsulatTermine.Domain.Enums;
 using ConsulatTermine.Infrastructure.Persistence;
 using ConsulatTermine.Infrastructure.Security;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace ConsulatTermine.Infrastructure.Services;
 
-public class EmployeeService : IEmployeeService
+/// <summary>
+/// Verwaltung der Mitarbeiterstammdaten.
+/// Anlegen, Aendern und Loeschen sind ServiceChef und Admin vorbehalten; die Pruefung
+/// erfolgt serverseitig und unabhaengig davon, was die UI anbietet.
+/// </summary>
+public sealed class EmployeeService : IEmployeeService
 {
-    private readonly ApplicationDbContext _context;
+    /// <summary>Praefix der systemseitig vergebenen Mitarbeiterkennung.</summary>
+    private const string EmployeeCodePrefix = "CDZ";
 
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
     private readonly IEmailService _emailService;
+    private readonly IEmployeeAuthorization _authorization;
+    private readonly IPasswordHasher<Employee> _passwordHasher;
+    private readonly ApplicationOptions _applicationOptions;
+    private readonly TimeProvider _timeProvider;
+    private readonly ILogger<EmployeeService> _logger;
 
     public EmployeeService(
-        ApplicationDbContext context,
-        IEmailService emailService)
+        IDbContextFactory<ApplicationDbContext> contextFactory,
+        IEmailService emailService,
+        IEmployeeAuthorization authorization,
+        IPasswordHasher<Employee> passwordHasher,
+        IOptions<ApplicationOptions> applicationOptions,
+        TimeProvider timeProvider,
+        ILogger<EmployeeService> logger)
     {
-        _context = context;
+        _contextFactory = contextFactory;
         _emailService = emailService;
+        _authorization = authorization;
+        _passwordHasher = passwordHasher;
+        _applicationOptions = applicationOptions.Value;
+        _timeProvider = timeProvider;
+        _logger = logger;
     }
 
-    // -------------------------------------------------------------
-    // GET ALL EMPLOYEES (inkl. Service Assignments)
-    // -------------------------------------------------------------
-    public async Task<List<Employee>> GetAllEmployeesAsync()
+    public async Task<List<Employee>> GetAllEmployeesAsync(CancellationToken cancellationToken = default)
     {
-        return await _context.Employees
+        await _authorization.RequireMinimumRoleAsync(EmployeeRole.ServiceChef);
+
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
+
+        return await context.Employees
+            .AsNoTracking()
             .Include(e => e.AssignedServices)
                 .ThenInclude(a => a.Service)
-            .AsNoTracking()
             .OrderBy(e => e.LastName)
             .ThenBy(e => e.FirstName)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 
-    // -------------------------------------------------------------
-    // GET EMPLOYEE BY ID
-    // -------------------------------------------------------------
-    public async Task<Employee?> GetEmployeeByIdAsync(int id)
+    public async Task<Employee?> GetEmployeeByIdAsync(int id, CancellationToken cancellationToken = default)
     {
-        return await _context.Employees
+        var current = await _authorization.RequireEmployeeAsync();
+
+        // Ein einfacher Mitarbeiter darf nur den eigenen Datensatz lesen.
+        if (current.Role < EmployeeRole.ServiceChef && current.EmployeeId != id)
+        {
+            throw new NotAuthorizedException();
+        }
+
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
+
+        return await context.Employees
+            .AsNoTracking()
             .Include(e => e.AssignedServices)
                 .ThenInclude(a => a.Service)
-            .FirstOrDefaultAsync(e => e.Id == id);
+            .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
     }
 
-    // -------------------------------------------------------------
-    // CREATE EMPLOYEE (mit Kennung: CDZ-001, CDZ-002, ...)
-    // -------------------------------------------------------------
-    public async Task<Employee> CreateEmployeeAsync(EmployeeDto dto)
+    public async Task<Employee> CreateEmployeeAsync(
+        EmployeeDto dto,
+        CancellationToken cancellationToken = default)
     {
-        // -------------------------------------------------
-        // 0) Basis-Validierung (fachlich, minimal)
-        // -------------------------------------------------
+        await _authorization.RequireMinimumRoleAsync(EmployeeRole.ServiceChef);
+
+        ArgumentNullException.ThrowIfNull(dto);
+
         if (string.IsNullOrWhiteSpace(dto.FirstName))
         {
-            throw new Exception("FirstName is required.");
+            throw new BusinessRuleViolationException("Der Vorname ist erforderlich.");
         }
 
         if (string.IsNullOrWhiteSpace(dto.LastName))
         {
-            throw new Exception("LastName is required.");
+            throw new BusinessRuleViolationException("Der Nachname ist erforderlich.");
         }
 
         if (string.IsNullOrWhiteSpace(dto.Email))
         {
-            throw new Exception("Email is required.");
+            throw new BusinessRuleViolationException("Die E-Mail-Adresse ist erforderlich.");
         }
 
-        // -------------------------------------------------
-        // 0a) Business-Validierung: E-Mail darf nur einmal existieren
-        // -------------------------------------------------
-        var emailExists = await _context.Employees
-            .AnyAsync(e => e.Email.ToLower() == dto.Email.Trim().ToLower());
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
+
+        var normalizedEmail = dto.Email.Trim();
+
+        // EF Core uebersetzt den Vergleich in eine Abfrage mit der Collation der Spalte.
+        // Die Datenbank ist case-insensitive konfiguriert; ToLower() waere hier nur ein
+        // Aufruf, der jeden Index unbrauchbar macht.
+        var emailExists = await context.Employees
+            .AnyAsync(e => e.Email == normalizedEmail, cancellationToken);
 
         if (emailExists)
         {
-            throw new Exception("Ein Mitarbeiter mit dieser E-Mail-Adresse existiert bereits.");
+            throw new BusinessRuleViolationException(
+                "Ein Mitarbeiter mit dieser E-Mail-Adresse existiert bereits.");
         }
 
+        var initialPassword = InitialPasswordGenerator.Generate();
 
-        // -------------------------------------------------
-        // 1) Nächste Mitarbeiter-Kennung generieren
-        // Format: CDZ-001, CDZ-002, ...
-        // -------------------------------------------------
-        var lastCode = await _context.Employees
-            .AsNoTracking()
-            .OrderByDescending(e => e.Id)
-            .Select(e => e.EmployeeCode)
-            .FirstOrDefaultAsync();
-
-        int nextNumber = 1;
-
-        if (!string.IsNullOrWhiteSpace(lastCode))
-        {
-            var parts = lastCode.Split('-');
-            if (parts.Length == 2 && int.TryParse(parts[1], out var parsed))
-            {
-                nextNumber = parsed + 1;
-            }
-        }
-
-        string employeeCode = $"CDZ-{nextNumber:D3}";
-
-        // -------------------------------------------------
-        // 2) Einmal-Passwort generieren
-        // (temporär gespeichert, später durch Identity ersetzt)
-        // -------------------------------------------------
-        string temporaryPassword = TemporaryPasswordGenerator.Generate();
-
-        // -------------------------------------------------
-        // 3) Employee Entity erstellen
-        // -------------------------------------------------
         var employee = new Employee
         {
-            EmployeeCode = employeeCode,
-
+            EmployeeCode = await GenerateNextEmployeeCodeAsync(context, cancellationToken),
             FirstName = dto.FirstName.Trim(),
             LastName = dto.LastName.Trim(),
-            Email = dto.Email.Trim(),
+            Email = normalizedEmail,
             DateOfBirth = dto.DateOfBirth,
             Role = dto.Role,
-
-            // Status
             IsActive = true,
-
-            // Sicherheit
-            TemporaryPassword = temporaryPassword,
             MustChangePassword = true,
-
-            // Vorbereitung für späteres Identity-Mapping
-            IdentityUserId = null,
-
-            // Meta
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = _timeProvider.GetUtcNow().UtcDateTime
         };
 
-        // -------------------------------------------------
-        // 4) Persistieren
-        // -------------------------------------------------
-        _context.Employees.Add(employee);
-        await _context.SaveChangesAsync();
+        employee.PasswordHash = _passwordHasher.HashPassword(employee, initialPassword);
 
-        // -------------------------------------------------
-        // BLOCK A3 – Willkommens-E-Mail (E-Mail 1)
-        // -------------------------------------------------
+        context.Employees.Add(employee);
+        await context.SaveChangesAsync(cancellationToken);
 
-        var changePasswordLink =
-            $"http://localhost:5262/employee/change-password/{employee.Id}";
+        _logger.LogInformation(
+            "Mitarbeiter {EmployeeId} mit Kennung {EmployeeCode} angelegt.",
+            employee.Id,
+            employee.EmployeeCode);
 
         await _emailService.SendEmployeeWelcomeEmailAsync(
             toEmail: employee.Email,
-            fullName: $"{employee.FirstName} {employee.LastName}",
+            fullName: FullNameOf(employee),
             employeeCode: employee.EmployeeCode,
-            temporaryPassword: temporaryPassword,
-            changePasswordLink: changePasswordLink
-        );
+            temporaryPassword: initialPassword,
+            changePasswordLink: BuildLink($"employee/change-password/{employee.Id}"));
 
         return employee;
-
     }
 
-
-    // -------------------------------------------------------------
-    // UPDATE EMPLOYEE
-    // -------------------------------------------------------------
-    public async Task<Employee> UpdateEmployeeAsync(int id, EmployeeDto dto)
+    public async Task<Employee> UpdateEmployeeAsync(
+        int id,
+        EmployeeDto dto,
+        CancellationToken cancellationToken = default)
     {
-        var employee = await _context.Employees.FindAsync(id);
-        if (employee == null)
+        var current = await _authorization.RequireMinimumRoleAsync(EmployeeRole.ServiceChef);
+
+        ArgumentNullException.ThrowIfNull(dto);
+
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
+
+        var employee = await context.Employees.FindAsync([id], cancellationToken)
+            ?? throw new BusinessRuleViolationException("Der Mitarbeiter wurde nicht gefunden.");
+
+        // Nur ein Admin darf Rollen vergeben. Sonst koennte sich ein ServiceChef selbst
+        // oder andere zum Admin befoerdern.
+        if (employee.Role != dto.Role && current.Role < EmployeeRole.Admin)
         {
-            throw new Exception("Employee not found");
+            throw new NotAuthorizedException("Nur ein Administrator darf Rollen aendern.");
         }
 
-        employee.FirstName = dto.FirstName;
-        employee.LastName = dto.LastName;
-        employee.Email = dto.Email;
+        employee.FirstName = dto.FirstName.Trim();
+        employee.LastName = dto.LastName.Trim();
+        employee.Email = dto.Email.Trim();
         employee.DateOfBirth = dto.DateOfBirth;
         employee.Role = dto.Role;
 
-        // EmployeeCode wird NICHT geändert (systemseitige Kennung)
-        await _context.SaveChangesAsync();
+        // Die Kennung ist systemseitig vergeben und bleibt unveraendert.
+        await context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Mitarbeiter {EmployeeId} geaendert.", employee.Id);
         return employee;
     }
 
-    // -------------------------------------------------------------
-    // DELETE EMPLOYEE
-    // -------------------------------------------------------------
-    public async Task<bool> DeleteEmployeeAsync(int id)
+    public async Task<bool> DeleteEmployeeAsync(int id, CancellationToken cancellationToken = default)
     {
-        var employee = await _context.Employees.FindAsync(id);
-        if (employee == null)
+        var current = await _authorization.RequireMinimumRoleAsync(EmployeeRole.Admin);
+
+        if (current.EmployeeId == id)
+        {
+            throw new BusinessRuleViolationException(
+                "Das eigene Konto kann nicht geloescht werden.");
+        }
+
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
+
+        var employee = await context.Employees.FindAsync([id], cancellationToken);
+        if (employee is null)
         {
             return false;
         }
 
-        _context.Employees.Remove(employee);
-        await _context.SaveChangesAsync();
+        // Der letzte aktive Administrator darf nicht verschwinden, sonst ist die
+        // Anwendung nicht mehr verwaltbar.
+        if (employee.Role == EmployeeRole.Admin)
+        {
+            var remainingAdmins = await context.Employees
+                .CountAsync(e => e.Role == EmployeeRole.Admin && e.IsActive && e.Id != id, cancellationToken);
+
+            if (remainingAdmins == 0)
+            {
+                throw new BusinessRuleViolationException(
+                    "Der letzte Administrator kann nicht geloescht werden.");
+            }
+        }
+
+        context.Employees.Remove(employee);
+        await context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Mitarbeiter {EmployeeId} geloescht.", id);
         return true;
     }
 
-    public async Task EnsureInitialAdminAsync()
+    /// <summary>
+    /// Legt beim ersten Start einen Administrator an, damit die Anwendung ueberhaupt
+    /// bedienbar ist. Laeuft ohne angemeldeten Benutzer und wird deshalb nicht autorisiert;
+    /// der Aufruf erfolgt ausschliesslich aus dem Anwendungsstart.
+    /// </summary>
+    public async Task EnsureInitialAdminAsync(
+        string adminEmail,
+        CancellationToken cancellationToken = default)
     {
-        var adminExists = await _context.Employees
-            .AnyAsync(e => e.Role == EmployeeRole.Admin);
+        ArgumentException.ThrowIfNullOrWhiteSpace(adminEmail);
+
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
+
+        var adminExists = await context.Employees
+            .AnyAsync(e => e.Role == EmployeeRole.Admin, cancellationToken);
 
         if (adminExists)
         {
             return;
         }
 
-        var tempPassword = "Admin123!"; // später austauschbar
+        var initialPassword = InitialPasswordGenerator.Generate();
 
         var admin = new Employee
         {
             FirstName = "System",
             LastName = "Administrator",
-            Email = "sidahmedbc1@gmail.com",
-            EmployeeCode = "ADMIN-001",
+            Email = adminEmail.Trim(),
+            EmployeeCode = $"{EmployeeCodePrefix}-001",
             Role = EmployeeRole.Admin,
-
-            TemporaryPassword = tempPassword,
             MustChangePassword = true,
-            IsActive = true
+            IsActive = true,
+            CreatedAt = _timeProvider.GetUtcNow().UtcDateTime
         };
 
-        _context.Employees.Add(admin);
-        await _context.SaveChangesAsync();
+        admin.PasswordHash = _passwordHasher.HashPassword(admin, initialPassword);
 
-        var changePasswordLink =
-            "http://localhost:5262/employee/change-password/" + admin.Id;
+        context.Employees.Add(admin);
+        await context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogWarning(
+            "Kein Administrator vorhanden. Konto {EmployeeCode} wurde angelegt; das "
+            + "Initialpasswort wurde per E-Mail an {Email} versendet und muss beim ersten "
+            + "Login geaendert werden.",
+            admin.EmployeeCode,
+            admin.Email);
 
         await _emailService.SendEmployeeWelcomeEmailAsync(
             toEmail: admin.Email,
-            fullName: $"{admin.FirstName} {admin.LastName}",
+            fullName: FullNameOf(admin),
             employeeCode: admin.EmployeeCode,
-            temporaryPassword: tempPassword,
-            changePasswordLink: changePasswordLink
-        );
+            temporaryPassword: initialPassword,
+            changePasswordLink: BuildLink($"employee/change-password/{admin.Id}"));
     }
 
+    /// <summary>
+    /// Bildet die naechste freie Kennung im Format CDZ-001.
+    /// Die Eindeutigkeit sichert zusaetzlich ein Unique-Index auf <c>EmployeeCode</c>:
+    /// bei zwei gleichzeitigen Anlagen scheitert die zweite an der Datenbank statt eine
+    /// doppelte Kennung zu vergeben.
+    /// </summary>
+    private static async Task<string> GenerateNextEmployeeCodeAsync(
+        ApplicationDbContext context,
+        CancellationToken cancellationToken)
+    {
+        var codes = await context.Employees
+            .AsNoTracking()
+            .Where(e => e.EmployeeCode.StartsWith(EmployeeCodePrefix))
+            .Select(e => e.EmployeeCode)
+            .ToListAsync(cancellationToken);
 
+        var highest = codes
+            .Select(code => code.Split('-'))
+            .Where(parts => parts.Length == 2 && int.TryParse(parts[1], out _))
+            .Select(parts => int.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture))
+            .DefaultIfEmpty(0)
+            .Max();
 
+        return $"{EmployeeCodePrefix}-{highest + 1:D3}";
+    }
 
+    private string BuildLink(string relativePath)
+    {
+        return $"{_applicationOptions.BaseUrl.TrimEnd('/')}/{relativePath}";
+    }
+
+    private static string FullNameOf(Employee employee)
+    {
+        return $"{employee.FirstName} {employee.LastName}";
+    }
 }
-
-

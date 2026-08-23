@@ -1,3 +1,4 @@
+using ConsulatTermine.Application.Services;
 using ConsulatTermine.Application.DTOs.Booking;
 using ConsulatTermine.Application.Interfaces.Booking;
 using ConsulatTermine.Domain.Enums;
@@ -8,15 +9,16 @@ namespace ConsulatTermine.Infrastructure.Services.Booking;
 
 public class SlotAvailabilityService : ISlotAvailabilityService
 {
-    private readonly ApplicationDbContext _db;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
 
-    public SlotAvailabilityService(ApplicationDbContext db)
+    public SlotAvailabilityService(IDbContextFactory<ApplicationDbContext> contextFactory)
     {
-        _db = db;
+        _contextFactory = contextFactory;
     }
 
     public async Task ValidateSlotCapacitiesAsync(CreateBookingRequestDto request)
     {
+        await using var db = await _contextFactory.CreateDbContextAsync();
         var allPersons = GetAllPersons(request);
 
         var grouped = allPersons
@@ -34,7 +36,7 @@ public class SlotAvailabilityService : ISlotAvailabilityService
             DateTime date = group.Key.Date;
 
             // 1) Service laden (nur Basis + Employees für Kapazität)
-            var service = await _db.Services
+            var service = await db.Services
                 .Include(s => s.AssignedEmployees)
                 .FirstOrDefaultAsync(s => s.Id == serviceId);
 
@@ -44,7 +46,7 @@ public class SlotAvailabilityService : ISlotAvailabilityService
             }
 
             // 2) Aktiven Plan laden
-            var plan = await _db.WorkingSchedulePlans
+            var plan = await db.WorkingSchedulePlans
                 .Where(p => p.ServiceId == serviceId && p.IsActive)
                 .OrderByDescending(p => p.ValidFromDate)
                 .FirstOrDefaultAsync();
@@ -64,20 +66,20 @@ public class SlotAvailabilityService : ISlotAvailabilityService
             }
 
             // 4) Plan-bezogene WorkingHours / Overrides laden
-            var workingHours = await _db.WorkingHours
+            var workingHours = await db.WorkingHours
                 .Where(w =>
                     w.ServiceId == serviceId &&
                     w.WorkingSchedulePlanId == plan.Id)
                 .ToListAsync();
 
-            var overrides = await _db.ServiceDayOverrides
+            var overrides = await db.ServiceDayOverrides
                 .Where(o =>
                     o.ServiceId == serviceId &&
                     o.WorkingSchedulePlanId == plan.Id)
                 .ToListAsync();
 
             // 5) Existierende Termine für diesen Tag laden
-            var existingAppointments = await _db.Appointments
+            var existingAppointments = await db.Appointments
 .Where(a =>
     a.ServiceId == serviceId &&
     a.Date.Date == date.Date &&
@@ -151,12 +153,13 @@ public class SlotAvailabilityService : ISlotAvailabilityService
 
     public async Task<bool> IsSlotAvailableAsync(int serviceId, DateTime slotTime)
     {
+        await using var db = await _contextFactory.CreateDbContextAsync();
         var localSlot = slotTime.Kind == DateTimeKind.Utc ? slotTime.ToLocalTime() : slotTime;
         var date = localSlot.Date;
         var timeOfDay = localSlot.TimeOfDay;
 
         // 1) Service laden
-        var service = await _db.Services
+        var service = await db.Services
             .Include(s => s.AssignedEmployees)
             .FirstOrDefaultAsync(s => s.Id == serviceId);
 
@@ -166,7 +169,7 @@ public class SlotAvailabilityService : ISlotAvailabilityService
         }
 
         // 2) Aktiven Plan laden
-        var plan = await _db.WorkingSchedulePlans
+        var plan = await db.WorkingSchedulePlans
             .Where(p => p.ServiceId == serviceId && p.IsActive)
             .OrderByDescending(p => p.ValidFromDate)
             .FirstOrDefaultAsync();
@@ -186,20 +189,20 @@ public class SlotAvailabilityService : ISlotAvailabilityService
         }
 
         // 4) Plan-bezogene WorkingHours / Overrides laden
-        var workingHours = await _db.WorkingHours
+        var workingHours = await db.WorkingHours
             .Where(w =>
                 w.ServiceId == serviceId &&
                 w.WorkingSchedulePlanId == plan.Id)
             .ToListAsync();
 
-        var overrides = await _db.ServiceDayOverrides
+        var overrides = await db.ServiceDayOverrides
             .Where(o =>
                 o.ServiceId == serviceId &&
                 o.WorkingSchedulePlanId == plan.Id)
             .ToListAsync();
 
         // 5) Existierende Appointments laden
-        var existingAppointments = await _db.Appointments
+        var existingAppointments = await db.Appointments
 .Where(a =>
     a.ServiceId == serviceId &&
     a.Date.Date == date &&

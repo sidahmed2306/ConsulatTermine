@@ -1,9 +1,10 @@
+using ConsulatTermine.Application.Services;
 using ConsulatTermine.Application.DTOs;
 using ConsulatTermine.Application.Interfaces;
 using ConsulatTermine.Domain.Entities;
 using ConsulatTermine.Domain.Enums;
 using ConsulatTermine.Infrastructure.Persistence;
-using Infrastructure.SignalR;
+using ConsulatTermine.Infrastructure.SignalR;
 
 using Microsoft.AspNetCore.SignalR;
 
@@ -13,7 +14,7 @@ namespace ConsulatTermine.Infrastructure.Services;
 
 public class AppointmentService : IAppointmentService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
     private readonly IHubContext<DisplayHub, IDisplayClient> _displayHub;
     private readonly IHubContext<EmployeeHub, IEmployeeClient> _employeeHub;
     private readonly IWaitingRoomNotifier _waitingRoomNotifier;
@@ -23,13 +24,13 @@ public class AppointmentService : IAppointmentService
 
 
     public AppointmentService(
-  ApplicationDbContext context,
+  IDbContextFactory<ApplicationDbContext> contextFactory,
   IHubContext<DisplayHub, IDisplayClient> displayHub,
   IHubContext<EmployeeHub, IEmployeeClient> employeeHub,
   IEmailService emailService,
   IWaitingRoomNotifier waitingRoomNotifier)
     {
-        _context = context;
+        _contextFactory = contextFactory;
         _displayHub = displayHub;
         _employeeHub = employeeHub;
         _emailService = emailService;
@@ -43,8 +44,9 @@ public class AppointmentService : IAppointmentService
     // -------------------------------------------------------------
     public async Task<List<AvailableSlotDto>> GetAvailableSlotDtosAsync(int serviceId, DateTime date)
     {
+        await using var db = await _contextFactory.CreateDbContextAsync();
         // Service laden (Kapazität über AssignedEmployees)
-        var service = await _context.Services
+        var service = await db.Services
             .Include(s => s.AssignedEmployees)
             .FirstOrDefaultAsync(s => s.Id == serviceId);
 
@@ -67,16 +69,16 @@ public class AppointmentService : IAppointmentService
         }
 
         // Plan-gebundene WorkingHours/Overrides laden
-        var workingHours = await _context.WorkingHours
+        var workingHours = await db.WorkingHours
             .Where(w => w.ServiceId == serviceId && w.WorkingSchedulePlanId == plan.Id)
             .ToListAsync();
 
-        var overrides = await _context.ServiceDayOverrides
+        var overrides = await db.ServiceDayOverrides
             .Where(o => o.ServiceId == serviceId && o.WorkingSchedulePlanId == plan.Id)
             .ToListAsync();
 
         // Existierende Termine an dem Tag
-        var appointments = await _context.Appointments
+        var appointments = await db.Appointments
             .Where(a => a.ServiceId == serviceId && a.Date.Date == date.Date)
             .ToListAsync();
 
@@ -109,6 +111,7 @@ public class AppointmentService : IAppointmentService
         string fullName,
         string email)
     {
+        await using var db = await _contextFactory.CreateDbContextAsync();
         var date = slotStart.Date;
 
         // Freie Slots für diesen Tag holen (plan-basiert)
@@ -136,8 +139,8 @@ public class AppointmentService : IAppointmentService
             CreatedAt = DateTime.UtcNow
         };
 
-        _context.Appointments.Add(appointment);
-        await _context.SaveChangesAsync();
+        db.Appointments.Add(appointment);
+        await db.SaveChangesAsync();
 
         return appointment;
     }
@@ -146,8 +149,9 @@ public class AppointmentService : IAppointmentService
     // -------------------------------------------------------------
     public async Task<bool> CancelAsync(int appointmentId)
     {
+        await using var db = await _contextFactory.CreateDbContextAsync();
         // 🔎 Termin inkl. Service laden
-        var appointment = await _context.Appointments
+        var appointment = await db.Appointments
             .Include(a => a.Service)
             .FirstOrDefaultAsync(a => a.Id == appointmentId);
 
@@ -168,12 +172,12 @@ public class AppointmentService : IAppointmentService
 
         // ❌ Termin stornieren
         appointment.Status = AppointmentStatus.Cancelled;
-        await _context.SaveChangesAsync();
+        await db.SaveChangesAsync();
 
         // ---------------------------------------------------------
         // 🔎 ALLE Termine dieser Buchung laden (GLEICHER THREAD)
         // ---------------------------------------------------------
-        var allAppointments = await _context.Appointments
+        var allAppointments = await db.Appointments
             .Include(a => a.Service)
             .Where(a => a.BookingReference == appointment.BookingReference)
             .ToListAsync();
@@ -226,12 +230,13 @@ public class AppointmentService : IAppointmentService
 
     public async Task<List<Appointment>> GetByBookingReferenceAsync(string bookingReference)
     {
+        await using var db = await _contextFactory.CreateDbContextAsync();
         if (string.IsNullOrWhiteSpace(bookingReference))
         {
             return new List<Appointment>();
         }
 
-        return await _context.Appointments
+        return await db.Appointments
             .Include(a => a.Service)
             .Where(a => a.BookingReference == bookingReference)
             .OrderBy(a => a.Date)
@@ -244,7 +249,8 @@ public class AppointmentService : IAppointmentService
     // -------------------------------------------------------------
     public async Task<bool> CheckInAsync(int appointmentId)
     {
-        var appointment = await _context.Appointments.FindAsync(appointmentId);
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        var appointment = await db.Appointments.FindAsync(appointmentId);
         if (appointment == null)
         {
             return false;
@@ -258,7 +264,7 @@ public class AppointmentService : IAppointmentService
         appointment.Status = AppointmentStatus.CheckedIn;
         appointment.CheckedInAt = DateTime.UtcNow;
 
-        await _context.SaveChangesAsync();
+        await db.SaveChangesAsync();
         await _employeeHub.Clients.All.StatusUpdated(appointment.Id, appointment.Status);
 
         return true;
@@ -269,8 +275,9 @@ public class AppointmentService : IAppointmentService
     // -------------------------------------------------------------
     public async Task<bool> StartProcessingAsync(int appointmentId, int employeeId)
     {
+        await using var db = await _contextFactory.CreateDbContextAsync();
         // 🔒 ATOMARES UPDATE
-        var affected = await _context.Database.ExecuteSqlInterpolatedAsync($@"
+        var affected = await db.Database.ExecuteSqlInterpolatedAsync($@"
     UPDATE Appointments
     SET 
         Status = {(int)AppointmentStatus.InProgress},
@@ -287,7 +294,7 @@ public class AppointmentService : IAppointmentService
         }
 
         // 🔴 DAS HAT GEFEHLT
-        _context.ChangeTracker.Clear();
+        db.ChangeTracker.Clear();
 
         return true;
 
@@ -306,7 +313,8 @@ public class AppointmentService : IAppointmentService
     // -------------------------------------------------------------
     public async Task<bool> CompleteAsync(int appointmentId, int employeeId)
     {
-        var appointment = await _context.Appointments
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        var appointment = await db.Appointments
             .FirstOrDefaultAsync(a => a.Id == appointmentId);
 
         if (appointment == null)
@@ -330,14 +338,15 @@ public class AppointmentService : IAppointmentService
         // 🧹 Arbeitsplatz / Mitarbeiter freigeben
         appointment.CurrentEmployeeId = null;
 
-        await _context.SaveChangesAsync();
+        await db.SaveChangesAsync();
         return true;
     }
 
 
     public async Task<bool> HideFromWaitingRoomAsync(int appointmentId, int employeeId)
     {
-        var appointment = await _context.Appointments
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        var appointment = await db.Appointments
             .FirstOrDefaultAsync(a => a.Id == appointmentId);
 
         if (appointment == null)
@@ -363,7 +372,7 @@ public class AppointmentService : IAppointmentService
         // ✅ Nicht mehr im Wartezimmer anzeigen
         appointment.IsVisibleInWaitingRoom = false;
 
-        await _context.SaveChangesAsync();
+        await db.SaveChangesAsync();
 
         _waitingRoomNotifier.Notify();
         return true;
@@ -376,10 +385,11 @@ public class AppointmentService : IAppointmentService
     // -------------------------------------------------------------
     public async Task<List<Appointment>> BookGroupAsync(GroupBookingDto dto)
     {
+        await using var db = await _contextFactory.CreateDbContextAsync();
         var result = new List<Appointment>();
 
         // Service laden (Kapazität über AssignedEmployees)
-        var service = await _context.Services
+        var service = await db.Services
             .Include(s => s.AssignedEmployees)
             .FirstOrDefaultAsync(s => s.Id == dto.ServiceId);
 
@@ -422,16 +432,16 @@ public class AppointmentService : IAppointmentService
         }
 
         // Plan-gebundene WorkingHours/Overrides laden
-        var workingHours = await _context.WorkingHours
+        var workingHours = await db.WorkingHours
             .Where(w => w.ServiceId == dto.ServiceId && w.WorkingSchedulePlanId == plan.Id)
             .ToListAsync();
 
-        var overrides = await _context.ServiceDayOverrides
+        var overrides = await db.ServiceDayOverrides
             .Where(o => o.ServiceId == dto.ServiceId && o.WorkingSchedulePlanId == plan.Id)
             .ToListAsync();
 
         // Existierende Termine für diesen Tag
-        var existing = await _context.Appointments
+        var existing = await db.Appointments
             .Where(a => a.ServiceId == dto.ServiceId && a.Date.Date == date.Date)
             .ToListAsync();
 
@@ -465,7 +475,7 @@ public class AppointmentService : IAppointmentService
         }
 
         // Speichern in Transaktion
-        using var trx = await _context.Database.BeginTransactionAsync();
+        using var trx = await db.Database.BeginTransactionAsync();
 
         try
         {
@@ -481,11 +491,11 @@ public class AppointmentService : IAppointmentService
                     CreatedAt = DateTime.UtcNow
                 };
 
-                _context.Appointments.Add(appointment);
+                db.Appointments.Add(appointment);
                 result.Add(appointment);
             }
 
-            await _context.SaveChangesAsync();
+            await db.SaveChangesAsync();
             await trx.CommitAsync();
         }
         catch
@@ -501,8 +511,9 @@ public class AppointmentService : IAppointmentService
 int serviceId,
 DateTime date)
     {
+        await using var db = await _contextFactory.CreateDbContextAsync();
         var targetDate = date.Date;
-        return await _context.Appointments
+        return await db.Appointments
             .AsNoTracking() // 🔴 WICHTIG
             .Where(a =>
                 a.ServiceId == serviceId &&
@@ -515,9 +526,15 @@ DateTime date)
     // -------------------------------------------------------------
     // Helpers: Active Plan + Range Check
     // -------------------------------------------------------------
+    /// <summary>
+    /// Liest den aktiven Arbeitszeitplan eines Service. Reine Leseabfrage ohne Bezug zu
+    /// offenen Änderungen des Aufrufers, daher mit eigenem, kurzlebigem Kontext.
+    /// </summary>
     private async Task<WorkingSchedulePlan?> GetActivePlanAsync(int serviceId)
     {
-        return await _context.WorkingSchedulePlans
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        return await db.WorkingSchedulePlans
+            .AsNoTracking()
             .Where(p => p.ServiceId == serviceId && p.IsActive)
             .OrderByDescending(p => p.ValidFromDate)
             .FirstOrDefaultAsync();
@@ -532,9 +549,10 @@ DateTime date)
 
     public async Task<List<Appointment>> GetActiveWaitingRoomAppointmentsAsync()
     {
+        await using var db = await _contextFactory.CreateDbContextAsync();
         var today = DateTime.Today;
 
-        return await _context.Appointments
+        return await db.Appointments
             .Include(a => a.Service)
             .Where(a =>
                 a.Status == AppointmentStatus.InProgress &&

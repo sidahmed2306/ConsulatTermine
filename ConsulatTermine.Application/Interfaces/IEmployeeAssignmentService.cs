@@ -1,5 +1,7 @@
 using ConsulatTermine.Domain.Entities;
 
+namespace ConsulatTermine.Application.Interfaces;
+
 public interface IEmployeeAssignmentService
 {
     Task<List<EmployeeServiceAssignment>> GetAllAssignmentsAsync();

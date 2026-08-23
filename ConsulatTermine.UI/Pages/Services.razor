@@ -1,4 +1,5 @@
 @page "/services"
+@attribute [AllowAnonymous]
 
 @using ConsulatTermine.Application.DTOs
 @using MudBlazor
@@ -239,8 +240,8 @@
         if (!CanConfirm)
             return;
 
-        await Session.SetItemAsync("personCount", _personCount);
-        await Session.SetItemAsync("serviceAssignments", _serviceAssignments);
+        await Session.SetItemAsync(SessionKeys.PersonCount, _personCount);
+        await Session.SetItemAsync(SessionKeys.ServiceAssignments, _serviceAssignments);
 
         Navigation.NavigateTo("/appointment");
     }

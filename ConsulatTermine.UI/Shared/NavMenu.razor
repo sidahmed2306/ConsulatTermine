@@ -1,39 +1,33 @@
-﻿@using MudBlazor
-@using ConsulatTermine.UI.Authentication
-@using ConsulatTermine.Domain.Enums
-
-@inject NavigationManager Navigation
-@inject EmployeeSessionService EmployeeSession
+@* Die Sichtbarkeit der Einträge steuert die Benutzerführung. Sie ist keine
+   Sicherheitsgrenze: jede Seite prüft zusätzlich per [Authorize], und jeder
+   Anwendungsfall prüft serverseitig erneut. Siehe harness/security.md Abschnitt 4. *@
 
 <MudNavMenu>
 
-    @if (_isAuthenticated)
-    {
-        <!-- ========================= -->
-        <!-- EMPLOYEE (ALLE ROLLEN) -->
-        <!-- ========================= -->
+    <AuthorizeView Policy="@AuthorizationPolicies.MitarbeiterZugriff">
+        <Authorized>
 
-        <MudNavLink Href="/employee/home" Match="NavLinkMatch.All">
-            <MudIcon Icon="@Icons.Material.Filled.Home" />
-            <span class="ml-2">Home</span>
-        </MudNavLink>
+            <MudNavLink Href="/employee/home" Match="NavLinkMatch.All">
+                <MudIcon Icon="@Icons.Material.Filled.Home" />
+                <span class="ml-2">Home</span>
+            </MudNavLink>
 
-        <MudNavLink Href="/employee/dashboard">
-            <MudIcon Icon="@Icons.Material.Filled.Dashboard" />
-            <span class="ml-2">Dashboard</span>
-        </MudNavLink>
+            <MudNavLink Href="/employee/dashboard">
+                <MudIcon Icon="@Icons.Material.Filled.Dashboard" />
+                <span class="ml-2">Dashboard</span>
+            </MudNavLink>
 
-        <MudNavLink Href="/employee/select-service">
-            <MudIcon Icon="@Icons.Material.Filled.SwapHoriz" />
-            <span class="ml-2">Service wechseln</span>
-        </MudNavLink>
+            <MudNavLink Href="/employee/select-service">
+                <MudIcon Icon="@Icons.Material.Filled.SwapHoriz" />
+                <span class="ml-2">Service wechseln</span>
+            </MudNavLink>
 
-        <!-- ========================= -->
-        <!-- SERVICE CHEF + ADMIN -->
-        <!-- ========================= -->
+        </Authorized>
+    </AuthorizeView>
 
-        @if (_role == EmployeeRole.ServiceChef || _role == EmployeeRole.Admin)
-        {
+    <AuthorizeView Policy="@AuthorizationPolicies.DienstplanVerwalten">
+        <Authorized>
+
             <MudDivider Class="my-2" />
 
             <MudNavLink Href="/admin/employees">
@@ -50,54 +44,34 @@
                 <MudIcon Icon="@Icons.Material.Filled.Schedule" />
                 <span class="ml-2">Arbeitszeiten</span>
             </MudNavLink>
-        }
 
-        <!-- ========================= -->
-        <!-- ADMIN -->
-        <!-- ========================= -->
+        </Authorized>
+    </AuthorizeView>
 
-        @if (_role == EmployeeRole.Admin)
-        {
+    <AuthorizeView Policy="@AuthorizationPolicies.AdministrationVerwalten">
+        <Authorized>
+
             <MudNavLink Href="/admin/services">
                 <MudIcon Icon="@Icons.Material.Filled.BusinessCenter" />
                 <span class="ml-2">Services</span>
             </MudNavLink>
-        }
 
-        <MudDivider Class="my-2" />
+        </Authorized>
+    </AuthorizeView>
 
-        <!-- ========================= -->
-        <!-- LOGOUT -->
-        <!-- ========================= -->
+    <AuthorizeView Policy="@AuthorizationPolicies.MitarbeiterZugriff">
+        <Authorized>
 
-        <MudNavLink OnClick="Logout">
-            <MudIcon Icon="@Icons.Material.Filled.Logout" />
-            <span class="ml-2">Logout</span>
-        </MudNavLink>
-    }
+            <MudDivider Class="my-2" />
+
+            @* Vollständiger Seitenaufruf: die Abmeldung löscht das Cookie im
+               HTTP-Kontext und ist daher eine Razor Page, kein Blazor-Aufruf. *@
+            <MudNavLink Href="/employee/logout" ForceLoad="true">
+                <MudIcon Icon="@Icons.Material.Filled.Logout" />
+                <span class="ml-2">Logout</span>
+            </MudNavLink>
+
+        </Authorized>
+    </AuthorizeView>
 
 </MudNavMenu>
-
-@code {
-    private bool _isAuthenticated;
-    private EmployeeRole? _role;
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (!firstRender)
-            return;
-
-        var auth = await EmployeeSession.EnsureAuthenticatedAsync();
-        _isAuthenticated = auth.IsAuthenticated;
-        _role = EmployeeSession.CurrentRole;
-
-        StateHasChanged();
-    }
-
-    private async Task Logout()
-    {
-        await EmployeeSession.SignOutAsync();
-        Navigation.NavigateTo("/employee/login", replace: true);
-    }
-}
-

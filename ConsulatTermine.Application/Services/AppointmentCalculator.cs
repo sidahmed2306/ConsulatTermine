@@ -1,6 +1,8 @@
 using ConsulatTermine.Domain.Entities;
 using ConsulatTermine.Domain.Enums;
 
+namespace ConsulatTermine.Application.Services;
+
 public static class AppointmentCalculator
 {
     // ============================================================

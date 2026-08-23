@@ -1,4 +1,5 @@
 @page "/employee/select-service"
+@attribute [Authorize(Policy = AuthorizationPolicies.MitarbeiterZugriff)]
 
 @using ConsulatTermine.Domain.Entities
 @using ConsulatTermine.Application.Interfaces
@@ -6,7 +7,7 @@
 @using MudBlazor
 
 @inject IEmployeeService EmployeeService
-@inject EmployeeSessionService EmployeeSession
+@inject IEmployeeAuthorization Authorization
 @inject Blazored.SessionStorage.ISessionStorageService Session
 @inject NavigationManager Navigation
 
@@ -70,23 +71,11 @@
         !string.IsNullOrWhiteSpace(_office) &&
         !string.IsNullOrWhiteSpace(_room);
 
-    protected override Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync()
 {
-    return Task.CompletedTask;
-}
-protected override async Task OnAfterRenderAsync(bool firstRender)
-{
-    if (!firstRender)
-        return;
+    var current = await Authorization.RequireEmployeeAsync();
 
-    var auth = await EmployeeSession.EnsureAuthenticatedAsync();
-    if (!auth.IsAuthenticated)
-    {
-        Navigation.NavigateTo("/employee/login", true);
-        return;
-    }
-
-    var employee = await EmployeeService.GetEmployeeByIdAsync(auth.EmployeeId);
+    var employee = await EmployeeService.GetEmployeeByIdAsync(current.EmployeeId);
 
     if (employee?.AssignedServices != null)
     {
@@ -99,7 +88,6 @@ protected override async Task OnAfterRenderAsync(bool firstRender)
         _selectedService = _services[0];
 
     _loading = false;
-    StateHasChanged();
 }
 
 
@@ -109,10 +97,9 @@ protected override async Task OnAfterRenderAsync(bool firstRender)
         if (_selectedService == null)
             return;
 
-        await EmployeeSession.SetActiveServiceAsync(_selectedService.Id);
-
-        await Session.SetItemAsync("OfficeName", _office);
-        await Session.SetItemAsync("RoomName", _room);
+        await Session.SetItemAsync(SessionKeys.ActiveServiceId, _selectedService.Id);
+        await Session.SetItemAsync(SessionKeys.OfficeName, _office);
+        await Session.SetItemAsync(SessionKeys.RoomName, _room);
 
         Navigation.NavigateTo("/employee/dashboard");
     }

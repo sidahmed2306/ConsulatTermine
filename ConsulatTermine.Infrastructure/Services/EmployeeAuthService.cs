@@ -1,152 +1,299 @@
+using ConsulatTermine.Application.Configuration;
 using ConsulatTermine.Application.DTOs;
 using ConsulatTermine.Application.Interfaces;
+using ConsulatTermine.Domain.Entities;
 using ConsulatTermine.Infrastructure.Persistence;
+using ConsulatTermine.Infrastructure.Security;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace ConsulatTermine.Infrastructure.Services;
 
-public class EmployeeAuthService : IEmployeeAuthService
+/// <summary>
+/// Anmeldung, Passwortwechsel und Passwort-Zuruecksetzung fuer Mitarbeiter.
+/// </summary>
+public sealed class EmployeeAuthService : IEmployeeAuthService
 {
-    private readonly ApplicationDbContext _context;
+    /// <summary>
+    /// Einheitliche Meldung fuer jeden fehlgeschlagenen Anmeldeversuch. Sie unterscheidet
+    /// bewusst nicht zwischen unbekannter Kennung, falschem Passwort und deaktiviertem Konto,
+    /// damit sich ueber die Anmeldemaske keine gueltigen Kennungen ermitteln lassen.
+    /// Siehe harness/security.md Abschnitt 3.
+    /// </summary>
+    private const string GenericLoginError = "Kennung oder Passwort ist falsch.";
+
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
     private readonly IEmailService _emailService;
-    private readonly IConfiguration _configuration;
+    private readonly IPasswordHasher<Employee> _passwordHasher;
+    private readonly ApplicationOptions _applicationOptions;
+    private readonly EmployeeLoginOptions _loginOptions;
+    private readonly TimeProvider _timeProvider;
+    private readonly ILogger<EmployeeAuthService> _logger;
 
     public EmployeeAuthService(
-        ApplicationDbContext context,
+        IDbContextFactory<ApplicationDbContext> contextFactory,
         IEmailService emailService,
-        IConfiguration configuration)
+        IPasswordHasher<Employee> passwordHasher,
+        IOptions<ApplicationOptions> applicationOptions,
+        IOptions<EmployeeLoginOptions> loginOptions,
+        TimeProvider timeProvider,
+        ILogger<EmployeeAuthService> logger)
     {
-        _context = context;
+        _contextFactory = contextFactory;
         _emailService = emailService;
-        _configuration = configuration;
+        _passwordHasher = passwordHasher;
+        _applicationOptions = applicationOptions.Value;
+        _loginOptions = loginOptions.Value;
+        _timeProvider = timeProvider;
+        _logger = logger;
     }
 
-    public async Task<EmployeeLoginResultDto> LoginAsync(string employeeCode, string password)
+    public async Task<EmployeeLoginResultDto> LoginAsync(
+        string employeeCode,
+        string password,
+        CancellationToken cancellationToken = default)
     {
-        var employee = await _context.Employees
-            .FirstOrDefaultAsync(e => e.EmployeeCode == employeeCode);
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
 
-        if (employee == null || !employee.IsActive)
+        var normalizedCode = employeeCode?.Trim() ?? string.Empty;
+
+        var employee = await context.Employees
+            .FirstOrDefaultAsync(e => e.EmployeeCode == normalizedCode, cancellationToken);
+
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
+
+        if (employee is null || !employee.IsActive || employee.PasswordHash is null)
         {
-            return new EmployeeLoginResultDto
-            {
-                Success = false,
-                ErrorMessage = "Ungültige Kennung oder Benutzer deaktiviert"
-            };
+            // Kein fruehes Return ohne Aufwand: der Vergleich laeuft trotzdem gegen einen
+            // Dummy-Hash, damit die Antwortzeit keinen Rueckschluss auf die Existenz des
+            // Kontos erlaubt.
+            _passwordHasher.VerifyHashedPassword(new Employee(), DummyHash, password ?? string.Empty);
+            _logger.LogInformation("Anmeldung fehlgeschlagen: unbekannte oder inaktive Kennung.");
+            return Failed();
         }
 
-        // Temporäre Passwortprüfung (Übergangsphase)
-        if (employee.TemporaryPassword != password)
+        if (employee.LockoutEndsAt is { } lockoutEnd && lockoutEnd > now)
         {
-            return new EmployeeLoginResultDto
-            {
-                Success = false,
-                ErrorMessage = "Ungültiges Passwort"
-            };
+            _logger.LogWarning(
+                "Anmeldung abgelehnt: Konto {EmployeeId} ist bis {LockoutEnd} gesperrt.",
+                employee.Id,
+                lockoutEnd);
+            return Failed();
         }
+
+        var verification = _passwordHasher.VerifyHashedPassword(
+            employee,
+            employee.PasswordHash,
+            password ?? string.Empty);
+
+        if (verification == PasswordVerificationResult.Failed)
+        {
+            await RegisterFailedAttemptAsync(context, employee, now, cancellationToken);
+            return Failed();
+        }
+
+        if (verification == PasswordVerificationResult.SuccessRehashNeeded)
+        {
+            // Der gespeicherte Hash stammt aus einem aelteren Verfahren und wird bei
+            // dieser Gelegenheit auf das aktuelle Format gehoben.
+            employee.PasswordHash = _passwordHasher.HashPassword(employee, password!);
+        }
+
+        employee.FailedLoginAttempts = 0;
+        employee.LockoutEndsAt = null;
+        await context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Mitarbeiter {EmployeeId} hat sich angemeldet.", employee.Id);
 
         return new EmployeeLoginResultDto
         {
             Success = true,
             EmployeeId = employee.Id,
             EmployeeCode = employee.EmployeeCode,
+            Role = employee.Role,
             MustChangePassword = employee.MustChangePassword
         };
     }
 
-    public async Task<bool> ChangePasswordAsync(int employeeId, string newPassword)
+    public async Task<bool> ChangePasswordAsync(
+        int employeeId,
+        string newPassword,
+        CancellationToken cancellationToken = default)
     {
-        var employee = await _context.Employees.FindAsync(employeeId);
-        if (employee == null)
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
+
+        var employee = await context.Employees.FindAsync([employeeId], cancellationToken);
+        if (employee is null)
         {
             return false;
         }
 
-        employee.TemporaryPassword = newPassword; // später: Hash
-        employee.MustChangePassword = false;
+        ApplyNewPassword(employee, newPassword);
+        await context.SaveChangesAsync(cancellationToken);
 
-        await _context.SaveChangesAsync();
+        _logger.LogInformation("Mitarbeiter {EmployeeId} hat das Passwort geaendert.", employee.Id);
 
-        // -------------------------------------------------
-        // BLOCK A4 – E-Mail 2: Passwort geändert + Login-Link
-        // -------------------------------------------------
-        var baseUrl = _configuration["AppBaseUrl"] ?? "http://localhost:5262";
-        var loginLink = $"{baseUrl.TrimEnd('/')}/employee/login";
-
-        await _emailService.SendEmployeePasswordChangedConfirmationEmailAsync(
-            toEmail: employee.Email,
-            fullName: $"{employee.FirstName} {employee.LastName}",
-            loginLink: loginLink
-        );
-
+        await SendPasswordChangedMailAsync(employee);
         return true;
     }
 
-    public async Task<bool> RequestPasswordResetAsync(string email)
+    public async Task<bool> RequestPasswordResetAsync(
+        string email,
+        CancellationToken cancellationToken = default)
     {
+        // Der Rueckgabewert ist bewusst immer true: er darf nicht verraten, ob die
+        // E-Mail-Adresse im System bekannt ist.
         if (string.IsNullOrWhiteSpace(email))
         {
-            return true; // Aus Sicherheitsgründen immer Erfolg melden
+            return true;
         }
 
-        var employee = await _context.Employees
-            .FirstOrDefaultAsync(e => e.Email == email.Trim() && e.IsActive);
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
 
-        if (employee == null)
+        var normalizedEmail = email.Trim();
+
+        var employee = await context.Employees
+            .FirstOrDefaultAsync(e => e.Email == normalizedEmail && e.IsActive, cancellationToken);
+
+        if (employee is null)
         {
-            return true; // Keine Hinweise geben, ob E-Mail existiert
+            _logger.LogInformation("Passwort-Reset fuer unbekannte Adresse angefordert.");
+            return true;
         }
 
-        var token = Guid.NewGuid().ToString("N");
-        employee.PasswordResetToken = token;
-        employee.PasswordResetTokenExpiresAt = DateTime.UtcNow.AddHours(1);
+        var (token, hash) = PasswordResetToken.Create();
 
-        await _context.SaveChangesAsync();
+        employee.PasswordResetTokenHash = hash;
+        employee.PasswordResetTokenExpiresAt =
+            _timeProvider.GetUtcNow().UtcDateTime + _loginOptions.PasswordResetTokenLifetime;
 
-        var baseUrl = _configuration["AppBaseUrl"] ?? "http://localhost:5262";
-        var resetLink = $"{baseUrl.TrimEnd('/')}/employee/reset-password?token={token}";
+        await context.SaveChangesAsync(cancellationToken);
+
+        var resetLink = BuildLink($"employee/reset-password?token={Uri.EscapeDataString(token)}");
 
         await _emailService.SendEmployeePasswordResetEmailAsync(
             employee.Email,
-            $"{employee.FirstName} {employee.LastName}",
+            FullNameOf(employee),
             resetLink);
 
+        _logger.LogInformation("Passwort-Reset fuer Mitarbeiter {EmployeeId} angefordert.", employee.Id);
         return true;
     }
 
-    public async Task<bool> ResetPasswordWithTokenAsync(string token, string newPassword)
+    public async Task<bool> ResetPasswordWithTokenAsync(
+        string token,
+        string newPassword,
+        CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(token) || string.IsNullOrWhiteSpace(newPassword))
         {
             return false;
         }
 
-        var employee = await _context.Employees
-            .FirstOrDefaultAsync(e => e.PasswordResetToken == token);
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
 
-        if (employee == null ||
-            employee.PasswordResetTokenExpiresAt == null ||
-            employee.PasswordResetTokenExpiresAt < DateTime.UtcNow)
+        var tokenHash = PasswordResetToken.Hash(token);
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
+
+        var employee = await context.Employees
+            .FirstOrDefaultAsync(
+                e => e.PasswordResetTokenHash == tokenHash
+                     && e.PasswordResetTokenExpiresAt != null
+                     && e.PasswordResetTokenExpiresAt > now,
+                cancellationToken);
+
+        if (employee is null)
         {
+            _logger.LogWarning("Passwort-Reset mit ungueltigem oder abgelaufenem Token abgelehnt.");
             return false;
         }
 
-        employee.TemporaryPassword = newPassword;
-        employee.MustChangePassword = false;
-        employee.PasswordResetToken = null;
-        employee.PasswordResetTokenExpiresAt = null;
+        ApplyNewPassword(employee, newPassword);
+        await context.SaveChangesAsync(cancellationToken);
 
-        await _context.SaveChangesAsync();
+        _logger.LogInformation("Passwort von Mitarbeiter {EmployeeId} wurde zurueckgesetzt.", employee.Id);
 
-        var baseUrl = _configuration["AppBaseUrl"] ?? "http://localhost:5262";
-        var loginLink = $"{baseUrl.TrimEnd('/')}/employee/login";
-
-        await _emailService.SendEmployeePasswordChangedConfirmationEmailAsync(
-            employee.Email,
-            $"{employee.FirstName} {employee.LastName}",
-            loginLink);
-
+        await SendPasswordChangedMailAsync(employee);
         return true;
     }
+
+    /// <summary>
+    /// Setzt ein neues Passwort und entwertet gleichzeitig einen offenen Reset-Link
+    /// sowie eine bestehende Sperre.
+    /// </summary>
+    private void ApplyNewPassword(Employee employee, string newPassword)
+    {
+        employee.PasswordHash = _passwordHasher.HashPassword(employee, newPassword);
+        employee.MustChangePassword = false;
+        employee.PasswordResetTokenHash = null;
+        employee.PasswordResetTokenExpiresAt = null;
+        employee.FailedLoginAttempts = 0;
+        employee.LockoutEndsAt = null;
+    }
+
+    private async Task RegisterFailedAttemptAsync(
+        ApplicationDbContext context,
+        Employee employee,
+        DateTime now,
+        CancellationToken cancellationToken)
+    {
+        employee.FailedLoginAttempts++;
+
+        if (employee.FailedLoginAttempts >= _loginOptions.MaxFailedAttempts)
+        {
+            employee.LockoutEndsAt = now + _loginOptions.LockoutDuration;
+            employee.FailedLoginAttempts = 0;
+
+            _logger.LogWarning(
+                "Konto {EmployeeId} nach zu vielen Fehlversuchen bis {LockoutEnd} gesperrt.",
+                employee.Id,
+                employee.LockoutEndsAt);
+        }
+        else
+        {
+            _logger.LogInformation(
+                "Fehlversuch {Attempt} von {Max} fuer Mitarbeiter {EmployeeId}.",
+                employee.FailedLoginAttempts,
+                _loginOptions.MaxFailedAttempts,
+                employee.Id);
+        }
+
+        await context.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task SendPasswordChangedMailAsync(Employee employee)
+    {
+        await _emailService.SendEmployeePasswordChangedConfirmationEmailAsync(
+            employee.Email,
+            FullNameOf(employee),
+            BuildLink("employee/login"));
+    }
+
+    private string BuildLink(string relativePath)
+    {
+        return $"{_applicationOptions.BaseUrl.TrimEnd('/')}/{relativePath}";
+    }
+
+    private static string FullNameOf(Employee employee)
+    {
+        return $"{employee.FirstName} {employee.LastName}";
+    }
+
+    private static EmployeeLoginResultDto Failed()
+    {
+        return new EmployeeLoginResultDto
+        {
+            Success = false,
+            ErrorMessage = GenericLoginError
+        };
+    }
+
+    /// <summary>
+    /// Gueltiger Hash eines Zufallswertes. Dient nur dazu, bei unbekannter Kennung dieselbe
+    /// Rechenzeit aufzuwenden wie bei einer bekannten.
+    /// </summary>
+    private static readonly string DummyHash =
+        new PasswordHasher<Employee>().HashPassword(new Employee(), "nicht-verwendetes-passwort");
 }

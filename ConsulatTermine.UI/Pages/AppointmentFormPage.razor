@@ -1,4 +1,5 @@
 @page "/appointment-form"
+@attribute [AllowAnonymous]
 
 @using ConsulatTermine.Application.DTOs.Booking
 @using ConsulatTermine.Application.Interfaces.Booking
@@ -216,7 +217,7 @@
             return;
         }
 
-        var personCount = await Session.GetItemAsync<int>("personCount");
+        var personCount = await Session.GetItemAsync<int>(SessionKeys.PersonCount);
         if (personCount <= 0)
         {
             Navigation.NavigateTo("/services");
@@ -341,7 +342,7 @@
             // =========================
             var bookingReference = await BookingService.CreateBookingAsync(request);
 
-            await Session.SetItemAsync("bookingReference", bookingReference);
+            await Session.SetItemAsync(SessionKeys.BookingReference, bookingReference);
 
             Navigation.NavigateTo("/appointment-confirmation");
         }

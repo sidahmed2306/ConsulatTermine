@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 
-namespace Infrastructure.SignalR;
+namespace ConsulatTermine.Infrastructure.SignalR;
 
 // Alle Display-Clients (öffentlicher Monitor) müssen diese Methoden empfangen können
 public interface IDisplayClient

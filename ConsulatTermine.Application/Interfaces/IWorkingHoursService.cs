@@ -1,5 +1,7 @@
 using ConsulatTermine.Domain.Entities;
 
+namespace ConsulatTermine.Application.Interfaces;
+
 public interface IWorkingHoursService
 {
     Task<List<WorkingHours>> GetAllAsync();

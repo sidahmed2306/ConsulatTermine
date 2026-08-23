@@ -1,4 +1,5 @@
 @page "/appointment-confirmation"
+@attribute [AllowAnonymous]
 
 @using MudBlazor
 @using Blazored.SessionStorage
@@ -96,8 +97,8 @@
     if (!firstRender)
         return;
 
-    _bookingReference = await Session.GetItemAsync<string>("bookingReference");
-    _email = await Session.GetItemAsync<string>("mainPersonEmail");
+    _bookingReference = await Session.GetItemAsync<string>(SessionKeys.BookingReference);
+    _email = await Session.GetItemAsync<string>(SessionKeys.MainPersonEmail);
 
     // ❌ Direktzugriff / Reload ohne gültige Buchung
     if (string.IsNullOrWhiteSpace(_bookingReference))

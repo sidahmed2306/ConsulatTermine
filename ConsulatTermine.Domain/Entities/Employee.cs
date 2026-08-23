@@ -41,11 +41,6 @@ public class Employee
     /// </summary>
     public bool MustChangePassword { get; set; } = true;
 
-    /// <summary>
-    /// Optionale Verknüpfung mit ASP.NET Identity
-    /// </summary>
-    public string? IdentityUserId { get; set; }
-
     // -------------------------------------------------
     // Meta
     // -------------------------------------------------
@@ -57,10 +52,11 @@ public class Employee
     public List<EmployeeServiceAssignment> AssignedServices { get; set; } = new();
 
     /// <summary>
-    /// Temporäres Initial‑Passwort (Hash oder Klartext nur für Setup‑Phase)
-    /// Wird nach erstem Login ungültig
+    /// Passwort im Format von <c>Microsoft.AspNetCore.Identity.PasswordHasher</c>
+    /// (PBKDF2 mit Salt und Iterationszahl). Niemals Klartext, niemals loggen.
+    /// <c>null</c>, solange noch kein Passwort gesetzt wurde.
     /// </summary>
-    public string? TemporaryPassword { get; set; }
+    public string? PasswordHash { get; set; }
 
     /// <summary>
     /// Rolle des Mitarbeiters (Employee, ServiceChef, Admin)
@@ -68,10 +64,11 @@ public class Employee
     public EmployeeRole Role { get; set; } = EmployeeRole.Employee;
 
     /// <summary>
-    /// Token für die Passwort-Zurücksetzung über E-Mail-Link.
-    /// Wird bei "Passwort vergessen" gesetzt.
+    /// SHA-256-Hash des Tokens zum Zuruecksetzen des Passworts.
+    /// Gespeichert wird nur der Hash: Wer die Datenbank liest, kann daraus keinen
+    /// gueltigen Link bauen. Der Klartext existiert ausschliesslich in der versendeten E-Mail.
     /// </summary>
-    public string? PasswordResetToken { get; set; }
+    public string? PasswordResetTokenHash { get; set; }
 
     /// <summary>
     /// Ablaufdatum des Passwort-Reset-Links.
@@ -79,4 +76,13 @@ public class Employee
     /// </summary>
     public DateTime? PasswordResetTokenExpiresAt { get; set; }
 
+    /// <summary>
+    /// Aufeinanderfolgende Fehlversuche bei der Anmeldung. Wird bei Erfolg zurueckgesetzt.
+    /// </summary>
+    public int FailedLoginAttempts { get; set; }
+
+    /// <summary>
+    /// Zeitpunkt, bis zu dem die Anmeldung nach zu vielen Fehlversuchen gesperrt ist.
+    /// </summary>
+    public DateTime? LockoutEndsAt { get; set; }
 }

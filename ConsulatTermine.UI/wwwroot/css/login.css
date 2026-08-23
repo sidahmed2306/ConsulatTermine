@@ -1,0 +1,99 @@
+/* Anmeldemaske des Mitarbeiterbereichs.
+   Bewusst ohne Komponentenbibliothek: die Seite laeuft ohne Blazor-Circuit und ohne
+   JavaScript, damit die Anmeldung auch dann funktioniert, wenn die interaktive
+   Anwendung nicht startet. Farben folgen AlgeriaTheme. */
+
+:root {
+    --konsulat-gruen: #006400;
+    --konsulat-gruen-hell: #008000;
+    --konsulat-rot: #c8102e;
+    --konsulat-rahmen: rgba(0, 0, 0, 0.12);
+}
+
+.login-page {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f5f5f5;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: #000;
+}
+
+.login-card {
+    width: min(420px, calc(100vw - 2rem));
+    padding: 2.5rem 2rem;
+    background-color: #fff;
+    border: 1px solid var(--konsulat-rahmen);
+    border-radius: 4px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.login-title {
+    margin: 0 0 2rem;
+    font-size: 1.75rem;
+    font-weight: 500;
+    text-align: center;
+    color: var(--konsulat-gruen);
+}
+
+.login-label {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-size: 0.875rem;
+    color: #444;
+}
+
+.login-input {
+    box-sizing: border-box;
+    width: 100%;
+    margin-bottom: 1.25rem;
+    padding: 0.65rem 0.75rem;
+    font-size: 1rem;
+    border: 1px solid var(--konsulat-rahmen);
+    border-radius: 4px;
+    background-color: #fff;
+}
+
+.login-input:focus {
+    outline: 2px solid var(--konsulat-gruen);
+    outline-offset: 1px;
+    border-color: var(--konsulat-gruen);
+}
+
+.login-button {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #fff;
+    background-color: var(--konsulat-gruen);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.login-button:hover,
+.login-button:focus-visible {
+    background-color: var(--konsulat-gruen-hell);
+}
+
+.login-error {
+    display: block;
+    margin-bottom: 1rem;
+    color: var(--konsulat-rot);
+    font-size: 0.875rem;
+}
+
+.login-error:empty {
+    display: none;
+}
+
+.login-link {
+    display: block;
+    margin-top: 1.25rem;
+    text-align: center;
+    font-size: 0.875rem;
+    color: var(--konsulat-gruen);
+}

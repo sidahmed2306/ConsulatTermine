@@ -1,4 +1,5 @@
 @page "/admin/assignments"
+@attribute [Authorize(Policy = AuthorizationPolicies.DienstplanVerwalten)]
 
 @using ConsulatTermine.Domain.Enums
 @using MudBlazor
@@ -6,12 +7,12 @@
 @using ConsulatTermine.Domain.Entities
 @using ConsulatTermine.UI.Authentication
 
+@inject IEmployeeAuthorization Authorization
 @inject IEmployeeAssignmentService AssignmentService
 @inject IEmployeeService EmployeeService
 @inject IServiceService ServiceService
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
-@inject EmployeeSessionService EmployeeSession
 @inject NavigationManager Navigation
 
 <MudPaper Class="pa-4">
@@ -92,33 +93,20 @@
     private int? _selectedService;
 
     private int _currentEmployeeId;
+    private bool _isAdmin;
 
     // -------------------------------------------------
     // LOGIN-GUARD
     // -------------------------------------------------
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    // Der Zugang zu dieser Seite wird über [Authorize] geprüft; die
+    // Anwendungsfälle prüfen die Berechtigung serverseitig zusätzlich.
+    protected override async Task OnInitializedAsync()
     {
-        if (!firstRender)
-            return;
-
-        var auth = await EmployeeSession.EnsureAuthenticatedAsync();
-        if (!auth.IsAuthenticated)
-        {
-            Navigation.NavigateTo("/employee/login", true);
-            return;
-        }
-
-        _currentEmployeeId = auth.EmployeeId;
-
-        var role = EmployeeSession.CurrentRole;
-        if (role != EmployeeRole.ServiceChef && role != EmployeeRole.Admin)
-        {
-            Navigation.NavigateTo("/employee/home", true);
-            return;
-        }
+        var current = await Authorization.RequireEmployeeAsync();
+        _currentEmployeeId = current.EmployeeId;
+        _isAdmin = current.Role == EmployeeRole.Admin;
 
         await LoadDataAsync();
-        StateHasChanged();
     }
 
     // -------------------------------------------------
@@ -127,7 +115,7 @@
     private async Task LoadDataAsync()
     {
         // Services
-        if (EmployeeSession.CurrentRole == EmployeeRole.Admin)
+        if (_isAdmin)
             _services = await ServiceService.GetAllServicesAsync();
         else
             _services = await ServiceService.GetServicesForEmployeeAsync(_currentEmployeeId);
@@ -135,7 +123,7 @@
         // Assignments
         var allAssignments = await AssignmentService.GetAllAssignmentsAsync();
 
-        if (EmployeeSession.CurrentRole == EmployeeRole.Admin)
+        if (_isAdmin)
         {
             _assignments = allAssignments;
         }
@@ -150,7 +138,7 @@
         // Employees
         var allEmployees = await EmployeeService.GetAllEmployeesAsync();
 
-        if (EmployeeSession.CurrentRole == EmployeeRole.Admin)
+        if (_isAdmin)
         {
             _employees = allEmployees;
         }

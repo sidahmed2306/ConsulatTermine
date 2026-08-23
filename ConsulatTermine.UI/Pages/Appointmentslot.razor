@@ -1,6 +1,7 @@
 
 
 @page "/appointment"
+@attribute [AllowAnonymous]
 
 @using MudBlazor
 @using Blazored.SessionStorage
@@ -214,7 +215,7 @@
 
     private async Task InitFromSessionAsync()
     {
-        _personCount = await Session.GetItemAsync<int>("personCount");
+        _personCount = await Session.GetItemAsync<int>(SessionKeys.PersonCount);
         _serviceAssignments = await Session.GetItemAsync<Dictionary<int, int>>("serviceAssignments")
                               ?? new Dictionary<int, int>();
 
@@ -558,6 +559,6 @@
             expanded[sid] = list;
         }
 
-        await Session.SetItemAsync("selectedServiceSlots", expanded);
+        await Session.SetItemAsync(SessionKeys.SelectedServiceSlots, expanded);
     }
 }

@@ -8,11 +8,11 @@ namespace ConsulatTermine.Infrastructure.Services;
 
 public class WorkingSchedulePlanService : IWorkingSchedulePlanService
 {
-    private readonly ApplicationDbContext _db;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
 
-    public WorkingSchedulePlanService(ApplicationDbContext db)
+    public WorkingSchedulePlanService(IDbContextFactory<ApplicationDbContext> contextFactory)
     {
-        _db = db;
+        _contextFactory = contextFactory;
     }
 
     // ----------------------------------------------------
@@ -20,6 +20,7 @@ public class WorkingSchedulePlanService : IWorkingSchedulePlanService
     // ----------------------------------------------------
     public async Task<WorkingSchedulePlanDto> SaveAsync(WorkingSchedulePlanDto dto)
     {
+        await using var db = await _contextFactory.CreateDbContextAsync();
         WorkingSchedulePlan entity;
 
         if (dto.Id == 0)
@@ -35,12 +36,12 @@ public class WorkingSchedulePlanService : IWorkingSchedulePlanService
                 UpdatedAt = DateTime.UtcNow
             };
 
-            _db.WorkingSchedulePlans.Add(entity);
+            db.WorkingSchedulePlans.Add(entity);
         }
         else
         {
             // UPDATE
-            entity = await _db.WorkingSchedulePlans
+            entity = await db.WorkingSchedulePlans
                 .FirstOrDefaultAsync(x => x.Id == dto.Id)
                 ?? throw new Exception("WorkingSchedulePlan not found.");
 
@@ -54,10 +55,10 @@ public class WorkingSchedulePlanService : IWorkingSchedulePlanService
         // Wenn dieser Plan aktiv ist → alle anderen für diesen Service deaktivieren
         if (entity.IsActive)
         {
-            await DeactivateOtherPlansAsync(entity);
+            await DeactivateOtherPlansAsync(db, entity);
         }
 
-        await _db.SaveChangesAsync();
+        await db.SaveChangesAsync();
 
         return MapToDto(entity);
     }
@@ -67,7 +68,8 @@ public class WorkingSchedulePlanService : IWorkingSchedulePlanService
     // ----------------------------------------------------
     public async Task<List<WorkingSchedulePlanDto>> GetByServiceAsync(int serviceId)
     {
-        return await _db.WorkingSchedulePlans
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        return await db.WorkingSchedulePlans
     .Where(x => x.ServiceId == serviceId)
     .OrderByDescending(x => x.ValidFromDate)
     .Select(x => new WorkingSchedulePlanDto
@@ -86,7 +88,8 @@ public class WorkingSchedulePlanService : IWorkingSchedulePlanService
 
     public async Task<WorkingSchedulePlanDto?> GetByIdAsync(int id)
     {
-        var entity = await _db.WorkingSchedulePlans.FindAsync(id);
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        var entity = await db.WorkingSchedulePlans.FindAsync(id);
         return entity == null ? null : MapToDto(entity);
     }
 
@@ -95,14 +98,15 @@ public class WorkingSchedulePlanService : IWorkingSchedulePlanService
     // ----------------------------------------------------
     public async Task<bool> DeleteAsync(int id)
     {
-        var entity = await _db.WorkingSchedulePlans.FindAsync(id);
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        var entity = await db.WorkingSchedulePlans.FindAsync(id);
         if (entity == null)
         {
             return false;
         }
 
-        _db.WorkingSchedulePlans.Remove(entity);
-        await _db.SaveChangesAsync();
+        db.WorkingSchedulePlans.Remove(entity);
+        await db.SaveChangesAsync();
         return true;
     }
 
@@ -111,7 +115,8 @@ public class WorkingSchedulePlanService : IWorkingSchedulePlanService
     // ----------------------------------------------------
     public async Task<bool> SetActiveAsync(int id)
     {
-        var entity = await _db.WorkingSchedulePlans.FindAsync(id);
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        var entity = await db.WorkingSchedulePlans.FindAsync(id);
         if (entity == null)
         {
             return false;
@@ -120,18 +125,25 @@ public class WorkingSchedulePlanService : IWorkingSchedulePlanService
         entity.IsActive = true;
         entity.UpdatedAt = DateTime.UtcNow;
 
-        await DeactivateOtherPlansAsync(entity);
+        await DeactivateOtherPlansAsync(db, entity);
 
-        await _db.SaveChangesAsync();
+        await db.SaveChangesAsync();
         return true;
     }
 
     // ----------------------------------------------------
     // HELPER
     // ----------------------------------------------------
-    private async Task DeactivateOtherPlansAsync(WorkingSchedulePlan activePlan)
+    /// <summary>
+    /// Deaktiviert alle anderen Pläne desselben Service.
+    /// Arbeitet bewusst im Kontext des Aufrufers: die Änderungen gehören zu derselben
+    /// Transaktion wie das Aktivieren des neuen Plans und werden dort gespeichert.
+    /// </summary>
+    private static async Task DeactivateOtherPlansAsync(
+        ApplicationDbContext db,
+        WorkingSchedulePlan activePlan)
     {
-        var others = await _db.WorkingSchedulePlans
+        var others = await db.WorkingSchedulePlans
             .Where(x =>
                 x.ServiceId == activePlan.ServiceId &&
                 x.Id != activePlan.Id &&

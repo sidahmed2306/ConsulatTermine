@@ -1,12 +1,13 @@
 @page "/employee/home"
 @page "/employee/"
+@attribute [Authorize(Policy = AuthorizationPolicies.MitarbeiterZugriff)]
 
 @using MudBlazor
 @using ConsulatTermine.Application.Interfaces
 @using ConsulatTermine.UI.Authentication
 
 @inject NavigationManager Navigation
-@inject EmployeeSessionService EmployeeSession
+@inject IEmployeeAuthorization Authorization
 @inject IEmployeeService EmployeeService
 
 <MudContainer MaxWidth="MaxWidth.False"
@@ -64,14 +65,9 @@
     {
         try
         {
-            var auth = await EmployeeSession.EnsureAuthenticatedAsync();
-            if (!auth.IsAuthenticated || auth.EmployeeId <= 0)
-            {
-                Navigation.NavigateTo("/employee/login", true);
-                return;
-            }
+            var current = await Authorization.RequireEmployeeAsync();
 
-            var employee = await EmployeeService.GetEmployeeByIdAsync(auth.EmployeeId);
+            var employee = await EmployeeService.GetEmployeeByIdAsync(current.EmployeeId);
             if (employee is null)
             {
                 _error = "Mitarbeiter nicht gefunden.";

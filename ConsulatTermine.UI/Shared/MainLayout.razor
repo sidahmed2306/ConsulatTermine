@@ -7,7 +7,6 @@
 @using System.Globalization
 
 
-@inject EmployeeSessionService EmployeeSession
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
@@ -70,37 +69,40 @@
 
 
     <!-- EMPLOYEE NAV -->
-    @if (_showEmployeeNav)
-    {
-        <MudDrawer Open="true"
-                   Variant="DrawerVariant.Persistent"
-                   Anchor="Anchor.Left"
-                   Width="260px">
+    <AuthorizeView Policy="@AuthorizationPolicies.MitarbeiterZugriff">
+        <Authorized>
+            <MudDrawer Open="true"
+                       Variant="DrawerVariant.Persistent"
+                       Anchor="Anchor.Left"
+                       Width="260px">
 
-            <NavMenu />
+                <NavMenu />
 
-        </MudDrawer>
-    }
+            </MudDrawer>
+        </Authorized>
+    </AuthorizeView>
 
     <!-- CONTENT -->
-    <MudMainContent Style="@MainContentStyle">
-        @Body
-    </MudMainContent>
+    <AuthorizeView Policy="@AuthorizationPolicies.MitarbeiterZugriff">
+        <Authorized>
+            <MudMainContent Style="margin-top:88px; margin-left:260px;">
+                @Body
+            </MudMainContent>
+        </Authorized>
+        <NotAuthorized>
+            <MudMainContent Style="margin-top:88px;">
+                @Body
+            </MudMainContent>
+        </NotAuthorized>
+    </AuthorizeView>
 
 </MudLayout>
 
 @code {
-    private bool _showEmployeeNav;
     private string _currentLanguageLabel = "Deutsch";
-
-    private string MainContentStyle =>
-        _showEmployeeNav
-            ? "margin-top:88px; margin-left:260px;"
-            : "margin-top:88px;";
 
     protected override void OnInitialized()
     {
-        EmployeeSession.OnChange += HandleSessionChanged;
         _currentLanguageLabel = CultureInfo.CurrentUICulture.Name switch
         {
             "de-DE" => "Deutsch",
@@ -110,28 +112,8 @@
         };
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    private async Task ChangeLanguage(string culture)
     {
-        if (!firstRender) return;
-
-        var result = await EmployeeSession.EnsureAuthenticatedAsync();
-        _showEmployeeNav = result.IsAuthenticated;
-
-        StateHasChanged();
-    }
-
-    private void HandleSessionChanged()
-    {
-        _showEmployeeNav = EmployeeSession.IsAuthenticated;
-        InvokeAsync(StateHasChanged);
-    }
-private async Task ChangeLanguage(string culture)
-{
-    await JS.InvokeVoidAsync("culture.set", culture);
-}
-
-    public void Dispose()
-    {
-        EmployeeSession.OnChange -= HandleSessionChanged;
+        await JS.InvokeVoidAsync("culture.set", culture);
     }
 }

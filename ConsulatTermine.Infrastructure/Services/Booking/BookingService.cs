@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using ConsulatTermine.Application.DTOs.Booking;
 using ConsulatTermine.Application.Interfaces;
 using ConsulatTermine.Application.Interfaces.Booking;
@@ -9,20 +10,20 @@ namespace ConsulatTermine.Infrastructure.Services.Booking;
 
 public class BookingService : IBookingService
 {
-    private readonly ApplicationDbContext _db;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
     private readonly IBookingValidationService _validationService;
     private readonly ISlotAvailabilityService _slotService;
     private readonly IBookingReferenceGenerator _referenceGenerator;
     private readonly IEmailService _emailService;
 
     public BookingService(
-        ApplicationDbContext db,
+        IDbContextFactory<ApplicationDbContext> contextFactory,
         IBookingValidationService validationService,
         ISlotAvailabilityService slotService,
         IBookingReferenceGenerator referenceGenerator,
         IEmailService emailService)
     {
-        _db = db;
+        _contextFactory = contextFactory;
         _validationService = validationService;
         _slotService = slotService;
         _referenceGenerator = referenceGenerator;
@@ -34,6 +35,7 @@ public class BookingService : IBookingService
     // --------------------------------------------------------------------
     public async Task<string> CreateBookingAsync(CreateBookingRequestDto request)
     {
+        await using var db = await _contextFactory.CreateDbContextAsync();
         // 1) Buchungsreferenz erzeugen
         string bookingRef = _referenceGenerator.GenerateReference();
         request.BookingReference = bookingRef;
@@ -51,7 +53,7 @@ public class BookingService : IBookingService
         await _slotService.ValidateSlotCapacitiesAsync(request);
 
         // 4) Jetzt ist alles gültig → wir speichern die Termine
-        using var trx = await _db.Database.BeginTransactionAsync();
+        using var trx = await db.Database.BeginTransactionAsync();
 
         try
         {
@@ -59,6 +61,7 @@ public class BookingService : IBookingService
 
             // ---- Hauptbucher zuerst ----
             await CreateAppointmentsForPersonAsync(
+                db,
                 request.MainPerson,
                 bookingRef,
                 cancelToken,
@@ -71,6 +74,7 @@ public class BookingService : IBookingService
             {
                 personIndex++;
                 await CreateAppointmentsForPersonAsync(
+                    db,
                     acc,
                     bookingRef,
                     cancelToken,
@@ -80,7 +84,7 @@ public class BookingService : IBookingService
             }
 
             // Alles speichern
-            await _db.SaveChangesAsync();
+            await db.SaveChangesAsync();
             await trx.CommitAsync();
 
             // 📧 E-Mail asynchron (darf Buchung nicht blockieren)
@@ -119,7 +123,12 @@ public class BookingService : IBookingService
     // --------------------------------------------------------------------
     // Erzeugt Appointments für eine Person (mehrere Services → mehrere Appointments)
     // --------------------------------------------------------------------
-    private async Task CreateAppointmentsForPersonAsync(
+    /// <summary>
+    /// Legt die Termine einer Person an. Arbeitet im Kontext des Aufrufers, damit alle
+    /// Termine einer Buchung gemeinsam gespeichert werden oder gar nicht.
+    /// </summary>
+    private static async Task CreateAppointmentsForPersonAsync(
+        ApplicationDbContext db,
         BookingPersonDto person,
         string bookingRef,
         string cancelToken,
@@ -164,14 +173,14 @@ public class BookingService : IBookingService
             emailAppointments.Add(new BookingEmailAppointmentDto
             {
                 PersonFullName = person.FullName,
-                ServiceName = _db.Services
+                ServiceName = db.Services
                     .Where(s => s.Id == serviceSlot.ServiceId)
                     .Select(s => s.Name)
                     .First(),
                 DateTime = serviceSlot.SlotTime
             });
 
-            _db.Appointments.Add(appointment);
+            db.Appointments.Add(appointment);
         }
 
         await Task.CompletedTask;

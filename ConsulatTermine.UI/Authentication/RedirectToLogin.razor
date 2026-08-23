@@ -1,0 +1,13 @@
+@inject NavigationManager Navigation
+
+@code {
+    /// <summary>
+    /// Leitet einen nicht angemeldeten Benutzer zur Anmeldemaske.
+    /// Der Wechsel laeuft ueber einen vollstaendigen Seitenaufruf: die Anmeldung ist eine
+    /// Razor Page ausserhalb des Blazor-Circuits.
+    /// </summary>
+    protected override void OnInitialized()
+    {
+        Navigation.NavigateTo("/employee/login", forceLoad: true);
+    }
+}

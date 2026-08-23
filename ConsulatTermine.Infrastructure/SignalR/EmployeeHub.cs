@@ -1,7 +1,7 @@
 using ConsulatTermine.Domain.Enums; // falls bei dir anders: Namespace anpassen
 using Microsoft.AspNetCore.SignalR;
 
-namespace Infrastructure.SignalR;
+namespace ConsulatTermine.Infrastructure.SignalR;
 
 // Clients für Mitarbeiter-Arbeitsplätze (NEXT-Button, Status-Anzeige)
 public interface IEmployeeClient

@@ -8,13 +8,13 @@ namespace ConsulatTermine.Infrastructure.Services;
 
 public class WorkingScheduleOverviewService : IWorkingScheduleOverviewService
 {
-    private readonly ApplicationDbContext _db;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
 
     public WorkingScheduleOverviewService(
-        ApplicationDbContext db,
+        IDbContextFactory<ApplicationDbContext> contextFactory,
         IServiceService serviceService) // bleibt im ctor, auch wenn wir es hier nicht nutzen
     {
-        _db = db;
+        _contextFactory = contextFactory;
     }
 
     // --------------------------------------------------------------------
@@ -22,8 +22,9 @@ public class WorkingScheduleOverviewService : IWorkingScheduleOverviewService
     // --------------------------------------------------------------------
     public async Task<List<WorkingScheduleOverviewItem>> GetOverviewAsync()
     {
+        await using var db = await _contextFactory.CreateDbContextAsync();
         // Services (Basisdaten + Mitarbeiter)
-        var services = await _db.Services
+        var services = await db.Services
             .AsNoTracking()
             .Include(s => s.AssignedEmployees)
                 .ThenInclude(a => a.Employee)
@@ -38,20 +39,20 @@ public class WorkingScheduleOverviewService : IWorkingScheduleOverviewService
         var serviceIds = services.Select(s => s.Id).ToList();
 
         // Pläne (Quelle der Wahrheit)
-        var plans = await _db.WorkingSchedulePlans
+        var plans = await db.WorkingSchedulePlans
             .AsNoTracking()
             .Where(p => serviceIds.Contains(p.ServiceId))
             .OrderByDescending(p => p.ValidFromDate)
             .ToListAsync();
 
         // WorkingHours (plan-gebunden)
-        var workingHours = await _db.WorkingHours
+        var workingHours = await db.WorkingHours
             .AsNoTracking()
             .Where(w => serviceIds.Contains(w.ServiceId))
             .ToListAsync();
 
         // Overrides (plan-gebunden, optional)
-        var overrides = await _db.ServiceDayOverrides
+        var overrides = await db.ServiceDayOverrides
             .AsNoTracking()
             .Where(o => serviceIds.Contains(o.ServiceId))
             .ToListAsync();
@@ -67,7 +68,8 @@ public class WorkingScheduleOverviewService : IWorkingScheduleOverviewService
     // --------------------------------------------------------------------
     public async Task<WorkingScheduleOverviewItem?> GetByServiceIdAsync(int serviceId)
     {
-        var service = await _db.Services
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        var service = await db.Services
             .AsNoTracking()
             .Include(s => s.AssignedEmployees)
                 .ThenInclude(a => a.Employee)
@@ -78,18 +80,18 @@ public class WorkingScheduleOverviewService : IWorkingScheduleOverviewService
             return null;
         }
 
-        var plans = await _db.WorkingSchedulePlans
+        var plans = await db.WorkingSchedulePlans
             .AsNoTracking()
             .Where(p => p.ServiceId == serviceId)
             .OrderByDescending(p => p.ValidFromDate)
             .ToListAsync();
 
-        var workingHours = await _db.WorkingHours
+        var workingHours = await db.WorkingHours
             .AsNoTracking()
             .Where(w => w.ServiceId == serviceId)
             .ToListAsync();
 
-        var overrides = await _db.ServiceDayOverrides
+        var overrides = await db.ServiceDayOverrides
             .AsNoTracking()
             .Where(o => o.ServiceId == serviceId)
             .ToListAsync();
@@ -102,9 +104,10 @@ public class WorkingScheduleOverviewService : IWorkingScheduleOverviewService
     // --------------------------------------------------------------------
     public async Task<bool> DeleteYearAsync(int serviceId, int year)
     {
+        await using var db = await _contextFactory.CreateDbContextAsync();
         // Wir löschen den/die Plan/Pläne des Jahres.
         // (Wenn du fachlich garantiert nur 1 Plan pro Jahr hast, ist das perfekt.)
-        var plans = await _db.WorkingSchedulePlans
+        var plans = await db.WorkingSchedulePlans
             .Where(p =>
                 p.ServiceId == serviceId &&
                 p.ValidFromDate.Year == year)
@@ -115,12 +118,12 @@ public class WorkingScheduleOverviewService : IWorkingScheduleOverviewService
             return true;
         }
 
-        _db.WorkingSchedulePlans.RemoveRange(plans);
+        db.WorkingSchedulePlans.RemoveRange(plans);
 
         // Cascade (laut deinem DbContext):
         // Plan -> WorkingHours (CASCADE)
         // Plan -> ServiceDayOverrides (CASCADE)
-        await _db.SaveChangesAsync();
+        await db.SaveChangesAsync();
         return true;
     }
 

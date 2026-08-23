@@ -8,11 +8,11 @@ namespace ConsulatTermine.Infrastructure.Services;
 
 public class ServiceService : IServiceService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
 
-    public ServiceService(ApplicationDbContext context)
+    public ServiceService(IDbContextFactory<ApplicationDbContext> contextFactory)
     {
-        _context = context;
+        _contextFactory = contextFactory;
     }
 
     // -------------------------------------------------------------
@@ -20,7 +20,8 @@ public class ServiceService : IServiceService
     // -------------------------------------------------------------
     public async Task<List<Service>> GetAllServicesAsync()
     {
-        return await _context.Services
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        return await db.Services
             .Include(s => s.AssignedEmployees)
                 .ThenInclude(a => a.Employee)
             .AsNoTracking()
@@ -31,7 +32,8 @@ public class ServiceService : IServiceService
 
     public async Task<List<Service>> GetServicesForEmployeeAsync(int employeeId)
     {
-        return await _context.EmployeeServiceAssignments
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        return await db.EmployeeServiceAssignments
             .Where(a => a.EmployeeId == employeeId)
             .Select(a => a.Service!) // <-- WICHTIG
             .AsNoTracking()
@@ -45,7 +47,8 @@ public class ServiceService : IServiceService
     // -------------------------------------------------------------
     public async Task<Service?> GetServiceByIdAsync(int id)
     {
-        return await _context.Services
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        return await db.Services
             .Include(s => s.WorkingHours)
             .Include(s => s.DayOverrides)
             .Include(s => s.AssignedEmployees)
@@ -58,6 +61,7 @@ public class ServiceService : IServiceService
     // -------------------------------------------------------------
     public async Task<Service> CreateServiceAsync(ServiceDto dto)
     {
+        await using var db = await _contextFactory.CreateDbContextAsync();
         var entity = new Service
         {
             Name = dto.Name,
@@ -66,8 +70,8 @@ public class ServiceService : IServiceService
             SlotDurationMinutes = dto.SlotDurationMinutes
         };
 
-        _context.Services.Add(entity);
-        await _context.SaveChangesAsync();
+        db.Services.Add(entity);
+        await db.SaveChangesAsync();
         return entity;
     }
 
@@ -76,7 +80,8 @@ public class ServiceService : IServiceService
     // -------------------------------------------------------------
     public async Task<Service> UpdateServiceAsync(int id, ServiceDto dto)
     {
-        var entity = await _context.Services.FindAsync(id);
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        var entity = await db.Services.FindAsync(id);
 
         if (entity == null)
         {
@@ -89,7 +94,7 @@ public class ServiceService : IServiceService
         entity.Floor = dto.Floor;
         entity.SlotDurationMinutes = dto.SlotDurationMinutes;
 
-        await _context.SaveChangesAsync();
+        await db.SaveChangesAsync();
         return entity;
     }
 
@@ -98,21 +103,23 @@ public class ServiceService : IServiceService
     // -------------------------------------------------------------
     public async Task<bool> DeleteServiceAsync(int id)
     {
-        var entity = await _context.Services.FindAsync(id);
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        var entity = await db.Services.FindAsync(id);
         if (entity == null)
         {
             return false;
         }
 
-        _context.Services.Remove(entity);
-        await _context.SaveChangesAsync();
+        db.Services.Remove(entity);
+        await db.SaveChangesAsync();
         return true;
     }
 
     public async Task<ServiceDto> GetByIdAsync(int id)
     {
+        await using var db = await _contextFactory.CreateDbContextAsync();
         // Lade den Service aus der Datenbank
-        var service = await _context.Services
+        var service = await db.Services
             .FirstOrDefaultAsync(s => s.Id == id);
 
         if (service == null)

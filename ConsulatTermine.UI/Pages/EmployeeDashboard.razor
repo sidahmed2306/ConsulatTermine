@@ -1,4 +1,5 @@
 @page "/employee/dashboard"
+@attribute [Authorize(Policy = AuthorizationPolicies.MitarbeiterZugriff)]
 @implements IDisposable
 
 @using ConsulatTermine.Domain.Entities
@@ -9,7 +10,7 @@
 @using Blazored.SessionStorage
 
 @inject IAppointmentService AppointmentService
-@inject EmployeeSessionService EmployeeSession
+@inject IEmployeeAuthorization Authorization
 @inject IWaitingRoomNotifier WaitingRoomNotifier
 @inject ISessionStorageService Session
 @inject NavigationManager Navigation
@@ -161,27 +162,22 @@
     {
         if (!firstRender || _disposed) return;
 
-        var auth = await EmployeeSession.EnsureAuthenticatedAsync();
-        if (!auth.IsAuthenticated)
-        {
-            Navigation.NavigateTo("/employee/login", true);
-            return;
-        }
+        var current = await Authorization.RequireEmployeeAsync();
+        _employeeId = current.EmployeeId;
 
-        _employeeId = auth.EmployeeId;
-
-        var activeService = await EmployeeSession.GetActiveServiceAsync();
-        if (activeService == null)
+        // Der gewählte Arbeitsplatz ist Bedienzustand, keine Berechtigung.
+        var activeServiceId = await Session.GetItemAsync<int>(SessionKeys.ActiveServiceId);
+        if (activeServiceId <= 0)
         {
             Navigation.NavigateTo("/employee/select-service", true);
             return;
         }
 
-        _serviceId = activeService.Value;
+        _serviceId = activeServiceId;
 
-        _office = await Session.GetItemAsync<string>("OfficeName") ?? "";
-        _room = await Session.GetItemAsync<string>("RoomName") ?? "";
-        _serviceName = await Session.GetItemAsync<string>("ServiceName") ?? _serviceName;
+        _office = await Session.GetItemAsync<string>(SessionKeys.OfficeName) ?? "";
+        _room = await Session.GetItemAsync<string>(SessionKeys.RoomName) ?? "";
+        _serviceName = await Session.GetItemAsync<string>(SessionKeys.ServiceName) ?? _serviceName;
 
         await WithLockAsync(async () => await LoadAsync());
 
