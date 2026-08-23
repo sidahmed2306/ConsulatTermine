@@ -4,6 +4,7 @@
 @using ConsulatTermine.Application.DTOs
 @using MudBlazor
 @using ConsulatTermine.Application.Interfaces
+@using ConsulatTermine.Application.Services
 @using ConsulatTermine.Domain.Entities
 @using Blazored.SessionStorage
 
@@ -36,16 +37,18 @@
             <MudButton Variant="Variant.Filled"
                        Color="Color.Success"
                        Disabled="@(_personCount <= 1)"
-                       OnClick="DecrementPerson">
+                       OnClick="DecrementPerson"
+                       aria-label="Eine Person weniger">
                 <MudIcon Icon="@Icons.Material.Filled.Remove" />
             </MudButton>
 
-            <MudText Typo="Typo.h6">@_personCount</MudText>
+            <MudText Typo="Typo.h6" aria-live="polite">@_personCount</MudText>
 
             <MudButton Variant="Variant.Filled"
                        Color="Color.Success"
-                       Disabled="@(_personCount >= MaxPersons)"
-                       OnClick="IncrementPerson">
+                       Disabled="@(_personCount >= ServiceSelectionCalculator.MaxPersons)"
+                       OnClick="IncrementPerson"
+                       aria-label="Eine Person mehr">
                 <MudIcon Icon="@Icons.Material.Filled.Add" />
             </MudButton>
         </MudStack>
@@ -53,13 +56,25 @@
         <MudDivider Class="mb-4" />
 
         <!-- SERVICES -->
-        <MudText Typo="Typo.subtitle1" Class="mb-2">
+        <MudText Typo="Typo.subtitle1" Class="mb-1">
             Für welche Services möchten Sie Termine buchen?
+        </MudText>
+
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+            Zählen Sie je Service, wie viele Personen ihn benötigen.
+            Jede Person braucht mindestens einen Termin, höchstens
+            @ServiceSelectionCalculator.MaxServicesPerPerson Termine.
         </MudText>
 
         @if (_loading)
         {
-            <MudProgressCircular Indeterminate />
+            <MudProgressCircular Indeterminate aria-label="Services werden geladen" />
+        }
+        else if (_services.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Class="mb-3">
+                Zurzeit stehen keine Services zur Buchung bereit. Bitte versuchen Sie es später erneut.
+            </MudAlert>
         }
         else
         {
@@ -86,17 +101,21 @@
                             <MudStack Row AlignItems="AlignItems.Center" Spacing="1">
                                 <MudIconButton Icon="@Icons.Material.Filled.Remove"
                                                Color="Color.Error"
-                                               Disabled="@(GetAssignedCount(service.Id) == 0)"
-                                               OnClick="@(() => DecrementService(service.Id))" />
+                                               Disabled="@(!ServiceSelectionCalculator.CanRemoveService(_serviceAssignments, service.Id))"
+                                               OnClick="@(() => DecrementService(service.Id))"
+                                               title="@($"{service.Name}: eine Person weniger")"
+                                               aria-label="@($"{service.Name}: eine Person weniger")" />
 
-                                <MudText Typo="Typo.subtitle1">
+                                <MudText Typo="Typo.subtitle1" aria-live="polite">
                                     @GetAssignedCount(service.Id)
                                 </MudText>
 
                                 <MudIconButton Icon="@Icons.Material.Filled.Add"
                                                Color="Color.Success"
-                                               Disabled="@IsAddDisabled(service.Id)"
-                                               OnClick="@(() => IncrementService(service.Id))" />
+                                               Disabled="@(!ServiceSelectionCalculator.CanAddService(_serviceAssignments, service.Id, _personCount))"
+                                               OnClick="@(() => IncrementService(service.Id))"
+                                               title="@($"{service.Name}: eine Person mehr")"
+                                               aria-label="@($"{service.Name}: eine Person mehr")" />
                             </MudStack>
 
                         </MudStack>
@@ -107,6 +126,18 @@
         }
 
         <MudDivider Class="mt-4" />
+
+        <!-- STATUS -->
+        @if (!_loading && _services.Count > 0)
+        {
+            <MudAlert Severity="@(CanConfirm ? Severity.Success : Severity.Info)"
+                      Variant="Variant.Outlined"
+                      Dense="true"
+                      Class="mt-4"
+                      aria-live="polite">
+                @SelectionStatusText
+            </MudAlert>
+        }
 
         <!-- FOOTER -->
         <MudStack Row Justify="Justify.FlexEnd" Spacing="2" Class="mt-4">
@@ -119,7 +150,7 @@
 
             <MudButton Variant="Variant.Filled"
                        Color="Color.Success"
-                       Disabled="!CanConfirm"
+                       Disabled="@(!CanConfirm)"
                        OnClick="ConfirmSelection">
                 Bestätigen
             </MudButton>
@@ -131,25 +162,39 @@
 
 @code {
 
-    /* ---------- CONFIG ---------- */
-    private const int MaxPersons = 5;
-    private const int MaxServicesPerPerson = 3;
-
     /* ---------- STATE ---------- */
     private int _personCount = 1;
     private bool _loading = true;
     private List<Service> _services = new();
 
-    // ServiceId -> Anzahl
+    // ServiceId -> Anzahl der Personen, die diesen Service benoetigen
     private Dictionary<int, int> _serviceAssignments = new();
 
     /* ---------- CALCULATED ---------- */
-    private int TotalAssigned => _serviceAssignments.Values.Sum();
-    private int MaxTotalAssignments => _personCount * MaxServicesPerPerson;
-
     private bool CanConfirm =>
-        TotalAssigned >= _personCount &&
-        TotalAssigned <= MaxTotalAssignments;
+        ServiceSelectionCalculator.IsSelectionComplete(_serviceAssignments, _personCount);
+
+    /// <summary>
+    /// Erklaert, warum "Bestaetigen" noch gesperrt ist. Ohne diesen Hinweis ist die Regel
+    /// "jede Person braucht mindestens einen Termin" auf der Seite nicht erkennbar.
+    /// </summary>
+    private string SelectionStatusText
+    {
+        get
+        {
+            var total = ServiceSelectionCalculator.TotalAssigned(_serviceAssignments);
+            var missing = ServiceSelectionCalculator.MissingAssignments(_serviceAssignments, _personCount);
+
+            if (missing > 0)
+            {
+                return $"{total} von mindestens {_personCount} Terminen zugeordnet. "
+                     + $"Bitte ordnen Sie noch {AppointmentLabel(missing)} zu.";
+            }
+
+            return $"{AppointmentLabel(total)} für {PersonLabel(_personCount)} zugeordnet. "
+                 + "Sie können fortfahren.";
+        }
+    }
 
     /* ---------- INIT ---------- */
     protected override async Task OnInitializedAsync()
@@ -160,31 +205,22 @@
 
     /* ---------- HELPERS ---------- */
     private int GetAssignedCount(int serviceId)
-        => _serviceAssignments.TryGetValue(serviceId, out var v) ? v : 0;
+        => ServiceSelectionCalculator.AssignedCount(_serviceAssignments, serviceId);
 
-   private bool IsAddDisabled(int serviceId)
-{
-    // Gesamtlimit erreicht
-    if (TotalAssigned >= MaxTotalAssignments)
-        return true;
+    private static string PersonLabel(int count)
+        => count == 1 ? "1 Person" : $"{count} Personen";
 
-    // ❗ NEU: Service darf nicht mehr als Personenzahl bekommen
-    var assignedForService = GetAssignedCount(serviceId);
-    if (assignedForService >= _personCount)
-        return true;
-
-    return false;
-}
-
+    private static string AppointmentLabel(int count)
+        => count == 1 ? "1 Termin" : $"{count} Termine";
 
     /* ---------- PERSON ---------- */
     private void IncrementPerson()
     {
-        if (_personCount >= MaxPersons)
+        if (_personCount >= ServiceSelectionCalculator.MaxPersons)
             return;
 
         _personCount++;
-        NormalizeAssignments();
+        _serviceAssignments = ServiceSelectionCalculator.Normalize(_serviceAssignments, _personCount);
     }
 
     private void DecrementPerson()
@@ -193,45 +229,32 @@
             return;
 
         _personCount--;
-        NormalizeAssignments();
+        _serviceAssignments = ServiceSelectionCalculator.Normalize(_serviceAssignments, _personCount);
     }
 
     /* ---------- SERVICE ---------- */
     private void IncrementService(int serviceId)
     {
-        if (TotalAssigned >= MaxTotalAssignments)
+        if (!ServiceSelectionCalculator.CanAddService(_serviceAssignments, serviceId, _personCount))
             return;
 
-        if (!_serviceAssignments.ContainsKey(serviceId))
-            _serviceAssignments[serviceId] = 0;
-
-        _serviceAssignments[serviceId]++;
+        _serviceAssignments[serviceId] = GetAssignedCount(serviceId) + 1;
     }
 
     private void DecrementService(int serviceId)
     {
-        if (!_serviceAssignments.ContainsKey(serviceId))
+        if (!ServiceSelectionCalculator.CanRemoveService(_serviceAssignments, serviceId))
             return;
 
-        _serviceAssignments[serviceId]--;
+        var remaining = GetAssignedCount(serviceId) - 1;
 
-        if (_serviceAssignments[serviceId] <= 0)
-            _serviceAssignments.Remove(serviceId);
-    }
-
-    private void NormalizeAssignments()
-    {
-        while (TotalAssigned > MaxTotalAssignments)
+        if (remaining <= 0)
         {
-            var key = _serviceAssignments
-                .OrderByDescending(x => x.Value)
-                .First().Key;
-
-            _serviceAssignments[key]--;
-
-            if (_serviceAssignments[key] <= 0)
-                _serviceAssignments.Remove(key);
+            _serviceAssignments.Remove(serviceId);
+            return;
         }
+
+        _serviceAssignments[serviceId] = remaining;
     }
 
     /* ---------- NAV ---------- */
@@ -249,6 +272,6 @@
     private void ResetAll()
     {
         _personCount = 1;
-        _serviceAssignments.Clear();
+        _serviceAssignments = new Dictionary<int, int>();
     }
 }
