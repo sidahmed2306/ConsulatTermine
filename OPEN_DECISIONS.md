@@ -8,15 +8,20 @@ Stand: 2026-08-23
 
 | # | Thema | Zu klären | Blockiert | Status |
 |---|---|---|---|---|
-| 1 | Target Framework | tatsächlich verwendete Version aus dem Projekt bestätigen | erste Implementierung | offen |
-| 2 | Architekturstil | gewählten Stil bestätigen und in PROJECT_CONTEXT.md festschreiben | erste Strukturänderung | offen |
-| 3 | Datenhaltung | konkrete Datenbank und Verantwortung je Datenart festlegen | erste Persistenz | offen |
-| 4 | Authentifizierung extern | Identity-Provider für Endkunden klären | erster geschützter Kundenbereich | offen |
-| 5 | Authentifizierung intern | Unternehmens-Login und benötigte Policies klären | erster interner Bereich | offen |
-| 6 | Berechtigungsmodell | Rollen, Policies und objektbezogene Rechte definieren | erste geschützte Aktion | offen |
-| 7 | Umgebungen | Development, Staging, Production sowie Secret Store und Deployment klären | erstes Deployment | offen |
-| 8 | Monitoring | zentrale Logs, Alerts, Integrationsstatus und Supportprozess festlegen | Produktivbetrieb | offen |
-| 9 | Externe Systeme | Versionen, Module, API-Möglichkeiten und Zuständigkeiten verifizieren | erste Integration | offen |
-| 10 | UI-Bestand | Komponenten, Marken-Tokens und Bibliotheksnutzung dokumentieren | erste UI-Story | offen |
-| 11 | Statische Analyse | `.editorconfig` bestätigen und `EnforceCodeStyleInBuild` in Build und CI verankern | erster Pull Request | offen |
-| 12 | Erste Specs | Ideen und Specs mit dem ersten beauftragten fachlichen Prozess anlegen | erste Story | offen |
+| 1 | Target Framework | — | — | geklärt: `net10.0`, siehe `PROJECT_CONTEXT.md` Abschnitt 2 |
+| 2 | Architekturstil | — | — | geklärt: Schichtenarchitektur mit vier Projekten, siehe ADR 0002 |
+| 3 | Datenhaltung | — | — | geklärt: SQL Server, Verantwortung je Datenart in `PROJECT_CONTEXT.md` Abschnitt 10 |
+| 4 | Authentifizierung extern | — | — | geklärt: kein Konto für Bürger, Identifikation über `BookingReference` und `CancelToken` |
+| 5 | Authentifizierung intern | Soll die Mitarbeiteranmeldung mittelfristig an einen Verzeichnisdienst des Konsulats angebunden werden, statt Passwörter selbst zu verwalten? | Einführung eines Identity Providers | offen |
+| 6 | Berechtigungsmodell | — | — | geklärt: drei Rollen, drei Policies, siehe `PROJECT_CONTEXT.md` Abschnitt 7 und ADR 0001 |
+| 7 | Umgebungen | Gibt es Staging und Production, wo liegen dort die Secrets und wie wird deployed? Bisher ist nur Development eingerichtet. | erstes Deployment | offen |
+| 8 | Monitoring | Wohin gehen Logs im Betrieb, welche Alerts gibt es, wer betreut den Support? Derzeit wird nur auf die Konsole protokolliert. | Produktivbetrieb | offen |
+| 9 | Externe Systeme | Bleibt SMTP die einzige Anbindung, oder kommen Fachverfahren des Konsulats hinzu? | erste weitere Integration | offen |
+| 10 | UI-Bestand | Marken-Tokens, Logo-Nutzung und Barrierefreiheitsanforderungen sind nicht dokumentiert. `AlgerienTheme.cs` definiert Farben ohne belegte Quelle. | erste UI-Story | offen |
+| 11 | Statische Analyse | — | — | geklärt: `.editorconfig` plus `Directory.Build.props` mit `EnforceCodeStyleInBuild`, Build läuft mit `-warnaserror` |
+| 12 | Erste Specs | Es existieren keine Specs unter `specs/`. Der Bestand wurde ohne Anforderungsdokumente gebaut. | erste beauftragte fachliche Änderung | offen |
+| 13 | Blazor-Hosting-Modell | Soll auf das Blazor-Web-App-Modell umgestellt werden? Entscheidung und Begründung der Vertagung in ADR 0003. | größerer UI-Umbau | offen |
+| 14 | Aufbewahrung personenbezogener Daten | Wie lange bleiben Name, E-Mail, Telefonnummer und Geburtsdatum in `Appointments` gespeichert, und wie wird gelöscht? Derzeit gibt es keine Löschung. | Produktivbetrieb, Datenschutzfreigabe | offen |
+| 15 | Historie der Secrets | Das Repository enthält in der Historie ein Gmail-App-Passwort und ein SQL-`sa`-Passwort. Beide sind zu widerrufen. Soll die Historie zusätzlich bereinigt werden? | Veröffentlichung des Repositorys | offen |
+| 16 | CI | Es gibt keine Pipeline. Build, Tests und `dotnet format --verify-no-changes` laufen nur lokal. | verlässliche Prüfung vor Merge | offen |
+| 17 | Zeitzonen | Termine werden als `DateTime` ohne Zeitzone gespeichert, `CreateBookingRequestDto.TimeZone` wird nirgends ausgewertet. Was gilt bei Sommerzeitwechsel? | Buchungen über einen Zeitumstellungstermin hinweg | offen |

@@ -1,8 +1,9 @@
 using ConsulatTermine.Application.DTOs;
-using ConsulatTermine.Application.DTOs.WorkingSchedulePlan;
 using ConsulatTermine.Application.Exceptions;
 using ConsulatTermine.Application.Interfaces;
+using ConsulatTermine.Application.Security;
 using ConsulatTermine.Domain.Entities;
+using ConsulatTermine.Domain.Enums;
 using ConsulatTermine.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,18 +12,25 @@ namespace ConsulatTermine.Infrastructure.Services;
 public class WorkingScheduleService : IWorkingScheduleService
 {
     private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
+    private readonly IEmployeeAuthorization _authorization;
     private readonly IWorkingSchedulePlanService _planService;
 
     public WorkingScheduleService(
         IDbContextFactory<ApplicationDbContext> contextFactory,
+        IEmployeeAuthorization authorization,
         IWorkingSchedulePlanService planService)
     {
         _contextFactory = contextFactory;
+        _authorization = authorization;
         _planService = planService;
     }
 
     public async Task<bool> GenerateScheduleAsync(WorkingScheduleRequestDto request)
     {
+        // Serverseitige Autorisierung: gilt unabhaengig davon, ob die Oberflaeche
+        // das zugehoerige Bedienelement ueberhaupt anbietet.
+        await _authorization.RequireMinimumRoleAsync(EmployeeRole.ServiceChef);
+
         await using var db = await _contextFactory.CreateDbContextAsync();
         // -------------------------------------------------
         // 0) VALIDIERUNG

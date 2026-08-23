@@ -1,6 +1,8 @@
 using ConsulatTermine.Application.Exceptions;
 using ConsulatTermine.Application.Interfaces;
+using ConsulatTermine.Application.Security;
 using ConsulatTermine.Domain.Entities;
+using ConsulatTermine.Domain.Enums;
 using ConsulatTermine.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,10 +11,14 @@ namespace ConsulatTermine.Infrastructure.Services;
 public class EmployeeAssignmentService : IEmployeeAssignmentService
 {
     private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
+    private readonly IEmployeeAuthorization _authorization;
 
-    public EmployeeAssignmentService(IDbContextFactory<ApplicationDbContext> contextFactory)
+    public EmployeeAssignmentService(
+        IDbContextFactory<ApplicationDbContext> contextFactory,
+        IEmployeeAuthorization authorization)
     {
         _contextFactory = contextFactory;
+        _authorization = authorization;
     }
 
     public async Task<List<EmployeeServiceAssignment>> GetAllAssignmentsAsync()
@@ -35,6 +41,10 @@ public class EmployeeAssignmentService : IEmployeeAssignmentService
 
     public async Task<bool> AddAssignmentAsync(int employeeId, int serviceId)
     {
+        // Serverseitige Autorisierung: gilt unabhaengig davon, ob die Oberflaeche
+        // das zugehoerige Bedienelement ueberhaupt anbietet.
+        await _authorization.RequireMinimumRoleAsync(EmployeeRole.ServiceChef);
+
         await using var db = await _contextFactory.CreateDbContextAsync();
         bool exists = await db.EmployeeServiceAssignments
             .AnyAsync(a => a.EmployeeId == employeeId && a.ServiceId == serviceId);
@@ -69,6 +79,10 @@ public class EmployeeAssignmentService : IEmployeeAssignmentService
 
     public async Task<bool> RemoveAssignmentAsync(int employeeId, int serviceId)
     {
+        // Serverseitige Autorisierung: gilt unabhaengig davon, ob die Oberflaeche
+        // das zugehoerige Bedienelement ueberhaupt anbietet.
+        await _authorization.RequireMinimumRoleAsync(EmployeeRole.ServiceChef);
+
         await using var db = await _contextFactory.CreateDbContextAsync();
         var assignment = await db.EmployeeServiceAssignments
             .FirstOrDefaultAsync(a => a.EmployeeId == employeeId && a.ServiceId == serviceId);

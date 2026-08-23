@@ -1,4 +1,4 @@
-namespace ConsulatTermine.UI;
+namespace ConsulatTermine.UI.Resources;
 
 public class AppResources
 {

@@ -1,4 +1,4 @@
-namespace ConsulatTermine.Application.DTOs.WorkingSchedulePlan;
+namespace ConsulatTermine.Application.DTOs;
 
 public class WorkingSchedulePlanDto
 {

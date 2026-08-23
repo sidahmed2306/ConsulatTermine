@@ -1,4 +1,4 @@
-using ConsulatTermine.Application.DTOs.WorkingSchedulePlan;
+using ConsulatTermine.Application.DTOs;
 
 namespace ConsulatTermine.Application.Interfaces;
 

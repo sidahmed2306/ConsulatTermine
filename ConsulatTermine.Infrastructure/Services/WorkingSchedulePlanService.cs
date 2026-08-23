@@ -1,7 +1,9 @@
-using ConsulatTermine.Application.DTOs.WorkingSchedulePlan;
+using ConsulatTermine.Application.DTOs;
 using ConsulatTermine.Application.Exceptions;
 using ConsulatTermine.Application.Interfaces;
+using ConsulatTermine.Application.Security;
 using ConsulatTermine.Domain.Entities;
+using ConsulatTermine.Domain.Enums;
 using ConsulatTermine.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,10 +12,14 @@ namespace ConsulatTermine.Infrastructure.Services;
 public class WorkingSchedulePlanService : IWorkingSchedulePlanService
 {
     private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
+    private readonly IEmployeeAuthorization _authorization;
 
-    public WorkingSchedulePlanService(IDbContextFactory<ApplicationDbContext> contextFactory)
+    public WorkingSchedulePlanService(
+        IDbContextFactory<ApplicationDbContext> contextFactory,
+        IEmployeeAuthorization authorization)
     {
         _contextFactory = contextFactory;
+        _authorization = authorization;
     }
 
     // ----------------------------------------------------
@@ -21,6 +27,10 @@ public class WorkingSchedulePlanService : IWorkingSchedulePlanService
     // ----------------------------------------------------
     public async Task<WorkingSchedulePlanDto> SaveAsync(WorkingSchedulePlanDto dto)
     {
+        // Serverseitige Autorisierung: gilt unabhaengig davon, ob die Oberflaeche
+        // das zugehoerige Bedienelement ueberhaupt anbietet.
+        await _authorization.RequireMinimumRoleAsync(EmployeeRole.ServiceChef);
+
         await using var db = await _contextFactory.CreateDbContextAsync();
         WorkingSchedulePlan entity;
 
@@ -99,6 +109,10 @@ public class WorkingSchedulePlanService : IWorkingSchedulePlanService
     // ----------------------------------------------------
     public async Task<bool> DeleteAsync(int id)
     {
+        // Serverseitige Autorisierung: gilt unabhaengig davon, ob die Oberflaeche
+        // das zugehoerige Bedienelement ueberhaupt anbietet.
+        await _authorization.RequireMinimumRoleAsync(EmployeeRole.ServiceChef);
+
         await using var db = await _contextFactory.CreateDbContextAsync();
         var entity = await db.WorkingSchedulePlans.FindAsync(id);
         if (entity == null)
@@ -116,6 +130,10 @@ public class WorkingSchedulePlanService : IWorkingSchedulePlanService
     // ----------------------------------------------------
     public async Task<bool> SetActiveAsync(int id)
     {
+        // Serverseitige Autorisierung: gilt unabhaengig davon, ob die Oberflaeche
+        // das zugehoerige Bedienelement ueberhaupt anbietet.
+        await _authorization.RequireMinimumRoleAsync(EmployeeRole.ServiceChef);
+
         await using var db = await _contextFactory.CreateDbContextAsync();
         var entity = await db.WorkingSchedulePlans.FindAsync(id);
         if (entity == null)

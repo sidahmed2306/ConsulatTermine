@@ -1,7 +1,9 @@
 using ConsulatTermine.Application.DTOs;
 using ConsulatTermine.Application.Exceptions;
 using ConsulatTermine.Application.Interfaces;
+using ConsulatTermine.Application.Security;
 using ConsulatTermine.Domain.Entities;
+using ConsulatTermine.Domain.Enums;
 using ConsulatTermine.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,10 +12,14 @@ namespace ConsulatTermine.Infrastructure.Services;
 public class ServiceService : IServiceService
 {
     private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
+    private readonly IEmployeeAuthorization _authorization;
 
-    public ServiceService(IDbContextFactory<ApplicationDbContext> contextFactory)
+    public ServiceService(
+        IDbContextFactory<ApplicationDbContext> contextFactory,
+        IEmployeeAuthorization authorization)
     {
         _contextFactory = contextFactory;
+        _authorization = authorization;
     }
 
     // -------------------------------------------------------------
@@ -62,6 +68,10 @@ public class ServiceService : IServiceService
     // -------------------------------------------------------------
     public async Task<Service> CreateServiceAsync(ServiceDto dto)
     {
+        // Serverseitige Autorisierung: gilt unabhaengig davon, ob die Oberflaeche
+        // das zugehoerige Bedienelement ueberhaupt anbietet.
+        await _authorization.RequireMinimumRoleAsync(EmployeeRole.Admin);
+
         await using var db = await _contextFactory.CreateDbContextAsync();
         var entity = new Service
         {
@@ -81,6 +91,10 @@ public class ServiceService : IServiceService
     // -------------------------------------------------------------
     public async Task<Service> UpdateServiceAsync(int id, ServiceDto dto)
     {
+        // Serverseitige Autorisierung: gilt unabhaengig davon, ob die Oberflaeche
+        // das zugehoerige Bedienelement ueberhaupt anbietet.
+        await _authorization.RequireMinimumRoleAsync(EmployeeRole.Admin);
+
         await using var db = await _contextFactory.CreateDbContextAsync();
         var entity = await db.Services.FindAsync(id);
 
@@ -104,6 +118,10 @@ public class ServiceService : IServiceService
     // -------------------------------------------------------------
     public async Task<bool> DeleteServiceAsync(int id)
     {
+        // Serverseitige Autorisierung: gilt unabhaengig davon, ob die Oberflaeche
+        // das zugehoerige Bedienelement ueberhaupt anbietet.
+        await _authorization.RequireMinimumRoleAsync(EmployeeRole.Admin);
+
         await using var db = await _contextFactory.CreateDbContextAsync();
         var entity = await db.Services.FindAsync(id);
         if (entity == null)

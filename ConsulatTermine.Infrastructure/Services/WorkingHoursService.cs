@@ -1,6 +1,8 @@
 using ConsulatTermine.Application.Exceptions;
 using ConsulatTermine.Application.Interfaces;
+using ConsulatTermine.Application.Security;
 using ConsulatTermine.Domain.Entities;
+using ConsulatTermine.Domain.Enums;
 using ConsulatTermine.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,10 +11,14 @@ namespace ConsulatTermine.Infrastructure.Services;
 public class WorkingHoursService : IWorkingHoursService
 {
     private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
+    private readonly IEmployeeAuthorization _authorization;
 
-    public WorkingHoursService(IDbContextFactory<ApplicationDbContext> contextFactory)
+    public WorkingHoursService(
+        IDbContextFactory<ApplicationDbContext> contextFactory,
+        IEmployeeAuthorization authorization)
     {
         _contextFactory = contextFactory;
+        _authorization = authorization;
     }
 
     public async Task<List<WorkingHours>> GetAllAsync()
@@ -38,6 +44,10 @@ public class WorkingHoursService : IWorkingHoursService
 
     public async Task<WorkingHours> CreateAsync(WorkingHours model)
     {
+        // Serverseitige Autorisierung: gilt unabhaengig davon, ob die Oberflaeche
+        // das zugehoerige Bedienelement ueberhaupt anbietet.
+        await _authorization.RequireMinimumRoleAsync(EmployeeRole.ServiceChef);
+
         await using var db = await _contextFactory.CreateDbContextAsync();
         db.WorkingHours.Add(model);
         await db.SaveChangesAsync();
@@ -46,6 +56,10 @@ public class WorkingHoursService : IWorkingHoursService
 
     public async Task<WorkingHours> UpdateAsync(int id, WorkingHours model)
     {
+        // Serverseitige Autorisierung: gilt unabhaengig davon, ob die Oberflaeche
+        // das zugehoerige Bedienelement ueberhaupt anbietet.
+        await _authorization.RequireMinimumRoleAsync(EmployeeRole.ServiceChef);
+
         await using var db = await _contextFactory.CreateDbContextAsync();
         var entity = await db.WorkingHours.FindAsync(id);
         if (entity == null)
@@ -64,6 +78,10 @@ public class WorkingHoursService : IWorkingHoursService
 
     public async Task<bool> DeleteAsync(int id)
     {
+        // Serverseitige Autorisierung: gilt unabhaengig davon, ob die Oberflaeche
+        // das zugehoerige Bedienelement ueberhaupt anbietet.
+        await _authorization.RequireMinimumRoleAsync(EmployeeRole.ServiceChef);
+
         await using var db = await _contextFactory.CreateDbContextAsync();
         var entity = await db.WorkingHours.FindAsync(id);
         if (entity == null)

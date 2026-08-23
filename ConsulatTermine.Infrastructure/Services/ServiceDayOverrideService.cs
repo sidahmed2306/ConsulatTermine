@@ -1,17 +1,24 @@
 using ConsulatTermine.Application.Exceptions;
 using ConsulatTermine.Application.Interfaces;
+using ConsulatTermine.Application.Security;
 using ConsulatTermine.Domain.Entities;
+using ConsulatTermine.Domain.Enums;
+using ConsulatTermine.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace ConsulatTermine.Infrastructure.Persistence;
+namespace ConsulatTermine.Infrastructure.Services;
 
 public class ServiceDayOverrideService : IServiceDayOverrideService
 {
     private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
+    private readonly IEmployeeAuthorization _authorization;
 
-    public ServiceDayOverrideService(IDbContextFactory<ApplicationDbContext> contextFactory)
+    public ServiceDayOverrideService(
+        IDbContextFactory<ApplicationDbContext> contextFactory,
+        IEmployeeAuthorization authorization)
     {
         _contextFactory = contextFactory;
+        _authorization = authorization;
     }
 
     public async Task<List<ServiceDayOverride>> GetAllAsync()
@@ -39,6 +46,10 @@ public class ServiceDayOverrideService : IServiceDayOverrideService
 
     public async Task<ServiceDayOverride> CreateAsync(ServiceDayOverride model)
     {
+        // Serverseitige Autorisierung: gilt unabhaengig davon, ob die Oberflaeche
+        // das zugehoerige Bedienelement ueberhaupt anbietet.
+        await _authorization.RequireMinimumRoleAsync(EmployeeRole.ServiceChef);
+
         await using var db = await _contextFactory.CreateDbContextAsync();
         db.ServiceDayOverrides.Add(model);
         await db.SaveChangesAsync();
@@ -47,6 +58,10 @@ public class ServiceDayOverrideService : IServiceDayOverrideService
 
     public async Task<ServiceDayOverride> UpdateAsync(int id, ServiceDayOverride model)
     {
+        // Serverseitige Autorisierung: gilt unabhaengig davon, ob die Oberflaeche
+        // das zugehoerige Bedienelement ueberhaupt anbietet.
+        await _authorization.RequireMinimumRoleAsync(EmployeeRole.ServiceChef);
+
         await using var db = await _contextFactory.CreateDbContextAsync();
         var existing = await db.ServiceDayOverrides.FindAsync(id);
         if (existing == null)
@@ -66,6 +81,10 @@ public class ServiceDayOverrideService : IServiceDayOverrideService
 
     public async Task<bool> DeleteAsync(int id)
     {
+        // Serverseitige Autorisierung: gilt unabhaengig davon, ob die Oberflaeche
+        // das zugehoerige Bedienelement ueberhaupt anbietet.
+        await _authorization.RequireMinimumRoleAsync(EmployeeRole.ServiceChef);
+
         await using var db = await _contextFactory.CreateDbContextAsync();
         var existing = await db.ServiceDayOverrides.FindAsync(id);
         if (existing == null)
