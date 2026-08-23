@@ -93,13 +93,37 @@ namespace ConsulatTermine.Infrastructure.Services.Booking
                     .GroupBy(x => x.Time)
                     .ToList();
 
+                var now = DateTime.Now;
+                var minSlotTime = now.AddMinutes(30);
+
                 foreach (var slotGroup in requestedSlotsGrouped)
                 {
                     DateTime slotTime = slotGroup.Key;
-                    var timeOfDay = slotTime.TimeOfDay;
+                    var localSlot = slotTime.Kind == DateTimeKind.Utc ? slotTime.ToLocalTime() : slotTime;
 
+                    // Regel wie in der UI: Slot muss mindestens „heute + 30 Min“ sein (nicht in der Vergangenheit / zu nah an „jetzt“)
+                    if (localSlot < minSlotTime)
+                    {
+                        throw new Exception(
+                            "Der gewählte Termin liegt in der Vergangenheit oder in weniger als 30 Minuten. " +
+                            "Bitte wählen Sie einen anderen Slot.");
+                    }
+
+                    // Zeit auf Slot-Granularität runden (z. B. 30 Min), damit kleine Abweichungen nicht zu „not a valid slot“ führen
+                    var timeOfDay = localSlot.TimeOfDay;
+                    var stepMinutes = service.SlotDurationMinutes;
+                    var totalMinutes = (int)timeOfDay.TotalMinutes;
+                    var roundedMinutes = (int)Math.Round((double)totalMinutes / stepMinutes) * stepMinutes;
+                    var timeOfDayRounded = TimeSpan.FromMinutes(roundedMinutes);
+
+                    // Slot-Grenzen aus der DB können minimale Abweichungen haben (z. B. 09:00:00.001) – beim Matching ebenfalls runden, damit der erste Slot (09:00) trifft
                     var matchingKey = freeSlotsDict.Keys
-                        .FirstOrDefault(k => k.Start == timeOfDay);
+                        .FirstOrDefault(k =>
+                        {
+                            var startRounded = RoundTimeToSlotMinutes(k.Start, stepMinutes);
+                            var endRounded = RoundTimeToSlotMinutes(k.End, stepMinutes);
+                            return timeOfDayRounded >= startRounded && timeOfDayRounded < endRounded;
+                        });
 
                     if (matchingKey.Start == default && matchingKey.End == default)
                     {
@@ -122,8 +146,9 @@ namespace ConsulatTermine.Infrastructure.Services.Booking
 
         public async Task<bool> IsSlotAvailableAsync(int serviceId, DateTime slotTime)
         {
-            var date = slotTime.Date;
-            var timeOfDay = slotTime.TimeOfDay;
+            var localSlot = slotTime.Kind == DateTimeKind.Utc ? slotTime.ToLocalTime() : slotTime;
+            var date = localSlot.Date;
+            var timeOfDay = localSlot.TimeOfDay;
 
             // 1) Service laden
             var service = await _db.Services
@@ -179,13 +204,30 @@ namespace ConsulatTermine.Infrastructure.Services.Booking
                 overrides,
                 existingAppointments);
 
+            var stepMinutes = service.SlotDurationMinutes;
+            var totalMinutes = (int)timeOfDay.TotalMinutes;
+            var timeOfDayRounded = TimeSpan.FromMinutes((int)Math.Round((double)totalMinutes / stepMinutes) * stepMinutes);
+
             var matchingKey = freeSlotsDict.Keys
-                .FirstOrDefault(k => k.Start == timeOfDay);
+                .FirstOrDefault(k =>
+                {
+                    var startRounded = RoundTimeToSlotMinutes(k.Start, stepMinutes);
+                    var endRounded = RoundTimeToSlotMinutes(k.End, stepMinutes);
+                    return timeOfDayRounded >= startRounded && timeOfDayRounded < endRounded;
+                });
 
             if (matchingKey.Start == default && matchingKey.End == default)
                 return false;
 
             return freeSlotsDict[matchingKey] > 0;
+        }
+
+        private static TimeSpan RoundTimeToSlotMinutes(TimeSpan time, int stepMinutes)
+        {
+            var totalMinutes = (int)time.TotalMinutes;
+            var rounded = (int)Math.Round((double)totalMinutes / stepMinutes) * stepMinutes;
+            if (rounded < 0) rounded = 0;
+            return TimeSpan.FromMinutes(rounded);
         }
 
         private static List<BookingPersonDto> GetAllPersons(CreateBookingRequestDto request)
@@ -194,5 +236,6 @@ namespace ConsulatTermine.Infrastructure.Services.Booking
             list.AddRange(request.AccompanyingPersons);
             return list;
         }
+
     }
 }

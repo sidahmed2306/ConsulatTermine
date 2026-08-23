@@ -1,0 +1,30 @@
+<Project>
+
+  <!-- Zentrale Paketverwaltung: Versionen stehen ausschliesslich hier. -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+
+  <ItemGroup Label="Entity Framework Core">
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.11" />
+  </ItemGroup>
+
+  <ItemGroup Label="UI">
+    <PackageVersion Include="MudBlazor" Version="8.15.0" />
+    <!-- Traegt den mehrstufigen Buchungs-Wizard ueber Seitenwechsel und Reload hinweg.
+         Ausdruecklich KEIN Sicherheitsmechanismus: Authentifizierung laeuft ueber Cookie-Auth. -->
+    <PackageVersion Include="Blazored.SessionStorage" Version="2.4.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="Test">
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
+    <PackageVersion Include="xunit.v3" Version="3.2.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.11" />
+    <PackageVersion Include="NSubstitute" Version="5.3.0" />
+  </ItemGroup>
+
+</Project>

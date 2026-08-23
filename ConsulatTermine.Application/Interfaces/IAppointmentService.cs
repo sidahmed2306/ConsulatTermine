@@ -9,12 +9,10 @@ public interface IAppointmentService
     Task<List<AvailableSlotDto>> GetAvailableSlotDtosAsync(int serviceId, DateTime date);
     Task<Appointment> BookAsync(int serviceId, DateTime slotStart, string fullName, string email);
     Task<bool> CancelAsync(int appointmentId);
-    Task<List<Appointment>> GetAppointmentsByServiceAndDayAsync(int serviceId, DateTime date);
 
     // --- Ablauf im Konsulat ---
-    Task<bool> CheckInAsync(int appointmentId);          // Warten in Warteschlange
-    Task<Appointment?> GetNextAsync(int serviceId);       // Nächster wartender Bürger
-Task<bool> StartProcessingAsync(int appointmentId, int employeeId);
+    Task<bool> CheckInAsync(int appointmentId);
+    Task<bool> StartProcessingAsync(int appointmentId, int employeeId);
 Task<bool> CompleteAsync(int appointmentId, int employeeId);
         // Fertig verarbeitet
 
@@ -25,10 +23,6 @@ Task<bool> CompleteAsync(int appointmentId, int employeeId);
   
 
 Task<List<Appointment>> GetAppointmentsForServiceOnDateAsync(
-    int serviceId,
-    DateTime date);
-
-Task<Appointment?> GetNextAppointmentForServiceOnDateAsync(
     int serviceId,
     DateTime date);
 

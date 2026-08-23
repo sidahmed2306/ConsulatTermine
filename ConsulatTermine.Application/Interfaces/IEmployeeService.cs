@@ -9,7 +9,6 @@ public interface IEmployeeService
     Task<Employee> UpdateEmployeeAsync(int id, EmployeeDto dto);
     Task<Employee?> GetEmployeeByIdAsync(int id);
     Task<List<Employee>> GetAllEmployeesAsync();
-    Task AssignServiceAsync(int employeeId, int serviceId);
     Task<bool> DeleteEmployeeAsync(int id);
 
     Task EnsureInitialAdminAsync();

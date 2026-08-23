@@ -1,26 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
+  <PropertyGroup>
+    <UserSecretsId>consulat-termine-ui-2025</UserSecretsId>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\ConsulatTermine.Application\ConsulatTermine.Application.csproj" />
     <ProjectReference Include="..\ConsulatTermine.Infrastructure\ConsulatTermine.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Blazored.SessionStorage" Version="2.4.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.10" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.10">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.10" />
-    <PackageReference Include="MudBlazor" Version="8.15.0" />
+    <PackageReference Include="MudBlazor" />
+    <PackageReference Include="Blazored.SessionStorage" />
   </ItemGroup>
-
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>consulat-termine-ui-2025</UserSecretsId>
-  </PropertyGroup>
 
 </Project>

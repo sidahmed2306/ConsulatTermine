@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="../buildMultiTargeting/ConsulatTermine.UI.props" />
-</Project>

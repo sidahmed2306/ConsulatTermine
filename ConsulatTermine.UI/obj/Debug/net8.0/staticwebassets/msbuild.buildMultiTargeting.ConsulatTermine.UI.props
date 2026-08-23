@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="../build/ConsulatTermine.UI.props" />
-</Project>

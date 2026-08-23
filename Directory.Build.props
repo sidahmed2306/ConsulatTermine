@@ -1,0 +1,27 @@
+<Project>
+
+  <!--
+    Zentrale Build-Einstellungen fuer alle Projekte der Solution.
+    Siehe harness/profile.md Abschnitt 15 (Code-Stil und statische Analyse).
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- Ohne EnforceCodeStyleInBuild melden die IDE-Regeln nur in der IDE, nicht im Build. -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <!-- Generierter Code wird nicht wie Anwendungscode gepflegt: harness/code.md Abschnitt 3. -->
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+</Project>

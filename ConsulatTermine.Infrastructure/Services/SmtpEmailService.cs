@@ -25,7 +25,8 @@ namespace ConsulatTermine.Infrastructure.Services
             string cancelToken,
             IReadOnlyList<BookingEmailAppointmentDto> appointments)
         {
-            var email = GetEmailConfig();
+            if (!TryGetEmailConfig(out var email))
+                return;
 
             var cancelUrl =
                 $"http://localhost:5262/appointment-cancel?ref={bookingReference}&token={cancelToken}";
@@ -59,7 +60,8 @@ namespace ConsulatTermine.Infrastructure.Services
             string serviceName,
             DateTime date)
         {
-            var email = GetEmailConfig();
+            if (!TryGetEmailConfig(out var email))
+                return;
             using var smtpClient = CreateSmtpClient(email);
 
             using var mailMessage = new MailMessage
@@ -85,7 +87,8 @@ namespace ConsulatTermine.Infrastructure.Services
             string fullName,
             string bookingReference)
         {
-            var email = GetEmailConfig();
+            if (!TryGetEmailConfig(out var email))
+                return;
             using var smtpClient = CreateSmtpClient(email);
 
             using var mailMessage = new MailMessage
@@ -112,7 +115,8 @@ namespace ConsulatTermine.Infrastructure.Services
             string temporaryPassword,
             string changePasswordLink)
         {
-            var email = GetEmailConfig();
+            if (!TryGetEmailConfig(out var email))
+                return;
             using var smtpClient = CreateSmtpClient(email);
 
             using var mailMessage = new MailMessage
@@ -139,7 +143,8 @@ namespace ConsulatTermine.Infrastructure.Services
             string fullName,
             string loginLink)
         {
-            var email = GetEmailConfig();
+            if (!TryGetEmailConfig(out var email))
+                return;
             using var smtpClient = CreateSmtpClient(email);
 
             using var mailMessage = new MailMessage
@@ -364,7 +369,8 @@ Passwort ändern
             string fullName,
             string resetLink)
         {
-            var email = GetEmailConfig();
+            if (!TryGetEmailConfig(out var email))
+                return;
             using var smtpClient = CreateSmtpClient(email);
 
             using var mailMessage = new MailMessage
@@ -447,22 +453,31 @@ Zum Login
         // =============================================================
         // HELPER
         // =============================================================
-        private (string SmtpServer, int Port, bool UseSsl,
+        /// <summary>Liest E-Mail-Konfiguration. Gibt false zurück, wenn SMTP nicht konfiguriert (z. B. leere User Secrets).</summary>
+        private bool TryGetEmailConfig(
+            out (string SmtpServer, int Port, bool UseSsl,
                  string Username, string Password,
-                 string FromEmail, string FromName)
-            GetEmailConfig()
+                 string FromEmail, string FromName) config)
         {
             var c = _configuration.GetSection("Email");
+            var smtpServer = c["SmtpServer"] ?? string.Empty;
 
-            return (
-                c["SmtpServer"]!,
-                int.Parse(c["Port"]!),
-                bool.Parse(c["UseSsl"]!),
-                c["Username"]!,
-                c["Password"]!,
-                c["FromEmail"]!,
+            if (string.IsNullOrWhiteSpace(smtpServer))
+            {
+                config = default;
+                return false;
+            }
+
+            config = (
+                smtpServer,
+                int.TryParse(c["Port"], out var port) ? port : 587,
+                bool.TryParse(c["UseSsl"], out var useSsl) && useSsl,
+                c["Username"] ?? string.Empty,
+                c["Password"] ?? string.Empty,
+                c["FromEmail"] ?? string.Empty,
                 c["FromName"] ?? "Konsulat – Terminservice"
             );
+            return true;
         }
 
         private static SmtpClient CreateSmtpClient(

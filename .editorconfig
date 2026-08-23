@@ -1,0 +1,147 @@
+# Verbindliche Code-Stil-Einstellungen
+# Wird als .editorconfig in den Repository-Root gelegt.
+# Roslyn liest die Datei automatisch; zusaetzliche Tools sind nicht noetig.
+# Entspricht harness/profile.md Abschnitt 6 bis 9.
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = crlf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{json,yml,yaml,xml,csproj,props,targets}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.{cs,razor}]
+max_line_length = 120
+
+[*.cs]
+
+# --- Namespaces und Usings ---
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_using_directive_placement = outside_namespace:warning
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+dotnet_diagnostic.IDE0005.severity = warning
+
+# --- Allman-Klammerstil ---
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_new_line_before_members_in_object_initializers = true
+csharp_new_line_before_members_in_anonymous_types = true
+csharp_new_line_between_query_expression_clauses = true
+
+# --- Bloecke auch bei einer einzelnen Anweisung verpflichtend ---
+csharp_prefer_braces = true:warning
+
+# --- var nur bei erkennbarem Typ ---
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = false:suggestion
+
+# --- C#-Schluesselwoerter statt BCL-Typnamen ---
+dotnet_style_predefined_type_for_locals_parameters_members = true:warning
+dotnet_style_predefined_type_for_member_access = true:warning
+
+# --- Lesbarkeit ---
+csharp_style_prefer_pattern_matching = true:suggestion
+csharp_style_throw_expression = true:suggestion
+dotnet_style_coalesce_expression = true:suggestion
+dotnet_style_null_propagation = true:suggestion
+dotnet_style_object_initializer = true:suggestion
+dotnet_style_collection_initializer = true:suggestion
+dotnet_style_prefer_conditional_expression_over_assignment = true:silent
+dotnet_style_prefer_conditional_expression_over_return = true:silent
+
+# --- Einrueckung und Umbrueche ---
+csharp_indent_case_contents = true
+csharp_indent_switch_labels = true
+csharp_indent_labels = one_less_than_current
+csharp_preserve_single_line_blocks = true
+csharp_preserve_single_line_statements = false
+
+# --- Modifier-Reihenfolge ---
+csharp_preferred_modifier_order = public,private,protected,internal,file,static,extern,new,virtual,abstract,sealed,override,readonly,unsafe,required,volatile,async:warning
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:warning
+dotnet_style_readonly_field = true:warning
+
+# =====================================================================
+# Benennung
+# =====================================================================
+
+# Typen, Namespaces, Enums -> PascalCase
+dotnet_naming_rule.types_pascal_case.severity = warning
+dotnet_naming_rule.types_pascal_case.symbols = types_symbols
+dotnet_naming_rule.types_pascal_case.style = pascal_case_style
+dotnet_naming_symbols.types_symbols.applicable_kinds = class,struct,enum,delegate,namespace
+dotnet_naming_symbols.types_symbols.applicable_accessibilities = *
+
+# Interfaces -> I + PascalCase
+dotnet_naming_rule.interfaces_prefixed.severity = warning
+dotnet_naming_rule.interfaces_prefixed.symbols = interface_symbols
+dotnet_naming_rule.interfaces_prefixed.style = i_pascal_case_style
+dotnet_naming_symbols.interface_symbols.applicable_kinds = interface
+dotnet_naming_symbols.interface_symbols.applicable_accessibilities = *
+
+# Methoden, Properties, Events -> PascalCase
+dotnet_naming_rule.members_pascal_case.severity = warning
+dotnet_naming_rule.members_pascal_case.symbols = member_symbols
+dotnet_naming_rule.members_pascal_case.style = pascal_case_style
+dotnet_naming_symbols.member_symbols.applicable_kinds = method,property,event
+dotnet_naming_symbols.member_symbols.applicable_accessibilities = *
+
+# Asynchrone Methoden -> Suffix Async
+dotnet_naming_rule.async_methods_suffix.severity = warning
+dotnet_naming_rule.async_methods_suffix.symbols = async_method_symbols
+dotnet_naming_rule.async_methods_suffix.style = async_suffix_style
+dotnet_naming_symbols.async_method_symbols.applicable_kinds = method
+dotnet_naming_symbols.async_method_symbols.applicable_accessibilities = *
+dotnet_naming_symbols.async_method_symbols.required_modifiers = async
+
+# Private Felder -> _camelCase
+dotnet_naming_rule.private_fields_underscore.severity = warning
+dotnet_naming_rule.private_fields_underscore.symbols = private_field_symbols
+dotnet_naming_rule.private_fields_underscore.style = underscore_camel_case_style
+dotnet_naming_symbols.private_field_symbols.applicable_kinds = field
+dotnet_naming_symbols.private_field_symbols.applicable_accessibilities = private
+
+# Konstanten -> PascalCase
+dotnet_naming_rule.constants_pascal_case.severity = warning
+dotnet_naming_rule.constants_pascal_case.symbols = constant_symbols
+dotnet_naming_rule.constants_pascal_case.style = pascal_case_style
+dotnet_naming_symbols.constant_symbols.applicable_kinds = field
+dotnet_naming_symbols.constant_symbols.applicable_accessibilities = *
+dotnet_naming_symbols.constant_symbols.required_modifiers = const
+
+# Parameter und lokale Variablen -> camelCase
+dotnet_naming_rule.parameters_camel_case.severity = warning
+dotnet_naming_rule.parameters_camel_case.symbols = parameter_symbols
+dotnet_naming_rule.parameters_camel_case.style = camel_case_style
+dotnet_naming_symbols.parameter_symbols.applicable_kinds = parameter,local
+
+# --- Stile ---
+dotnet_naming_style.pascal_case_style.capitalization = pascal_case
+dotnet_naming_style.camel_case_style.capitalization = camel_case
+dotnet_naming_style.i_pascal_case_style.capitalization = pascal_case
+dotnet_naming_style.i_pascal_case_style.required_prefix = I
+dotnet_naming_style.underscore_camel_case_style.capitalization = camel_case
+dotnet_naming_style.underscore_camel_case_style.required_prefix = _
+dotnet_naming_style.async_suffix_style.capitalization = pascal_case
+dotnet_naming_style.async_suffix_style.required_suffix = Async
+
+# =====================================================================
+# Generierter Code
+# =====================================================================
+
+[**/Migrations/*.cs]
+generated_code = true
+dotnet_diagnostic.IDE0005.severity = none

@@ -206,18 +206,6 @@ public async Task<bool> CancelAsync(int appointmentId)
 
 
 
-        // -------------------------------------------------------------
-        // TAGESLISTE FÜR EINEN SERVICE
-        // -------------------------------------------------------------
-        public async Task<List<Appointment>> GetAppointmentsByServiceAndDayAsync(int serviceId, DateTime date)
-        {
-            return await _context.Appointments
-                .Where(a => a.ServiceId == serviceId && a.Date.Date == date.Date)
-                .OrderBy(a => a.Date)
-                .ToListAsync();
-        }
-
-
         public async Task<List<Appointment>> GetByBookingReferenceAsync(string bookingReference)
 {
     if (string.IsNullOrWhiteSpace(bookingReference))
@@ -250,17 +238,6 @@ public async Task<bool> CancelAsync(int appointmentId)
             await _employeeHub.Clients.All.StatusUpdated(appointment.Id, appointment.Status);
 
             return true;
-        }
-
-        // -------------------------------------------------------------
-        // NÄCHSTER WARTENDER BÜRGER (für Mitarbeiter-UI)
-        // -------------------------------------------------------------
-        public async Task<Appointment?> GetNextAsync(int serviceId)
-        {
-            return await _context.Appointments
-                .Where(a => a.ServiceId == serviceId && a.Status == AppointmentStatus.CheckedIn)
-                .OrderBy(a => a.CheckedInAt ?? a.Date)
-                .FirstOrDefaultAsync();
         }
 
         // -------------------------------------------------------------
@@ -481,20 +458,6 @@ return await _context.Appointments
     .OrderBy(a => a.Date)
     .ToListAsync();
 
-}
-
-public async Task<Appointment?> GetNextAppointmentForServiceOnDateAsync(
-    int serviceId,
-    DateTime date)
-{
-    var targetDate = date.Date;
-
-    return await _context.Appointments
-        .Where(a =>
-            a.ServiceId == serviceId &&
-            a.Date.Date == targetDate)
-        .OrderBy(a => a.Date)
-        .FirstOrDefaultAsync();
 }
 
         // -------------------------------------------------------------

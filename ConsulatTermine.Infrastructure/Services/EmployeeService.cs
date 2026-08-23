@@ -190,41 +190,7 @@ return employee;
             return true;
         }
 
-        // -------------------------------------------------------------
-        // ASSIGN SERVICE TO EMPLOYEE
-        // -------------------------------------------------------------
-        public async Task AssignServiceAsync(int employeeId, int serviceId)
-        {
-            var exists = await _context.EmployeeServiceAssignments
-                .AnyAsync(a => a.EmployeeId == employeeId && a.ServiceId == serviceId);
-
-            if (!exists)
-            {
-                _context.EmployeeServiceAssignments.Add(new EmployeeServiceAssignment
-                {
-                    EmployeeId = employeeId,
-                    ServiceId = serviceId
-                });
-
-                await _context.SaveChangesAsync();
-            }
-        }
-
-        // -------------------------------------------------------------
-        // REMOVE SERVICE FROM EMPLOYEE
-        // -------------------------------------------------------------
-        public async Task RemoveServiceAsync(int employeeId, int serviceId)
-        {
-            var assignment = await _context.EmployeeServiceAssignments
-                .FirstOrDefaultAsync(a => a.EmployeeId == employeeId && a.ServiceId == serviceId);
-
-            if (assignment != null)
-            {
-                _context.EmployeeServiceAssignments.Remove(assignment);
-                await _context.SaveChangesAsync();
-            }
-        }
- public async Task EnsureInitialAdminAsync()
+        public async Task EnsureInitialAdminAsync()
 {
     var adminExists = await _context.Employees
         .AnyAsync(e => e.Role == EmployeeRole.Admin);
