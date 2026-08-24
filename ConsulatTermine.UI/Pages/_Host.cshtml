@@ -19,11 +19,15 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="~/" />
-    <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
-    <link href="css/site.css" rel="stylesheet" />
-    <link href="css/localization.css" rel="stylesheet" />
-    <link href="ConsulatTermine.UI.styles.css" rel="stylesheet" />
-    <link rel="icon" type="image/png" href="favicon.png"/>
+    @* asp-append-version haengt einen Inhaltshash an die Adresse. Ohne ihn liefert
+       der Browser nach einer Aenderung weiter die zwischengespeicherte Fassung aus
+       und mischt neues Markup mit altem Stil. Dateien aus Paketen und dem Framework
+       tragen ihren Stand bereits ueber die Paketversion. *@
+    <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" asp-append-version="true" />
+    <link href="css/site.css" rel="stylesheet" asp-append-version="true" />
+    <link href="css/localization.css" rel="stylesheet" asp-append-version="true" />
+    <link href="ConsulatTermine.UI.styles.css" rel="stylesheet" asp-append-version="true" />
+    <link rel="icon" type="image/png" href="favicon.png" asp-append-version="true" />
     <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
 
     <component type="typeof(HeadOutlet)" render-mode="ServerPrerendered" />
@@ -46,8 +50,8 @@
         <a class="dismiss" aria-label="@Texts["Action.Dismiss"]">🗙</a>
     </div>
     <script src="_framework/blazor.server.js"></script>
-    <script src="~/js/sounds.js"></script>
-    <script src="~/js/waiting-room.js"></script>
+    <script src="~/js/sounds.js" asp-append-version="true"></script>
+    <script src="~/js/waiting-room.js" asp-append-version="true"></script>
 
 </body>
 </html>
