@@ -7,6 +7,15 @@ public interface IAppointmentService
 {
     // --- Buchung & freie Slots ---
     Task<List<AvailableSlotDto>> GetAvailableSlotDtosAsync(int serviceId, DateTime appointmentDate);
+
+    /// <summary>
+    /// Liefert die freien Slots aller Tage eines Monats in einem Zug, je Tag eine Liste.
+    /// </summary>
+    /// <param name="serviceId">Service, dessen Verfuegbarkeit gefragt ist.</param>
+    /// <param name="monthFirstDay">Beliebiger Tag des gewuenschten Monats; ausgewertet wird der ganze Monat.</param>
+    Task<Dictionary<DateOnly, List<AvailableSlotDto>>> GetAvailableSlotDtosForMonthAsync(
+        int serviceId,
+        DateOnly monthFirstDay);
     Task<Appointment> BookAsync(int serviceId, DateTime slotStart, string fullName, string email);
     Task<bool> CancelAsync(int appointmentId);
 

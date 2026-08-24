@@ -1,4 +1,5 @@
 using System.Globalization;
+using ConsulatTermine.Application.DTOs;
 using ConsulatTermine.Application.Services;
 using ConsulatTermine.Domain.Entities;
 using ConsulatTermine.Domain.Enums;
@@ -239,5 +240,133 @@ public sealed class AppointmentCalculatorTests
             30,
             [],
             TimeSpan.FromMinutes(30)));
+    }
+
+    // ============================================================
+    // AUSWAEHLBARE SLOTS
+    // ============================================================
+
+    /// <summary>Montag, 24.08.2026, 07:00 Uhr: liegt vor allen Slots der Tests.</summary>
+    private static readonly DateTime MondayMorning = Monday.AddHours(7);
+
+    private static readonly DateOnly MondayDay = DateOnly.FromDateTime(Monday);
+
+    private static AvailableSlotDto Slot(string start, int freeCapacity) => new()
+    {
+        SlotStart = Monday.Add(TimeSpan.Parse(start, CultureInfo.InvariantCulture)),
+        FreeCapacity = freeCapacity
+    };
+
+    private static List<AvailableSlotDto> SelectableSlots(
+        List<AvailableSlotDto> availableSlots,
+        DateTime now,
+        int slotDurationMinutes = 10,
+        List<(DateTime Start, int DurationMinutes)>? otherSelectedSlots = null) =>
+        AppointmentCalculator.GetSelectableSlots(
+            availableSlots,
+            MondayDay,
+            slotDurationMinutes,
+            otherSelectedSlots ?? [],
+            TimeSpan.FromMinutes(60),
+            30,
+            now);
+
+    [Fact]
+    public void GetSelectableSlots_FasstDieSlotsEinesRastersZusammen()
+    {
+        var selectable = SelectableSlots(
+            [Slot("09:00", 3), Slot("09:10", 3), Slot("09:20", 3), Slot("09:30", 2)],
+            MondayMorning);
+
+        Assert.Equal(2, selectable.Count);
+        Assert.Equal(Monday.AddHours(9), selectable[0].SlotStart);
+        Assert.Equal(Monday.AddHours(9).AddMinutes(30), selectable[1].SlotStart);
+    }
+
+    [Fact]
+    public void GetSelectableSlots_NimmtJeRasterDieKleinsteFreieKapazitaet()
+    {
+        var selectable = SelectableSlots(
+            [Slot("09:00", 3), Slot("09:10", 1), Slot("09:20", 3)],
+            MondayMorning);
+
+        Assert.Equal(1, Assert.Single(selectable).FreeCapacity);
+    }
+
+    [Fact]
+    public void GetSelectableSlots_OhneFreieKapazitaet_BietetDasRasterNichtAn()
+    {
+        var selectable = SelectableSlots(
+            [Slot("09:00", 0), Slot("09:10", 0)],
+            MondayMorning);
+
+        Assert.Empty(selectable);
+    }
+
+    [Fact]
+    public void GetSelectableSlots_AmLaufendenTag_LaesstNurSlotsMitAusreichendemVorlauf()
+    {
+        // 09:05 Uhr am selben Tag: 09:00 ist vorbei, 09:30 liegt innerhalb der
+        // Vorlaufzeit von 30 Minuten, erst 10:00 bleibt uebrig.
+        var selectable = SelectableSlots(
+            [Slot("09:00", 2), Slot("09:30", 2), Slot("10:00", 2)],
+            Monday.AddHours(9).AddMinutes(5));
+
+        Assert.Equal(Monday.AddHours(10), Assert.Single(selectable).SlotStart);
+    }
+
+    [Fact]
+    public void GetSelectableSlots_AnEinemAnderenTag_GiltDieVorlaufzeitNicht()
+    {
+        // Dieselbe Uhrzeit, aber der Tag liegt in der Zukunft.
+        var selectable = SelectableSlots(
+            [Slot("09:00", 2), Slot("09:30", 2)],
+            Monday.AddDays(-1).AddHours(9).AddMinutes(5));
+
+        Assert.Equal(2, selectable.Count);
+    }
+
+    [Fact]
+    public void GetSelectableSlots_VerwirftWasZuNahAnEinemTerminEinesAnderenServiceLiegt()
+    {
+        // Anderer Termin 10:00 bis 10:10, Puffer 60 Minuten: 09:30 kollidiert,
+        // 11:30 haelt den Abstand ein.
+        var selectable = SelectableSlots(
+            [Slot("09:30", 2), Slot("11:30", 2)],
+            MondayMorning,
+            otherSelectedSlots: [(Monday.AddHours(10), 10)]);
+
+        Assert.Equal(Monday.AddHours(11).AddMinutes(30), Assert.Single(selectable).SlotStart);
+    }
+
+    [Fact]
+    public void GetSelectableSlots_OhneSlots_LiefertEineLeereListe()
+    {
+        Assert.Empty(SelectableSlots([], MondayMorning));
+    }
+
+    [Fact]
+    public void GetSelectableSlots_LiefertDieRasterAufsteigendSortiert()
+    {
+        var selectable = SelectableSlots(
+            [Slot("11:00", 1), Slot("09:00", 1), Slot("10:00", 1)],
+            MondayMorning);
+
+        Assert.Equal(
+            [Monday.AddHours(9), Monday.AddHours(10), Monday.AddHours(11)],
+            selectable.Select(slot => slot.SlotStart));
+    }
+
+    [Fact]
+    public void GetSelectableSlots_MitUngueltigemRaster_WirdAbgewiesen()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => AppointmentCalculator.GetSelectableSlots(
+            [Slot("09:00", 1)],
+            MondayDay,
+            10,
+            [],
+            TimeSpan.FromMinutes(60),
+            0,
+            MondayMorning));
     }
 }

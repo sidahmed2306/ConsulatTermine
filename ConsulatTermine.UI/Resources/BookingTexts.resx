@@ -169,6 +169,12 @@
   <data name="Slots.CalendarHint" xml:space="preserve">
     <value>Tage ohne verfügbare Termine sind nicht auswählbar.</value>
   </data>
+  <data name="Slots.CalendarLoading" xml:space="preserve">
+    <value>Verfügbare Tage werden geladen …</value>
+  </data>
+  <data name="Slots.DayLoading" xml:space="preserve">
+    <value>Termine des Tages werden geladen …</value>
+  </data>
   <data name="Slots.TitleForService" xml:space="preserve">
     <value>Termine für {0}</value>
   </data>

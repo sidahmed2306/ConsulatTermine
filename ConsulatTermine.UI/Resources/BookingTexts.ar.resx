@@ -169,6 +169,12 @@
   <data name="Slots.CalendarHint" xml:space="preserve">
     <value>لا يمكن اختيار الأيام التي لا تتوفر فيها مواعيد.</value>
   </data>
+  <data name="Slots.CalendarLoading" xml:space="preserve">
+    <value>جارٍ تحميل الأيام المتاحة …</value>
+  </data>
+  <data name="Slots.DayLoading" xml:space="preserve">
+    <value>جارٍ تحميل مواعيد هذا اليوم …</value>
+  </data>
   <data name="Slots.TitleForService" xml:space="preserve">
     <value>مواعيد {0}</value>
   </data>

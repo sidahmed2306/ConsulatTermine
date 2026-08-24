@@ -108,6 +108,90 @@ public class AppointmentService : IAppointmentService
             .ToList();
     }
 
+    /// <summary>
+    /// Liefert die freien Slots aller Tage eines Monats in einem Zug.
+    /// </summary>
+    /// <remarks>
+    /// Der Kalender der Buchung braucht immer den ganzen Monat. Eine Abfrage je
+    /// Tag ergab dafuer rund dreissig Rundreisen zur Datenbank, waehrend derer
+    /// die Oberflaeche unvollstaendig war. Stammdaten und Termine werden deshalb
+    /// einmal geladen und die Tage im Speicher ausgewertet.
+    /// </remarks>
+    public async Task<Dictionary<DateOnly, List<AvailableSlotDto>>> GetAvailableSlotDtosForMonthAsync(
+        int serviceId,
+        DateOnly monthFirstDay)
+    {
+        var slotsByDay = new Dictionary<DateOnly, List<AvailableSlotDto>>();
+
+        await using var db = await _contextFactory.CreateDbContextAsync();
+
+        var service = await db.Services
+            .Include(s => s.AssignedEmployees)
+            .FirstOrDefaultAsync(s => s.Id == serviceId);
+
+        if (service == null)
+        {
+            throw new BusinessRuleViolationException(BusinessMessages.Get("ServiceNotFound"));
+        }
+
+        var plan = await GetActivePlanAsync(serviceId);
+        if (plan == null)
+        {
+            return slotsByDay;
+        }
+
+        var workingHours = await db.WorkingHours
+            .Where(w => w.ServiceId == serviceId && w.WorkingSchedulePlanId == plan.Id)
+            .ToListAsync();
+
+        var overrides = await db.ServiceDayOverrides
+            .Where(o => o.ServiceId == serviceId && o.WorkingSchedulePlanId == plan.Id)
+            .ToListAsync();
+
+        var firstDay = new DateOnly(monthFirstDay.Year, monthFirstDay.Month, 1);
+        var monthStart = firstDay.ToDateTime(TimeOnly.MinValue);
+        var monthEndExclusive = firstDay.AddMonths(1).ToDateTime(TimeOnly.MinValue);
+
+        var appointments = await db.Appointments
+            .Where(a => a.ServiceId == serviceId
+                        && a.Date >= monthStart
+                        && a.Date < monthEndExclusive)
+            .ToListAsync();
+
+        var dayCount = DateTime.DaysInMonth(firstDay.Year, firstDay.Month);
+
+        for (var dayOfMonth = 1; dayOfMonth <= dayCount; dayOfMonth++)
+        {
+            var day = new DateOnly(firstDay.Year, firstDay.Month, dayOfMonth);
+            var date = day.ToDateTime(TimeOnly.MinValue);
+
+            // Ausserhalb des aktiven Plans gibt es keine Slots.
+            if (!IsInsidePlan(plan, date))
+            {
+                slotsByDay[day] = new List<AvailableSlotDto>();
+                continue;
+            }
+
+            var slots = AppointmentCalculator.GetAvailableSlots(
+                service,
+                date,
+                workingHours,
+                overrides,
+                appointments);
+
+            slotsByDay[day] = slots
+                .Select(kv => new AvailableSlotDto
+                {
+                    SlotStart = date + kv.Key.Start,
+                    FreeCapacity = kv.Value
+                })
+                .OrderBy(x => x.SlotStart)
+                .ToList();
+        }
+
+        return slotsByDay;
+    }
+
     // -------------------------------------------------------------
     // TERMIN BUCHEN
     // -------------------------------------------------------------

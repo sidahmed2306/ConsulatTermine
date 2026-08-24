@@ -169,6 +169,12 @@
   <data name="Slots.CalendarHint" xml:space="preserve">
     <value>Days without available appointments cannot be selected.</value>
   </data>
+  <data name="Slots.CalendarLoading" xml:space="preserve">
+    <value>Loading available days …</value>
+  </data>
+  <data name="Slots.DayLoading" xml:space="preserve">
+    <value>Loading appointments for this day …</value>
+  </data>
   <data name="Slots.TitleForService" xml:space="preserve">
     <value>Appointments for {0}</value>
   </data>

@@ -1,3 +1,4 @@
+using ConsulatTermine.Application.DTOs;
 using ConsulatTermine.Domain.Entities;
 using ConsulatTermine.Domain.Enums;
 
@@ -175,5 +176,71 @@ public static class AppointmentCalculator
         }
 
         return true;
+    }
+
+    // ============================================================
+    // 4) AUSWAEHLBARE SLOTS DER BUCHUNGSOBERFLAECHE
+    // ============================================================
+
+    /// <summary>
+    /// Verdichtet die freien Slots eines Tages zu den Eintraegen, die in der
+    /// Buchung tatsaechlich auswaehlbar sind: vertraeglich mit den bereits
+    /// gewaehlten Terminen der anderen Services, nicht mehr zu kurzfristig und
+    /// auf das Anzeigeraster zusammengefasst.
+    /// </summary>
+    /// <remarks>
+    /// Kalender und Slot-Liste verwenden bewusst dieselbe Berechnung. Ein Tag
+    /// gilt genau dann als buchbar, wenn diese Methode fuer ihn mindestens einen
+    /// Eintrag liefert. Damit kann ein anklickbarer Tag nicht mehr leer sein.
+    /// </remarks>
+    /// <param name="availableSlots">Freie Slots des Tages aus der Kapazitaetsrechnung.</param>
+    /// <param name="day">Tag, zu dem die Slots gehoeren.</param>
+    /// <param name="slotDurationMinutes">Dauer eines Termins des betrachteten Service.</param>
+    /// <param name="otherSelectedSlots">Bereits gewaehlte Termine der uebrigen Services.</param>
+    /// <param name="bufferBetweenServices">Mindestabstand zwischen zwei Terminen derselben Buchung.</param>
+    /// <param name="gridIntervalMinutes">Raster, in dem die Oberflaeche Slots zusammenfasst.</param>
+    /// <param name="now">Aktueller Zeitpunkt; bestimmt die Vorlaufzeit am laufenden Tag.</param>
+    public static List<AvailableSlotDto> GetSelectableSlots(
+        IEnumerable<AvailableSlotDto> availableSlots,
+        DateOnly day,
+        int slotDurationMinutes,
+        IReadOnlyCollection<(DateTime Start, int DurationMinutes)> otherSelectedSlots,
+        TimeSpan bufferBetweenServices,
+        int gridIntervalMinutes,
+        DateTime now)
+    {
+        ArgumentNullException.ThrowIfNull(availableSlots);
+        ArgumentNullException.ThrowIfNull(otherSelectedSlots);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(gridIntervalMinutes);
+
+        // Am laufenden Tag faellt weg, was ohne Vorlauf nicht mehr erreichbar ist.
+        var earliestStart = day == DateOnly.FromDateTime(now)
+            ? now.AddMinutes(gridIntervalMinutes)
+            : DateTime.MinValue;
+
+        return availableSlots
+            .Where(slot => slot.FreeCapacity > 0)
+            .Where(slot => slot.SlotStart > earliestStart)
+            .Where(slot => IsSlotTimeCompatible(
+                slot.SlotStart,
+                slotDurationMinutes,
+                otherSelectedSlots,
+                bufferBetweenServices))
+            .GroupBy(slot => RoundDownToGrid(slot.SlotStart, gridIntervalMinutes))
+            .Select(group => new AvailableSlotDto
+            {
+                SlotStart = group.Key,
+                FreeCapacity = group.Min(slot => slot.FreeCapacity)
+            })
+            .Where(slot => slot.FreeCapacity > 0)
+            .OrderBy(slot => slot.SlotStart)
+            .ToList();
+    }
+
+    private static DateTime RoundDownToGrid(DateTime slotStart, int gridIntervalMinutes)
+    {
+        var minutesSinceMidnight = (int)(slotStart - slotStart.Date).TotalMinutes;
+        var rounded = minutesSinceMidnight / gridIntervalMinutes * gridIntervalMinutes;
+        return slotStart.Date.AddMinutes(rounded);
     }
 }

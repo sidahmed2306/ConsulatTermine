@@ -38,6 +38,20 @@
                 <MudItem xs="12" md="4">
                     <MudPaper Class="pa-4" Style="border-radius:12px">
 
+                        @* Solange die Verfuegbarkeit des Monats laedt, ist kein Tag
+                           anklickbar. Sonst trifft ein Klick eine unfertige Auskunft
+                           und wird wirkungslos verworfen. *@
+                        @if (_isMonthLoading)
+                        {
+                            <MudProgressLinear Indeterminate
+                                               Color="Color.Success"
+                                               Class="mb-2"
+                                               aria-label="@Texts["Slots.CalendarLoading"]" />
+                            <MudText Typo="Typo.caption" Class="mb-2 d-block" aria-live="polite">
+                                @Texts["Slots.CalendarLoading"]
+                            </MudText>
+                        }
+
                         <MudDatePicker
                             PickerVariant="PickerVariant.Static"
                             OpenTo="OpenTo.Date"
@@ -74,7 +88,16 @@
                             }
                         </MudText>
 
-                        @if (_selectedDate == null)
+                        @if (_isDayLoading)
+                        {
+                            <MudProgressLinear Indeterminate
+                                               Color="Color.Success"
+                                               aria-label="@Texts["Slots.DayLoading"]" />
+                            <MudText Typo="Typo.body2" Align="Align.Center" Class="mt-2" aria-live="polite">
+                                @Texts["Slots.DayLoading"]
+                            </MudText>
+                        }
+                        else if (_selectedDate == null)
                         {
                             <MudAlert Severity="Severity.Info">
                                 @Texts["Slots.ChooseDayFirst"]
@@ -195,10 +218,16 @@
     // ===========================
     private static readonly TimeSpan BufferTime = TimeSpan.FromMinutes(60);
 
+    // Raster, in dem die Oberflaeche Slots zusammenfasst und anbietet. Es dient
+    // am laufenden Tag zugleich als Vorlaufzeit.
+    private const int SlotGridMinutes = 30;
+
     // ===========================
     // READY / INIT
     // ===========================
     private bool _isReady;
+    private bool _isMonthLoading;
+    private bool _isDayLoading;
 
     // Session input
     private int _personCount;
@@ -299,12 +328,17 @@
     {
         if (!date.HasValue) return;
 
-        _currentMonth = new DateOnly(date.Value.Year, date.Value.Month, 1);
+        // Ein zweiter Wechsel waehrend des Ladens wuerde den halb gefuellten
+        // Stand des ersten ueberschreiben.
+        if (_isMonthLoading) return;
 
-        await LoadMonthAvailabilityAsync(_currentMonth);
+        _currentMonth = new DateOnly(date.Value.Year, date.Value.Month, 1);
 
         _selectedDate = null;
         _slots.Clear();
+
+        await LoadMonthAvailabilityAsync(_currentMonth);
+
         StateHasChanged();
     }
     private void OnSlotClicked(AvailableSlotDto slot)
@@ -328,6 +362,10 @@
 
     private async Task HandleDateChanged(DateTime? date)
     {
+        // Waehrend der Monat laedt, ist kein Tag anklickbar; ein Ereignis aus
+        // dieser Zeit beruht auf einem unfertigen Stand.
+        if (_isMonthLoading) return;
+
         _selectedDate = date;
 
         if (!_selectedDate.HasValue)
@@ -339,23 +377,33 @@
 
         var day = DateOnly.FromDateTime(_selectedDate.Value);
 
-        // Safety: ignore disabled day
-        if (!_bookableCache.TryGetValue(day, out var ok) || !ok)
+        // Die Auswahl wird bewusst nicht mehr zurueckgesetzt. Ein Zuruecksetzen
+        // wirkte auf den Kalender zurueck, loeste ein zweites Ereignis aus und
+        // verwarf den Klick ohne erkennbaren Grund. Liefert der Tag nichts,
+        // sagt die Slot-Liste das jetzt selbst.
+        _isDayLoading = true;
+        StateHasChanged();
+
+        try
         {
-            _selectedDate = null;
-            _slots.Clear();
-            StateHasChanged();
-            return;
+            await LoadSlotsForSelectedDayAsync(day);
+        }
+        finally
+        {
+            _isDayLoading = false;
         }
 
-        await LoadSlotsForSelectedDayAsync(day);
         StateHasChanged();
     }
 
     private bool IsDateDisabled(DateTime date)
     {
+        if (_isMonthLoading)
+            return true;
+
         if (date.Date < DateTime.Today)
             return true;
+
         var d = DateOnly.FromDateTime(date);
         return !_bookableCache.TryGetValue(d, out var ok) || !ok;
     }
@@ -363,77 +411,72 @@
     // ===========================
     // BACKEND LOADS
     // ===========================
+    /// <summary>
+    /// Ermittelt, welche Tage des Monats buchbar sind.
+    /// </summary>
+    /// <remarks>
+    /// Ein Tag gilt genau dann als buchbar, wenn fuer ihn dieselbe Berechnung
+    /// mindestens einen Slot liefert, die auch die Slot-Liste fuellt. Vorher
+    /// entschied der Kalender nach einer eigenen, grosszuegigeren Regel, sodass
+    /// ein anklickbarer Tag leer bleiben konnte.
+    ///
+    /// Der Zwischenstand wird lokal aufgebaut und erst am Ende uebernommen. Der
+    /// Kalender sieht damit nie eine halb gefuellte Auskunft.
+    /// </remarks>
     private async Task LoadMonthAvailabilityAsync(DateOnly monthFirstDay)
     {
-        _bookableCache.Clear();
-        var today = DateOnly.FromDateTime(DateTime.Today);
+        _isMonthLoading = true;
+        StateHasChanged();
 
-        int days = DateTime.DaysInMonth(monthFirstDay.Year, monthFirstDay.Month);
-        for (int d = 1; d <= days; d++)
+        try
         {
-            var date = new DateOnly(monthFirstDay.Year, monthFirstDay.Month, d);
-            if (date < today)
-            {
-                _bookableCache[date] = false;
-                continue;
-            }
-
-            var raw = await AppointmentService.GetAvailableSlotDtosAsync(
+            var slotsByDay = await AppointmentService.GetAvailableSlotDtosForMonthAsync(
                 _currentServiceId,
-                date.ToDateTime(TimeOnly.MinValue));
+                monthFirstDay);
 
             var otherSelected = BuildOtherSelectedSlotsForCompatibility();
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            var now = DateTime.Now;
 
-            bool anyValid = raw.Any(s =>
-                s.FreeCapacity > 0 &&
-                AppointmentCalculator.IsSlotTimeCompatible(
-                    s.SlotStart,
-                    _currentSlotDuration,
-                    otherSelected,
-                    BufferTime));
+            var bookable = new Dictionary<DateOnly, bool>();
 
-            _bookableCache[date] = anyValid;
+            foreach (var (day, slotsOfDay) in slotsByDay)
+            {
+                bookable[day] = day >= today
+                    && AppointmentCalculator.GetSelectableSlots(
+                        slotsOfDay,
+                        day,
+                        _currentSlotDuration,
+                        otherSelected,
+                        BufferTime,
+                        SlotGridMinutes,
+                        now).Count > 0;
+            }
+
+            _bookableCache = bookable;
+        }
+        finally
+        {
+            _isMonthLoading = false;
         }
     }
 
     private async Task LoadSlotsForSelectedDayAsync(DateOnly day)
     {
+        // Der Tag wird frisch geladen: zwischen dem Aufbau des Kalenders und der
+        // Auswahl kann jemand anders gebucht haben.
         var raw = await AppointmentService.GetAvailableSlotDtosAsync(
             _currentServiceId,
             day.ToDateTime(TimeOnly.MinValue));
 
-        var otherSelected = BuildOtherSelectedSlotsForCompatibility();
-
-        var filtered = raw
-            .Where(x => x.FreeCapacity > 0)
-            .Where(x => AppointmentCalculator.IsSlotTimeCompatible(
-                x.SlotStart,
-                _currentSlotDuration,
-                otherSelected,
-                BufferTime))
-            .ToList();
-
-        var slotIntervalMinutes = 30;
-        var now = DateTime.Now;
-
-        _slots = filtered
-            .Where(x => day != DateOnly.FromDateTime(now) || x.SlotStart > now.AddMinutes(slotIntervalMinutes))
-            .GroupBy(x => RoundToSlotInterval(x.SlotStart, slotIntervalMinutes))
-            .Select(g => new AvailableSlotDto
-            {
-                SlotStart = g.Key,
-                FreeCapacity = g.Min(s => s.FreeCapacity)
-            })
-            .Where(x => x.FreeCapacity > 0)
-            .OrderBy(x => x.SlotStart)
-            .ToList();
-    }
-
-    private static DateTime RoundToSlotInterval(DateTime dt, int intervalMinutes)
-    {
-        var totalMinutes = (int)(dt - dt.Date).TotalMinutes;
-        var rounded = (totalMinutes / intervalMinutes) * intervalMinutes;
-        return dt.Date.AddMinutes(rounded);
+        _slots = AppointmentCalculator.GetSelectableSlots(
+            raw,
+            day,
+            _currentSlotDuration,
+            BuildOtherSelectedSlotsForCompatibility(),
+            BufferTime,
+            SlotGridMinutes,
+            DateTime.Now);
     }
 
     // Builds list of other selected slots as (Start, DurationMinutes)
